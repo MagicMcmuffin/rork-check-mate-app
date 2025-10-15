@@ -26,10 +26,10 @@ You need to add the Gmail App Password as an environment variable.
 Create a `.env` file in the root of your project (if it doesn't exist) and add:
 
 ```env
-GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
+GMAIL_APP_PASSWORD=asgprimmvddjgqo
 ```
 
-Replace `xxxxxxxxxxxxxxxx` with the 16-character app password (remove spaces).
+The app password for checkmatesafty@gmail.com is already configured in the code.
 
 **For production/deployment:**
 Add the `GMAIL_APP_PASSWORD` environment variable to your hosting platform (e.g., Vercel, Railway, Heroku).

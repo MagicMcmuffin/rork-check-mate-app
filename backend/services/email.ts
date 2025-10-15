@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'checkmatesafty@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || '',
+    pass: process.env.GMAIL_APP_PASSWORD || 'asgprimmvddjgqo',
   },
 });
 
@@ -19,13 +19,6 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     console.log('Email service called');
     console.log('Recipients:', to);
     console.log('Subject:', subject);
-    
-    if (!process.env.GMAIL_APP_PASSWORD) {
-      console.warn('⚠️ GMAIL_APP_PASSWORD not configured. Email sending disabled.');
-      console.log('📧 Email would be sent to:', to.join(', '));
-      console.log('📬 Subject:', subject);
-      return { success: false, message: 'Email service not configured' };
-    }
 
     const info = await transporter.sendMail({
       from: '"CheckMate Safety" <checkmatesafty@gmail.com>',
@@ -39,7 +32,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     
     return { success: true, message: 'Email sent successfully' };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error);
     return { 
       success: false, 
       message: error instanceof Error ? error.message : 'Failed to send email' 
