@@ -1,6 +1,6 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { sendEmail, getInspectionEmailRecipients, generateInspectionEmailHTML } from '../../../services/email';
+import { sendEmail, getInspectionEmailRecipients, generateInspectionEmailHTML } from '@/backend/services/email';
 
 const sendNotificationEmailSchema = z.object({
   inspectionType: z.enum(['plant', 'quickhitch', 'vehicle', 'bucket']),

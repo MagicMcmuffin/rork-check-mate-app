@@ -1,6 +1,6 @@
 import { publicProcedure } from '../../../create-context';
 import { z } from 'zod';
-import { sendEmail, getInspectionEmailRecipients, generatePositiveInterventionEmailHTML } from '../../../services/email';
+import { sendEmail, getInspectionEmailRecipients, generatePositiveInterventionEmailHTML } from '@/backend/services/email';
 
 const sendInterventionEmailSchema = z.object({
   employeeName: z.string(),
