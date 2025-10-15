@@ -41,19 +41,23 @@ export const trpcReactClient = trpc.createClient({
         }
         
         try {
-          console.log('tRPC React Client Request:', url);
           const response = await fetch(url, options);
           if (!response.ok) {
-            console.error('❌ tRPC React Client Error:', response.status, response.statusText);
             const text = await response.text();
-            console.error('Response body:', text.substring(0, 500));
             
-            if (response.status === 404) {
-              throw new Error('Backend server not found. The backend may still be deploying.');
+            if (response.status === 404 && text.includes('Site Not Found')) {
+              console.warn('⚠️ Backend not yet deployed - feature unavailable');
+              throw new Error('Backend service is currently unavailable. Please try again later.');
             }
+            
+            console.error('❌ tRPC React Client Error:', response.status, response.statusText);
+            console.error('Response body:', text.substring(0, 200));
           }
           return response;
         } catch (error) {
+          if (error instanceof Error && error.message.includes('Backend service is currently unavailable')) {
+            throw error;
+          }
           console.error('❌ tRPC React Client fetch error:', error);
           throw error;
         }
@@ -75,19 +79,23 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
         }
         
         try {
-          console.log('tRPC Proxy Client Request:', url);
           const response = await fetch(url, options);
           if (!response.ok) {
-            console.error('❌ tRPC Proxy Client Error:', response.status, response.statusText);
             const text = await response.text();
-            console.error('Response body:', text.substring(0, 500));
             
-            if (response.status === 404) {
-              throw new Error('Backend server not found. The backend may still be deploying.');
+            if (response.status === 404 && text.includes('Site Not Found')) {
+              console.warn('⚠️ Backend not yet deployed - feature unavailable');
+              throw new Error('Backend service is currently unavailable. Please try again later.');
             }
+            
+            console.error('❌ tRPC Proxy Client Error:', response.status, response.statusText);
+            console.error('Response body:', text.substring(0, 200));
           }
           return response;
         } catch (error) {
+          if (error instanceof Error && error.message.includes('Backend service is currently unavailable')) {
+            throw error;
+          }
           console.error('❌ tRPC Proxy Client fetch error:', error);
           throw error;
         }
