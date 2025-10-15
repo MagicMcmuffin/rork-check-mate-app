@@ -29,6 +29,18 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
     httpLink({
       url: `${getBaseUrl()}/api/trpc`,
       transformer: superjson,
+      fetch: async (url, options) => {
+        try {
+          const response = await fetch(url, options);
+          if (!response.ok) {
+            console.error('tRPC request failed:', response.status, response.statusText);
+          }
+          return response;
+        } catch (error) {
+          console.error('tRPC fetch error:', error);
+          throw error;
+        }
+      },
     }),
   ],
 });

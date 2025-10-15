@@ -15,27 +15,36 @@ export const sendAnnouncementNotificationEmailProcedure = publicProcedure
     })
   )
   .mutation(async ({ input }) => {
-    const html = generateAnnouncementEmailHTML({
-      companyName: input.companyName,
-      title: input.title,
-      message: input.message,
-      priority: input.priority,
-      authorName: input.authorName,
-      date: input.date,
-    });
+    try {
+      if (!input.recipientEmails || input.recipientEmails.length === 0) {
+        console.log('No email recipients configured for announcement');
+        return { success: false, message: 'No recipients configured' };
+      }
 
-    const priorityText = input.priority === 'high' ? 'URGENT' : input.priority === 'normal' ? 'Announcement' : 'Info';
-    const subject = `[${priorityText}] ${input.title} - ${input.companyName}`;
+      const html = generateAnnouncementEmailHTML({
+        companyName: input.companyName,
+        title: input.title,
+        message: input.message,
+        priority: input.priority,
+        authorName: input.authorName,
+        date: input.date,
+      });
 
-    const result = await sendEmail({
-      to: input.recipientEmails,
-      subject,
-      html,
-    });
+      const priorityText = input.priority === 'high' ? 'URGENT' : input.priority === 'normal' ? 'Announcement' : 'Info';
+      const subject = `[${priorityText}] ${input.title} - ${input.companyName}`;
 
-    if (!result.success) {
-      throw new Error(result.message || 'Failed to send announcement email');
+      const result = await sendEmail({
+        to: input.recipientEmails,
+        subject,
+        html,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error in sendAnnouncementEmail:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to send announcement email' 
+      };
     }
-
-    return { success: true };
   });

@@ -23,35 +23,43 @@ const sendNotificationEmailSchema = z.object({
 export default publicProcedure
   .input(sendNotificationEmailSchema)
   .mutation(async ({ input }) => {
-    const recipients = getInspectionEmailRecipients({
-      companyEmail: input.companyEmail,
-      projectEmails: input.projectEmails,
-      adminEmails: input.adminEmails,
-    });
+    try {
+      const recipients = getInspectionEmailRecipients({
+        companyEmail: input.companyEmail,
+        projectEmails: input.projectEmails,
+        adminEmails: input.adminEmails,
+      });
 
-    if (recipients.length === 0) {
-      console.log('No email recipients configured');
-      return { success: false, message: 'No recipients configured' };
+      if (recipients.length === 0) {
+        console.log('No email recipients configured');
+        return { success: false, message: 'No recipients configured' };
+      }
+
+      const emailHTML = generateInspectionEmailHTML({
+        inspectionType: input.inspectionType,
+        equipmentName: input.equipmentName,
+        operatorName: input.operatorName,
+        date: input.date,
+        projectName: input.projectName,
+        failedChecks: input.failedChecks,
+        notesOnDefects: input.notesOnDefects,
+        companyName: input.companyName,
+      });
+
+      const subject = `⚠️ Inspection Alert - ${input.equipmentName} - ${input.inspectionType.toUpperCase()}`;
+
+      const result = await sendEmail({
+        to: recipients,
+        subject,
+        html: emailHTML,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error in sendNotificationEmail:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to send email notification' 
+      };
     }
-
-    const emailHTML = generateInspectionEmailHTML({
-      inspectionType: input.inspectionType,
-      equipmentName: input.equipmentName,
-      operatorName: input.operatorName,
-      date: input.date,
-      projectName: input.projectName,
-      failedChecks: input.failedChecks,
-      notesOnDefects: input.notesOnDefects,
-      companyName: input.companyName,
-    });
-
-    const subject = `⚠️ Inspection Alert - ${input.equipmentName} - ${input.inspectionType.toUpperCase()}`;
-
-    const result = await sendEmail({
-      to: recipients,
-      subject,
-      html: emailHTML,
-    });
-
-    return result;
   });

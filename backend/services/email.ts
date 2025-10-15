@@ -4,17 +4,22 @@ export interface SendEmailParams {
   html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  console.log('Email service called');
-  console.log('Recipients:', to);
-  console.log('Subject:', subject);
-  
-  console.warn('⚠️ Email sending is simulated in development mode.');
-  console.log('📧 Email would be sent to:', to.join(', '));
-  console.log('📬 Subject:', subject);
-  console.log('✅ Email notification logged successfully');
-  
-  return { success: true, message: 'Email logged (dev mode)' };
+export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<{ success: boolean; message: string }> {
+  try {
+    console.log('Email service called');
+    console.log('Recipients:', to);
+    console.log('Subject:', subject);
+    
+    console.warn('⚠️ Email sending is simulated in development mode.');
+    console.log('📧 Email would be sent to:', to.join(', '));
+    console.log('📬 Subject:', subject);
+    console.log('✅ Email notification logged successfully');
+    
+    return { success: true, message: 'Email logged (dev mode)' };
+  } catch (error) {
+    console.error('Error in sendEmail:', error);
+    return { success: false, message: 'Failed to log email' };
+  }
 }
 
 export function getInspectionEmailRecipients(params: {

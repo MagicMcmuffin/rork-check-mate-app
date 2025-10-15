@@ -20,36 +20,44 @@ const sendInterventionEmailSchema = z.object({
 export default publicProcedure
   .input(sendInterventionEmailSchema)
   .mutation(async ({ input }) => {
-    const recipients = getInspectionEmailRecipients({
-      companyEmail: input.companyEmail,
-      projectEmails: input.projectEmails,
-      adminEmails: input.adminEmails,
-    });
+    try {
+      const recipients = getInspectionEmailRecipients({
+        companyEmail: input.companyEmail,
+        projectEmails: input.projectEmails,
+        adminEmails: input.adminEmails,
+      });
 
-    if (recipients.length === 0) {
-      console.log('No email recipients configured');
-      return { success: false, message: 'No recipients configured' };
+      if (recipients.length === 0) {
+        console.log('No email recipients configured');
+        return { success: false, message: 'No recipients configured' };
+      }
+
+      const emailHTML = generatePositiveInterventionEmailHTML({
+        companyName: input.companyName,
+        employeeName: input.employeeName,
+        date: input.date,
+        projectName: input.projectName,
+        hazardDescription: input.hazardDescription,
+        severity: input.severity,
+        actionTaken: input.actionTaken,
+        site: input.site,
+        location: input.location,
+      });
+
+      const subject = `🛡️ Positive Intervention - ${input.employeeName}`;
+
+      const result = await sendEmail({
+        to: recipients,
+        subject,
+        html: emailHTML,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error in sendInterventionEmail:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to send email notification' 
+      };
     }
-
-    const emailHTML = generatePositiveInterventionEmailHTML({
-      companyName: input.companyName,
-      employeeName: input.employeeName,
-      date: input.date,
-      projectName: input.projectName,
-      hazardDescription: input.hazardDescription,
-      severity: input.severity,
-      actionTaken: input.actionTaken,
-      site: input.site,
-      location: input.location,
-    });
-
-    const subject = `🛡️ Positive Intervention - ${input.employeeName}`;
-
-    const result = await sendEmail({
-      to: recipients,
-      subject,
-      html: emailHTML,
-    });
-
-    return result;
   });
