@@ -2,6 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry } from '@/types';
+import { trpcClient } from '@/lib/trpc';
+import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -294,25 +296,44 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    console.log('Plant inspection submitted:', newInspection);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
-    if (inspection.projectId) {
-      const project = company?.projects?.find(p => p.id === inspection.projectId);
-      if (project && project.emails.length > 0) {
-        console.log('- Project emails:', project.emails.join(', '));
-      }
-    }
+    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
     const adminUsers = users.filter(u => 
       u.companyId === company?.id && 
       (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
     );
-    if (adminUsers.length > 0) {
-      console.log('- Admin/Management/Mechanic emails:', adminUsers.map(u => u.email).join(', '));
+
+    const allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
+    const failedCheckDetails = newInspection.checks
+      .filter(c => c.status === 'B' || c.status === 'C')
+      .map(check => {
+        const item = allItems.find(i => i.id === check.itemId);
+        return {
+          name: item?.name || check.itemId,
+          status: check.status || '',
+          notes: check.notes,
+        };
+      });
+
+    if (failedCheckDetails.length > 0) {
+      trpcClient.inspections.sendNotificationEmail.mutate({
+        inspectionType: 'plant',
+        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`,
+        operatorName: newInspection.employeeName,
+        date: newInspection.date,
+        projectName: project?.name,
+        failedChecks: failedCheckDetails,
+        notesOnDefects: newInspection.notesOnDefects,
+        companyName: company?.name || 'Unknown Company',
+        companyEmail: company?.email || '',
+        projectEmails: project?.emails,
+        adminEmails: adminUsers.map(u => u.email),
+      }).catch(error => {
+        console.error('Failed to send email notification:', error);
+      });
     }
 
     return newInspection;
-  }, [plantInspections, company, notifications]);
+  }, [plantInspections, company, notifications, users]);
 
   const submitQuickHitchInspection = useCallback(async (inspection: Omit<QuickHitchInspection, 'id' | 'createdAt'>) => {
     const newInspection: QuickHitchInspection = {
@@ -346,25 +367,43 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    console.log('Quick Hitch inspection submitted:', newInspection);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
-    if (inspection.projectId) {
-      const project = company?.projects?.find(p => p.id === inspection.projectId);
-      if (project && project.emails.length > 0) {
-        console.log('- Project emails:', project.emails.join(', '));
-      }
-    }
+    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
     const adminUsers = users.filter(u => 
       u.companyId === company?.id && 
       (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
     );
-    if (adminUsers.length > 0) {
-      console.log('- Admin/Management/Mechanic emails:', adminUsers.map(u => u.email).join(', '));
+
+    const failedCheckDetails = newInspection.checks
+      .filter(c => c.status === '✗' || c.status === false)
+      .map(check => {
+        const item = QUICK_HITCH_ITEMS.find(i => i.id === check.itemId);
+        return {
+          name: item?.name || check.itemId,
+          status: typeof check.status === 'boolean' ? (check.status ? '✓' : '✗') : check.status?.toString() || '✗',
+          notes: undefined,
+        };
+      });
+
+    if (failedCheckDetails.length > 0) {
+      trpcClient.inspections.sendNotificationEmail.mutate({
+        inspectionType: 'quickhitch',
+        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails,
+        operatorName: newInspection.operatorName,
+        date: newInspection.date,
+        projectName: project?.name,
+        failedChecks: failedCheckDetails,
+        notesOnDefects: newInspection.remarks,
+        companyName: company?.name || 'Unknown Company',
+        companyEmail: company?.email || '',
+        projectEmails: project?.emails,
+        adminEmails: adminUsers.map(u => u.email),
+      }).catch(error => {
+        console.error('Failed to send email notification:', error);
+      });
     }
 
     return newInspection;
-  }, [quickHitchInspections, company]);
+  }, [quickHitchInspections, company, notifications, users]);
 
   const logout = useCallback(async () => {
     await Promise.all([
@@ -407,19 +446,40 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    console.log('Vehicle inspection submitted:', newInspection);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
     const adminUsers = users.filter(u => 
       u.companyId === company?.id && 
       (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
     );
-    if (adminUsers.length > 0) {
-      console.log('- Admin/Management/Mechanic emails:', adminUsers.map(u => u.email).join(', '));
+
+    const failedCheckDetails = newInspection.checks
+      .filter(c => c.status === 'B' || c.status === 'C')
+      .map(check => {
+        const item = VEHICLE_INSPECTION_ITEMS.find(i => i.id === check.itemId);
+        return {
+          name: item?.name || check.itemId,
+          status: check.status || '',
+          notes: check.notes,
+        };
+      });
+
+    if (failedCheckDetails.length > 0) {
+      trpcClient.inspections.sendNotificationEmail.mutate({
+        inspectionType: 'vehicle',
+        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration,
+        operatorName: newInspection.employeeName,
+        date: newInspection.date,
+        failedChecks: failedCheckDetails,
+        notesOnDefects: newInspection.additionalComments,
+        companyName: company?.name || 'Unknown Company',
+        companyEmail: company?.email || '',
+        adminEmails: adminUsers.map(u => u.email),
+      }).catch(error => {
+        console.error('Failed to send email notification:', error);
+      });
     }
 
     return newInspection;
-  }, [vehicleInspections, company]);
+  }, [vehicleInspections, company, notifications, users]);
 
   const getCompanyInspections = useCallback(() => {
     if (!company) return { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
@@ -647,25 +707,42 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    console.log('Bucket change inspection submitted:', newInspection);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
-    if (inspection.projectId) {
-      const project = company?.projects?.find(p => p.id === inspection.projectId);
-      if (project && project.emails.length > 0) {
-        console.log('- Project emails:', project.emails.join(', '));
-      }
-    }
+    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
     const adminUsers = users.filter(u => 
       u.companyId === company?.id && 
       (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
     );
-    if (adminUsers.length > 0) {
-      console.log('- Admin/Management/Mechanic emails:', adminUsers.map(u => u.email).join(', '));
+
+    const failedCheckDetails = newInspection.checks
+      .filter(c => c.status === false)
+      .map(check => {
+        const item = BUCKET_CHANGE_ITEMS.find((i: { id: string; name: string }) => i.id === check.itemId);
+        return {
+          name: item?.name || check.itemId,
+          status: 'Failed',
+          notes: check.notes,
+        };
+      });
+
+    if (failedCheckDetails.length > 0) {
+      trpcClient.inspections.sendNotificationEmail.mutate({
+        inspectionType: 'bucket',
+        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType,
+        operatorName: newInspection.employeeName,
+        date: newInspection.date,
+        projectName: project?.name,
+        failedChecks: failedCheckDetails,
+        companyName: company?.name || 'Unknown Company',
+        companyEmail: company?.email || '',
+        projectEmails: project?.emails,
+        adminEmails: adminUsers.map(u => u.email),
+      }).catch(error => {
+        console.error('Failed to send email notification:', error);
+      });
     }
 
     return newInspection;
-  }, [bucketChangeInspections, company]);
+  }, [bucketChangeInspections, company, notifications, users]);
 
   const switchCompany = useCallback(async (companyId: string) => {
     if (!user) throw new Error('No user found');
@@ -856,24 +933,30 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.setItem(STORAGE_KEYS.POSITIVE_INTERVENTIONS, JSON.stringify(updated));
     setPositiveInterventions(updated);
 
-    console.log('Positive intervention submitted:', newIntervention);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
-    if (intervention.projectId) {
-      const project = company?.projects?.find(p => p.id === intervention.projectId);
-      if (project && project.emails.length > 0) {
-        console.log('- Project emails:', project.emails.join(', '));
-      }
-    }
+    const project = intervention.projectId ? company?.projects?.find(p => p.id === intervention.projectId) : undefined;
     const adminUsers = users.filter(u => 
       u.companyId === company?.id && 
       (u.role === 'administrator' || u.role === 'management')
     );
-    if (adminUsers.length > 0) {
-      console.log('- Admin/Management emails:', adminUsers.map(u => u.email).join(', '));
-    }
+
+    trpcClient.interventions.sendNotificationEmail.mutate({
+      employeeName: newIntervention.employeeName,
+      date: newIntervention.date,
+      projectName: project?.name,
+      hazardDescription: newIntervention.hazardDescription,
+      severity: newIntervention.severity,
+      actionTaken: newIntervention.actionTaken,
+      site: newIntervention.site,
+      location: newIntervention.location,
+      companyName: company?.name || 'Unknown Company',
+      companyEmail: company?.email || '',
+      projectEmails: project?.emails,
+      adminEmails: adminUsers.map(u => u.email),
+    }).catch(error => {
+      console.error('Failed to send email notification:', error);
+    });
     return newIntervention;
-  }, [positiveInterventions]);
+  }, [positiveInterventions, company, users]);
 
   const getCompanyPositiveInterventions = useCallback(() => {
     if (!company) return [];
@@ -899,19 +982,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.setItem(STORAGE_KEYS.APPRENTICESHIP_ENTRIES, JSON.stringify(updated));
     setApprenticeshipEntries(updated);
 
-    console.log('Apprenticeship entry submitted:', newEntry);
-    console.log('Email notification would be sent to:');
-    console.log('- Company email:', company?.email);
-    const managementUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'company' || u.role === 'administrator' || u.role === 'management')
-    );
-    if (managementUsers.length > 0) {
-      console.log('- Management emails:', managementUsers.map(u => u.email).join(', '));
-    }
+
 
     return newEntry;
-  }, [apprenticeshipEntries, company, users]);
+  }, [apprenticeshipEntries]);
 
   const getCompanyApprenticeshipEntries = useCallback(() => {
     if (!company) return [];

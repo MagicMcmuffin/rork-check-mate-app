@@ -1,0 +1,272 @@
+export interface SendEmailParams {
+  to: string[];
+  subject: string;
+  html: string;
+}
+
+export async function sendEmail({ to, subject, html }: SendEmailParams) {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not configured. Email would be sent to:', to);
+    console.log('Subject:', subject);
+    console.log('Content:', html.substring(0, 200) + '...');
+    return { success: false, message: 'Email service not configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM || 'CheckMate <noreply@checkmate.app>',
+        to,
+        subject,
+        html,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Email send failed:', error);
+      return { success: false, message: 'Failed to send email' };
+    }
+
+    const data = await response.json();
+    console.log('Email sent successfully:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email send error:', error);
+    return { success: false, message: 'Email service error' };
+  }
+}
+
+export function getInspectionEmailRecipients(params: {
+  companyEmail: string;
+  projectEmails?: string[];
+  adminEmails?: string[];
+}): string[] {
+  const recipients = new Set<string>();
+  
+  if (params.companyEmail) {
+    recipients.add(params.companyEmail);
+  }
+  
+  if (params.projectEmails) {
+    params.projectEmails.forEach(email => recipients.add(email));
+  }
+  
+  if (params.adminEmails) {
+    params.adminEmails.forEach(email => recipients.add(email));
+  }
+  
+  return Array.from(recipients);
+}
+
+interface InspectionEmailData {
+  inspectionType: string;
+  equipmentName: string;
+  operatorName: string;
+  date: string;
+  projectName?: string;
+  failedChecks: { name: string; status: string; notes?: string }[];
+  notesOnDefects?: string;
+  companyName: string;
+}
+
+export function generateInspectionEmailHTML(data: InspectionEmailData): string {
+  const severityColor = data.failedChecks.some(c => c.status === 'C') ? '#ef4444' : '#f59e0b';
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Inspection Alert</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background-color: #f8fafc;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+            <div style="background: ${severityColor}; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: 700;">⚠️ Inspection Alert</h1>
+            </div>
+            
+            <div style="padding: 24px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #64748b;">
+                An inspection has been completed with issues that require attention.
+              </p>
+              
+              <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569; width: 140px;">Company:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.companyName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Inspection Type:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.inspectionType}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Equipment:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.equipmentName}</td>
+                  </tr>
+                  ${data.projectName ? `
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Project:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.projectName}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Operator:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.operatorName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Date:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.date}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 24px 0 12px 0;">Failed Checks</h2>
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                ${data.failedChecks.map((check, index) => `
+                  <div style="padding: 12px 16px; ${index !== 0 ? 'border-top: 1px solid #e2e8f0;' : ''}">
+                    <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                      <span style="display: inline-block; padding: 2px 8px; background: ${check.status === 'C' ? '#fee2e2' : check.status === 'B' ? '#fef3c7' : '#f1f5f9'}; color: ${check.status === 'C' ? '#dc2626' : check.status === 'B' ? '#d97706' : '#64748b'}; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 8px;">${check.status}</span>
+                      <span style="font-weight: 600; color: #1e293b;">${check.name}</span>
+                    </div>
+                    ${check.notes ? `<p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px;">${check.notes}</p>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+              
+              ${data.notesOnDefects ? `
+              <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 24px 0 12px 0;">Additional Notes</h2>
+              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px;">
+                <p style="margin: 0; color: #78350f;">${data.notesOnDefects}</p>
+              </div>
+              ` : ''}
+              
+              <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="margin: 0; color: #64748b; font-size: 14px;">
+                  Please review and take appropriate action.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+            <p style="margin: 0;">This is an automated message from CheckMate Inspection System</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+interface PositiveInterventionEmailData {
+  companyName: string;
+  employeeName: string;
+  date: string;
+  projectName?: string;
+  hazardDescription: string;
+  severity: string;
+  actionTaken: string;
+  site?: string;
+  location?: string;
+}
+
+export function generatePositiveInterventionEmailHTML(data: PositiveInterventionEmailData): string {
+  const severityColor = data.severity === 'high' ? '#ef4444' : data.severity === 'medium' ? '#f59e0b' : '#10b981';
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Positive Intervention Submitted</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background-color: #f8fafc;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: 700;">🛡️ Positive Intervention</h1>
+            </div>
+            
+            <div style="padding: 24px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #64748b;">
+                A positive intervention has been submitted by a team member.
+              </p>
+              
+              <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569; width: 140px;">Company:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.companyName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Submitted By:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.employeeName}</td>
+                  </tr>
+                  ${data.projectName ? `
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Project:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.projectName}</td>
+                  </tr>
+                  ` : ''}
+                  ${data.site ? `
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Site:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.site}</td>
+                  </tr>
+                  ` : ''}
+                  ${data.location ? `
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Location:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.location}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Date:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.date}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Severity:</td>
+                    <td style="padding: 8px 0;">
+                      <span style="display: inline-block; padding: 4px 12px; background: ${severityColor}; color: white; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${data.severity}</span>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 24px 0 12px 0;">Hazard Description</h2>
+              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #78350f;">${data.hazardDescription}</p>
+              </div>
+              
+              <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 24px 0 12px 0;">Action Taken</h2>
+              <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 16px; border-radius: 4px;">
+                <p style="margin: 0; color: #065f46;">${data.actionTaken}</p>
+              </div>
+              
+              <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="margin: 0; color: #64748b; font-size: 14px;">
+                  Great work identifying and addressing this safety concern!
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+            <p style="margin: 0;">This is an automated message from CheckMate Inspection System</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
