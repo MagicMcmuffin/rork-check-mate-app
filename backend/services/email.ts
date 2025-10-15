@@ -15,6 +15,13 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
   }
 
   try {
+    const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    
+    console.log('Attempting to send email...');
+    console.log('From:', fromEmail);
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -22,25 +29,38 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'CheckMate <onboarding@resend.dev>',
+        from: fromEmail,
         to,
         subject,
         html,
       }),
     });
 
+    const responseText = await response.text();
+    console.log('Response status:', response.status);
+    console.log('Response body:', responseText);
+
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Email send failed:', error);
-      return { success: false, message: 'Failed to send email' };
+      console.error('Email send failed. Status:', response.status);
+      console.error('Error details:', responseText);
+      
+      let errorMessage = 'Failed to send email';
+      try {
+        const errorJson = JSON.parse(responseText);
+        errorMessage = errorJson.message || errorMessage;
+      } catch {
+        errorMessage = responseText.substring(0, 200);
+      }
+      
+      return { success: false, message: errorMessage };
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     console.log('Email sent successfully:', data);
     return { success: true, data };
   } catch (error) {
     console.error('Email send error:', error);
-    return { success: false, message: 'Email service error' };
+    return { success: false, message: error instanceof Error ? error.message : 'Email service error' };
   }
 }
 
