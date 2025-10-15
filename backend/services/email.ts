@@ -5,7 +5,7 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_N88sZJUk_46jyGRSnxWjfmX278AGuBv6q';
   
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY not configured. Email would be sent to:', to);
@@ -22,7 +22,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'CheckMate <noreply@checkmate.app>',
+        from: process.env.EMAIL_FROM || 'CheckMate <onboarding@resend.dev>',
         to,
         subject,
         html,
