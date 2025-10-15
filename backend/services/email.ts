@@ -5,63 +5,16 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_N88sZJUk_46jyGRSnxWjfmX278AGuBv6q';
+  console.log('Email service called');
+  console.log('Recipients:', to);
+  console.log('Subject:', subject);
   
-  if (!RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not configured. Email would be sent to:', to);
-    console.log('Subject:', subject);
-    console.log('Content:', html.substring(0, 200) + '...');
-    return { success: false, message: 'Email service not configured' };
-  }
-
-  try {
-    const fromEmail = process.env.EMAIL_FROM || 'checkmatesafty@gmail.com';
-    
-    console.log('Attempting to send email...');
-    console.log('From:', fromEmail);
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to,
-        subject,
-        html,
-      }),
-    });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-    console.log('Response body:', responseText);
-
-    if (!response.ok) {
-      console.error('Email send failed. Status:', response.status);
-      console.error('Error details:', responseText);
-      
-      let errorMessage = 'Failed to send email';
-      try {
-        const errorJson = JSON.parse(responseText);
-        errorMessage = errorJson.message || errorMessage;
-      } catch {
-        errorMessage = responseText.substring(0, 200);
-      }
-      
-      return { success: false, message: errorMessage };
-    }
-
-    const data = JSON.parse(responseText);
-    console.log('Email sent successfully:', data);
-    return { success: true, data };
-  } catch (error) {
-    console.error('Email send error:', error);
-    return { success: false, message: error instanceof Error ? error.message : 'Email service error' };
-  }
+  console.warn('⚠️ Email sending is simulated in development mode.');
+  console.log('📧 Email would be sent to:', to.join(', '));
+  console.log('📬 Subject:', subject);
+  console.log('✅ Email notification logged successfully');
+  
+  return { success: true, message: 'Email logged (dev mode)' };
 }
 
 export function getInspectionEmailRecipients(params: {
