@@ -274,10 +274,12 @@ export const generatePlantInspectionPDF = async (
     const { uri } = await Print.printToFileAsync({ html });
     
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = uri;
-      link.download = `plant-inspection-${inspection.plantNumber}-${inspection.date}.pdf`;
-      link.click();
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = `plant-inspection-${inspection.plantNumber}-${inspection.date}.pdf`;
+        link.click();
+      }
     } else {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
@@ -386,10 +388,12 @@ export const generateQuickHitchInspectionPDF = async (
     const { uri } = await Print.printToFileAsync({ html });
     
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = uri;
-      link.download = `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}.pdf`;
-      link.click();
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}.pdf`;
+        link.click();
+      }
     } else {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
@@ -510,10 +514,12 @@ export const generateVehicleInspectionPDF = async (
     const { uri } = await Print.printToFileAsync({ html });
     
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = uri;
-      link.download = `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}.pdf`;
-      link.click();
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}.pdf`;
+        link.click();
+      }
     } else {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
@@ -618,10 +624,12 @@ export const generateBucketChangeInspectionPDF = async (
     const { uri } = await Print.printToFileAsync({ html });
     
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = uri;
-      link.download = `bucket-change-${inspection.bucketType}-${inspection.date}.pdf`;
-      link.click();
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = `bucket-change-${inspection.bucketType}-${inspection.date}.pdf`;
+        link.click();
+      }
     } else {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
@@ -748,10 +756,12 @@ export const generatePositiveInterventionPDF = async (
     const { uri } = await Print.printToFileAsync({ html });
     
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = uri;
-      link.download = `positive-intervention-${intervention.date}.pdf`;
-      link.click();
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = `positive-intervention-${intervention.date}.pdf`;
+        link.click();
+      }
     } else {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
