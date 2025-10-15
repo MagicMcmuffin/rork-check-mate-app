@@ -1,10 +1,11 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Calendar, User, AlertTriangle, MapPin, Building2, Image as ImageIcon } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Dimensions } from 'react-native';
+import { ArrowLeft, Calendar, User, AlertTriangle, Image as ImageIcon, Download } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { generatePositiveInterventionPDF } from '@/lib/pdf-generator';
 
 export default function InterventionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -12,6 +13,7 @@ export default function InterventionDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
 
   const intervention = positiveInterventions.find(i => i.id === id);
 
@@ -57,6 +59,23 @@ export default function InterventionDetailScreen() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!intervention || !company) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const projectName = intervention.projectId 
+        ? company.projects.find(p => p.id === intervention.projectId)?.name 
+        : undefined;
+
+      await generatePositiveInterventionPDF(intervention, company.name, projectName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen
@@ -68,6 +87,19 @@ export default function InterventionDetailScreen() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={handleDownloadPDF} 
+              style={styles.downloadButton}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Download size={24} color={colors.primary} />
+              )}
             </TouchableOpacity>
           ),
         }}
@@ -191,6 +223,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginLeft: 16,
+  },
+  downloadButton: {
+    marginRight: 16,
+    padding: 8,
   },
   errorContainer: {
     flex: 1,

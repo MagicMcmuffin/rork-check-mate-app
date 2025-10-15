@@ -1,12 +1,13 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Calendar, User, FileText, CheckCircle2, XCircle, AlertCircle, Image as ImageIcon, CheckCheck } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert } from 'react-native';
+import { ArrowLeft, Calendar, User, FileText, CheckCircle2, XCircle, AlertCircle, Image as ImageIcon, CheckCheck, Download } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CheckStatus } from '@/types';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
 import { useState } from 'react';
+import { generatePlantInspectionPDF, generateQuickHitchInspectionPDF, generateVehicleInspectionPDF, generateBucketChangeInspectionPDF } from '@/lib/pdf-generator';
 
 export default function InspectionDetailScreen() {
   const { id, type } = useLocalSearchParams<{ id: string; type: 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' }>();
@@ -15,6 +16,7 @@ export default function InspectionDetailScreen() {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [fixedChecks, setFixedChecks] = useState<Set<string>>(new Set());
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
 
   let inspection: any = null;
 
@@ -103,6 +105,31 @@ export default function InspectionDetailScreen() {
 
   const isCheckFixed = (checkIndex: number) => {
     return fixedChecks.has(`${id}-${checkIndex}`);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!inspection || !company) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const projectName = inspection.projectId 
+        ? company.projects.find(p => p.id === inspection.projectId)?.name 
+        : undefined;
+
+      if (type === 'plant') {
+        await generatePlantInspectionPDF(inspection, company.name, projectName);
+      } else if (type === 'quickhitch') {
+        await generateQuickHitchInspectionPDF(inspection, company.name, projectName);
+      } else if (type === 'vehicle') {
+        await generateVehicleInspectionPDF(inspection, company.name, projectName);
+      } else if (type === 'bucketchange') {
+        await generateBucketChangeInspectionPDF(inspection, company.name, projectName);
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const getPlantItemName = (itemId: string) => {
@@ -469,6 +496,19 @@ export default function InspectionDetailScreen() {
               <ArrowLeft size={24} color={colors.text} />
             </TouchableOpacity>
           ),
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={handleDownloadPDF} 
+              style={styles.downloadButton}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Download size={24} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          ),
         }}
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
@@ -540,6 +580,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginLeft: 16,
+  },
+  downloadButton: {
+    marginRight: 16,
+    padding: 8,
   },
   errorContainer: {
     flex: 1,
