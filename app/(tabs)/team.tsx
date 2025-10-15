@@ -11,7 +11,6 @@ import { useState, useMemo } from 'react';
 export default function TeamScreen() {
   const { user, company, getCompanyUsers, changeUserRole, removeEmployee, getCompanyPositiveInterventions, positiveInterventions, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors, isDarkMode } = useTheme();
-  const companyUsers = getCompanyUsers();
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; currentRole: UserRole } | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'team' | 'leaderboard' | 'announcements'>('team');
@@ -20,6 +19,7 @@ export default function TeamScreen() {
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
 
+  const companyUsers = getCompanyUsers();
   const isAdmin = user?.role === 'company' || user?.role === 'administrator';
   const canPostAnnouncements = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const announcements = getCompanyAnnouncements();
