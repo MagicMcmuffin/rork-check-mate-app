@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement } from '@/types';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
 import { trpcClient } from '@/lib/trpc';
 
@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
   POSITIVE_INTERVENTIONS: '@checkmate_positive_interventions',
   FIX_LOGS: '@checkmate_fix_logs',
   APPRENTICESHIP_ENTRIES: '@checkmate_apprenticeship_entries',
+  ANNOUNCEMENTS: '@checkmate_announcements',
 } as const;
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -33,6 +34,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [positiveInterventions, setPositiveInterventions] = useState<PositiveIntervention[]>([]);
   const [fixLogs, setFixLogs] = useState<FixLog[]>([]);
   const [apprenticeshipEntries, setApprenticeshipEntries] = useState<ApprenticeshipEntry[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData] = await Promise.all([
+      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANY),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANIES),
@@ -54,6 +56,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.POSITIVE_INTERVENTIONS),
         AsyncStorage.getItem(STORAGE_KEYS.FIX_LOGS),
         AsyncStorage.getItem(STORAGE_KEYS.APPRENTICESHIP_ENTRIES),
+        AsyncStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS),
       ]);
 
       const safeJSONParse = (data: string | null, key: string) => {
@@ -108,6 +111,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const parsedApprenticeshipEntries = safeJSONParse(apprenticeshipData, 'APPRENTICESHIP_ENTRIES');
       if (parsedApprenticeshipEntries) setApprenticeshipEntries(parsedApprenticeshipEntries);
+
+      const parsedAnnouncements = safeJSONParse(announcementsData, 'ANNOUNCEMENTS');
+      if (parsedAnnouncements) setAnnouncements(parsedAnnouncements);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -1013,6 +1019,40 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return apprenticeshipEntries.filter(e => e.apprenticeId === apprenticeId);
   }, [apprenticeshipEntries]);
 
+  const createAnnouncement = useCallback(async (title: string, message: string, priority: 'low' | 'normal' | 'high') => {
+    if (!user || !company) throw new Error('No user or company found');
+
+    const newAnnouncement: Announcement = {
+      id: Date.now().toString(),
+      companyId: company.id,
+      authorId: user.id,
+      authorName: user.name,
+      title,
+      message,
+      priority,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...announcements, newAnnouncement];
+    await AsyncStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updated));
+    setAnnouncements(updated);
+
+    return newAnnouncement;
+  }, [user, company, announcements]);
+
+  const getCompanyAnnouncements = useCallback(() => {
+    if (!company) return [];
+    return announcements
+      .filter(a => a.companyId === company.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [company, announcements]);
+
+  const deleteAnnouncement = useCallback(async (announcementId: string) => {
+    const updated = announcements.filter(a => a.id !== announcementId);
+    await AsyncStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updated));
+    setAnnouncements(updated);
+  }, [announcements]);
+
   return useMemo(() => ({
     user,
     company,
@@ -1025,6 +1065,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     positiveInterventions,
     fixLogs,
     apprenticeshipEntries,
+    announcements,
     isLoading,
     registerCompany,
     joinCompany,
@@ -1060,5 +1101,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     submitApprenticeshipEntry,
     getCompanyApprenticeshipEntries,
     getApprenticeApprenticeshipEntries,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries]);
+    createAnnouncement,
+    getCompanyAnnouncements,
+    deleteAnnouncement,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement]);
 });

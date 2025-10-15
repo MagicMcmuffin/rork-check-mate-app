@@ -1,22 +1,28 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
+import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Megaphone, AlertCircle, Plus, X } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput } from 'react-native';
 import { UserRole } from '@/types';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useMemo } from 'react';
 
 export default function TeamScreen() {
-  const { user, company, getCompanyUsers, changeUserRole, removeEmployee, getCompanyPositiveInterventions, positiveInterventions } = useApp();
+  const { user, company, getCompanyUsers, changeUserRole, removeEmployee, getCompanyPositiveInterventions, positiveInterventions, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors, isDarkMode } = useTheme();
   const companyUsers = getCompanyUsers();
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; currentRole: UserRole } | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'team' | 'leaderboard'>('team');
+  const [activeTab, setActiveTab] = useState<'team' | 'leaderboard' | 'announcements'>('team');
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator';
+  const canPostAnnouncements = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
+  const announcements = getCompanyAnnouncements();
 
   const leaderboardData = useMemo(() => {
     const interventions = getCompanyPositiveInterventions();
@@ -154,6 +160,48 @@ export default function TeamScreen() {
 
 
 
+  const handleCreateAnnouncement = async () => {
+    if (!announcementTitle.trim() || !announcementMessage.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      await createAnnouncement(announcementTitle, announcementMessage, announcementPriority);
+      setShowAnnouncementModal(false);
+      setAnnouncementTitle('');
+      setAnnouncementMessage('');
+      setAnnouncementPriority('normal');
+      Alert.alert('Success', 'Announcement posted successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to post announcement');
+      console.error('Create announcement error:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = (announcementId: string) => {
+    Alert.alert(
+      'Delete Announcement',
+      'Are you sure you want to delete this announcement?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAnnouncement(announcementId);
+              Alert.alert('Success', 'Announcement deleted');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete announcement');
+              console.error('Delete error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleRemoveEmployee = (userId: string, userName: string) => {
     Alert.alert(
       'Remove Employee',
@@ -194,20 +242,99 @@ export default function TeamScreen() {
           style={[styles.tab, activeTab === 'team' && [styles.activeTab, { borderBottomColor: '#1e40af' }]]}
           onPress={() => setActiveTab('team')}
         >
-          <Users size={20} color={activeTab === 'team' ? '#1e40af' : colors.textSecondary} />
+          <Users size={18} color={activeTab === 'team' ? '#1e40af' : colors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'team' ? '#1e40af' : colors.textSecondary }]}>Team</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'leaderboard' && [styles.activeTab, { borderBottomColor: '#1e40af' }]]}
           onPress={() => setActiveTab('leaderboard')}
         >
-          <Trophy size={20} color={activeTab === 'leaderboard' ? '#1e40af' : colors.textSecondary} />
+          <Trophy size={18} color={activeTab === 'leaderboard' ? '#1e40af' : colors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'leaderboard' ? '#1e40af' : colors.textSecondary }]}>Leaderboard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'announcements' && [styles.activeTab, { borderBottomColor: '#1e40af' }]]}
+          onPress={() => setActiveTab('announcements')}
+        >
+          <Megaphone size={18} color={activeTab === 'announcements' ? '#1e40af' : colors.textSecondary} />
+          <Text style={[styles.tabText, { color: activeTab === 'announcements' ? '#1e40af' : colors.textSecondary }]}>Announcements</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
-        {activeTab === 'team' ? (
+        {activeTab === 'announcements' ? (
+          <View>
+            <View style={styles.header}>
+              <View style={[styles.headerIcon, { backgroundColor: isDarkMode ? '#5f3a1e' : '#fef3c7' }]}>
+                <Megaphone size={28} color="#eab308" />
+              </View>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Announcements</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Company-wide updates and notices</Text>
+            </View>
+
+            {canPostAnnouncements && (
+              <TouchableOpacity
+                style={[styles.createAnnouncementButton, { backgroundColor: '#1e40af' }]}
+                onPress={() => setShowAnnouncementModal(true)}
+              >
+                <Plus size={20} color="#fff" />
+                <Text style={styles.createAnnouncementButtonText}>New Announcement</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.section}>
+              {announcements.length === 0 ? (
+                <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                  <Megaphone size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyStateText, { color: colors.textSecondary, marginTop: 12 }]}>No announcements yet</Text>
+                </View>
+              ) : (
+                announcements.map((announcement) => (
+                  <View
+                    key={announcement.id}
+                    style={[
+                      styles.announcementCard,
+                      { backgroundColor: colors.card, borderLeftColor: announcement.priority === 'high' ? '#dc2626' : announcement.priority === 'normal' ? '#3b82f6' : '#64748b' }
+                    ]}
+                  >
+                    <View style={styles.announcementHeader}>
+                      <View style={styles.announcementHeaderLeft}>
+                        <View style={[
+                          styles.priorityBadge,
+                          { backgroundColor: announcement.priority === 'high' ? '#fee2e2' : announcement.priority === 'normal' ? '#dbeafe' : '#f1f5f9' }
+                        ]}>
+                          {announcement.priority === 'high' && <AlertCircle size={14} color="#dc2626" />}
+                          <Text style={[
+                            styles.priorityBadgeText,
+                            { color: announcement.priority === 'high' ? '#dc2626' : announcement.priority === 'normal' ? '#1e40af' : '#64748b' }
+                          ]}>
+                            {announcement.priority === 'high' ? 'Urgent' : announcement.priority === 'normal' ? 'Normal' : 'Info'}
+                          </Text>
+                        </View>
+                        <Text style={[styles.announcementDate, { color: colors.textSecondary }]}>
+                          {new Date(announcement.createdAt).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      {(user?.role === 'company' || user?.role === 'administrator' || announcement.authorId === user?.id) && (
+                        <TouchableOpacity
+                          style={[styles.deleteAnnouncementButton, { backgroundColor: isDarkMode ? '#5f1e1e' : '#fee2e2' }]}
+                          onPress={() => handleDeleteAnnouncement(announcement.id)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <Text style={[styles.announcementTitle, { color: colors.text }]}>{announcement.title}</Text>
+                    <Text style={[styles.announcementMessage, { color: colors.text }]}>{announcement.message}</Text>
+                    <View style={styles.announcementFooter}>
+                      <Text style={[styles.announcementAuthor, { color: colors.textSecondary }]}>Posted by {announcement.authorName}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        ) : activeTab === 'team' ? (
         <>
         <View style={styles.header}>
           <View style={[styles.headerIcon, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
@@ -642,6 +769,87 @@ export default function TeamScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={showAnnouncementModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAnnouncementModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAnnouncementModal(false)}
+        >
+          <View style={[styles.announcementModalContent, { backgroundColor: colors.card }]} onStartShouldSetResponder={() => true}>
+            <View style={styles.announcementModalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>New Announcement</Text>
+              <TouchableOpacity onPress={() => setShowAnnouncementModal(false)}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Title</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              placeholder="Enter announcement title"
+              placeholderTextColor={colors.textSecondary}
+              value={announcementTitle}
+              onChangeText={setAnnouncementTitle}
+            />
+
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Message</Text>
+            <TextInput
+              style={[styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              placeholder="Enter announcement message"
+              placeholderTextColor={colors.textSecondary}
+              value={announcementMessage}
+              onChangeText={setAnnouncementMessage}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Priority</Text>
+            <View style={styles.prioritySelector}>
+              <TouchableOpacity
+                style={[
+                  styles.priorityOption,
+                  { backgroundColor: announcementPriority === 'low' ? '#f1f5f9' : colors.background, borderColor: announcementPriority === 'low' ? '#64748b' : colors.border }
+                ]}
+                onPress={() => setAnnouncementPriority('low')}
+              >
+                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'low' ? '#64748b' : colors.textSecondary }]}>Info</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.priorityOption,
+                  { backgroundColor: announcementPriority === 'normal' ? '#dbeafe' : colors.background, borderColor: announcementPriority === 'normal' ? '#1e40af' : colors.border }
+                ]}
+                onPress={() => setAnnouncementPriority('normal')}
+              >
+                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'normal' ? '#1e40af' : colors.textSecondary }]}>Normal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.priorityOption,
+                  { backgroundColor: announcementPriority === 'high' ? '#fee2e2' : colors.background, borderColor: announcementPriority === 'high' ? '#dc2626' : colors.border }
+                ]}
+                onPress={() => setAnnouncementPriority('high')}
+              >
+                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'high' ? '#dc2626' : colors.textSecondary }]}>Urgent</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.postButton, { backgroundColor: '#1e40af' }]}
+              onPress={handleCreateAnnouncement}
+            >
+              <Text style={styles.postButtonText}>Post Announcement</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={showRoleModal}
@@ -1166,5 +1374,144 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
     color: '#1e40af',
+  },
+  announcementCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  announcementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  announcementHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  priorityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  announcementDate: {
+    fontSize: 12,
+  },
+  deleteAnnouncementButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  announcementTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+  },
+  announcementMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  announcementFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 8,
+  },
+  announcementAuthor: {
+    fontSize: 13,
+    fontStyle: 'italic' as const,
+  },
+  createAnnouncementButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  createAnnouncementButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  announcementModalContent: {
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  announcementModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    marginBottom: 16,
+    minHeight: 120,
+  },
+  prioritySelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  priorityOption: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  priorityOptionText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  postButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  postButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
 });

@@ -222,3 +222,14 @@ export interface ApprenticeshipEntry {
   pictures?: string[];
   createdAt: string;
 }
+
+export interface Announcement {
+  id: string;
+  companyId: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'normal' | 'high';
+  createdAt: string;
+}
