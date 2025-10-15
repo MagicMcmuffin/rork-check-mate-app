@@ -54,7 +54,7 @@ export default function TeamScreen() {
   const handleResetLeaderboard = () => {
     Alert.alert(
       'Reset Leaderboard',
-      'Are you sure you want to reset the overall positive intervention leaderboard? This will delete all positive intervention records.',
+      'Are you sure you want to reset the overall positive intervention leaderboard? This will set all counts to 0 and delete all positive intervention records.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -63,7 +63,7 @@ export default function TeamScreen() {
           onPress: async () => {
             try {
               await AsyncStorage.setItem('@checkmate_positive_interventions', JSON.stringify([]));
-              Alert.alert('Success', 'Leaderboard has been reset');
+              window.location.reload();
             } catch (error) {
               Alert.alert('Error', 'Failed to reset leaderboard');
               console.error('Reset error:', error);
@@ -77,7 +77,7 @@ export default function TeamScreen() {
   const handleResetProjectLeaderboard = (projectId: string, projectName: string) => {
     Alert.alert(
       'Reset Project Leaderboard',
-      `Are you sure you want to reset the positive intervention leaderboard for ${projectName}? This will delete all positive interventions for this project.`,
+      `Are you sure you want to reset the positive intervention leaderboard for ${projectName}? This will set all counts to 0 and delete all positive interventions for this project.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -88,7 +88,7 @@ export default function TeamScreen() {
               const allInterventions = getCompanyPositiveInterventions();
               const filtered = allInterventions.filter(i => i.projectId !== projectId);
               await AsyncStorage.setItem('@checkmate_positive_interventions', JSON.stringify(filtered));
-              Alert.alert('Success', `Project leaderboard for ${projectName} has been reset`);
+              window.location.reload();
             } catch (error) {
               Alert.alert('Error', 'Failed to reset project leaderboard');
               console.error('Reset error:', error);
