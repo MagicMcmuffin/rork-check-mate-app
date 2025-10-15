@@ -1,8 +1,8 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Linking } from 'react-native';
 import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry } from '@/types';
-import { trpcClient } from '@/lib/trpc';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
 
 const STORAGE_KEYS = {
@@ -315,20 +315,34 @@ export const [AppProvider, useApp] = createContextHook(() => {
       });
 
     if (failedCheckDetails.length > 0) {
-      trpcClient.inspections.sendNotificationEmail.mutate({
-        inspectionType: 'plant',
-        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`,
-        operatorName: newInspection.employeeName,
-        date: newInspection.date,
-        projectName: project?.name,
-        failedChecks: failedCheckDetails,
-        notesOnDefects: newInspection.notesOnDefects,
-        companyName: company?.name || 'Unknown Company',
-        companyEmail: company?.email || '',
-        projectEmails: project?.emails,
-        adminEmails: adminUsers.map(u => u.email),
-      }).catch(error => {
-        console.error('Failed to send email notification:', error);
+      const recipients = [
+        company?.email,
+        ...(project?.emails || []),
+        ...adminUsers.map(u => u.email),
+      ].filter(Boolean).join(',');
+
+      const subject = encodeURIComponent(`⚠️ Inspection Alert - ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`}`);
+      
+      const failedChecksText = failedCheckDetails
+        .map(check => `• ${check.name} [${check.status}]${check.notes ? `: ${check.notes}` : ''}`)
+        .join('\n');
+
+      const body = encodeURIComponent(
+        `INSPECTION ALERT\n\n` +
+        `Company: ${company?.name || 'Unknown Company'}\n` +
+        `Inspection Type: Plant Inspection\n` +
+        `Equipment: ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`}\n` +
+        (project?.name ? `Project: ${project.name}\n` : '') +
+        `Operator: ${newInspection.employeeName}\n` +
+        `Date: ${newInspection.date}\n\n` +
+        `FAILED CHECKS:\n${failedChecksText}\n\n` +
+        (newInspection.notesOnDefects ? `ADDITIONAL NOTES:\n${newInspection.notesOnDefects}\n\n` : '') +
+        `Please review and take appropriate action.\n\n` +
+        `---\nThis is an automated message from CheckMate Inspection System`
+      );
+
+      Linking.openURL(`mailto:${recipients}?subject=${subject}&body=${body}`).catch(error => {
+        console.log('Email client not available:', error);
       });
     }
 
@@ -385,20 +399,34 @@ export const [AppProvider, useApp] = createContextHook(() => {
       });
 
     if (failedCheckDetails.length > 0) {
-      trpcClient.inspections.sendNotificationEmail.mutate({
-        inspectionType: 'quickhitch',
-        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails,
-        operatorName: newInspection.operatorName,
-        date: newInspection.date,
-        projectName: project?.name,
-        failedChecks: failedCheckDetails,
-        notesOnDefects: newInspection.remarks,
-        companyName: company?.name || 'Unknown Company',
-        companyEmail: company?.email || '',
-        projectEmails: project?.emails,
-        adminEmails: adminUsers.map(u => u.email),
-      }).catch(error => {
-        console.error('Failed to send email notification:', error);
+      const recipients = [
+        company?.email,
+        ...(project?.emails || []),
+        ...adminUsers.map(u => u.email),
+      ].filter(Boolean).join(',');
+
+      const subject = encodeURIComponent(`⚠️ Quick Hitch Inspection Alert - ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails}`);
+      
+      const failedChecksText = failedCheckDetails
+        .map(check => `• ${check.name} [${check.status}]`)
+        .join('\n');
+
+      const body = encodeURIComponent(
+        `QUICK HITCH INSPECTION ALERT\n\n` +
+        `Company: ${company?.name || 'Unknown Company'}\n` +
+        `Inspection Type: Quick Hitch Inspection\n` +
+        `Equipment: ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails}\n` +
+        (project?.name ? `Project: ${project.name}\n` : '') +
+        `Operator: ${newInspection.operatorName}\n` +
+        `Date: ${newInspection.date}\n\n` +
+        `FAILED CHECKS:\n${failedChecksText}\n\n` +
+        (newInspection.remarks ? `REMARKS:\n${newInspection.remarks}\n\n` : '') +
+        `Please review and take appropriate action.\n\n` +
+        `---\nThis is an automated message from CheckMate Inspection System`
+      );
+
+      Linking.openURL(`mailto:${recipients}?subject=${subject}&body=${body}`).catch(error => {
+        console.log('Email client not available:', error);
       });
     }
 
@@ -463,18 +491,32 @@ export const [AppProvider, useApp] = createContextHook(() => {
       });
 
     if (failedCheckDetails.length > 0) {
-      trpcClient.inspections.sendNotificationEmail.mutate({
-        inspectionType: 'vehicle',
-        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration,
-        operatorName: newInspection.employeeName,
-        date: newInspection.date,
-        failedChecks: failedCheckDetails,
-        notesOnDefects: newInspection.additionalComments,
-        companyName: company?.name || 'Unknown Company',
-        companyEmail: company?.email || '',
-        adminEmails: adminUsers.map(u => u.email),
-      }).catch(error => {
-        console.error('Failed to send email notification:', error);
+      const recipients = [
+        company?.email,
+        ...adminUsers.map(u => u.email),
+      ].filter(Boolean).join(',');
+
+      const subject = encodeURIComponent(`⚠️ Vehicle Inspection Alert - ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration}`);
+      
+      const failedChecksText = failedCheckDetails
+        .map(check => `• ${check.name} [${check.status}]${check.notes ? `: ${check.notes}` : ''}`)
+        .join('\n');
+
+      const body = encodeURIComponent(
+        `VEHICLE INSPECTION ALERT\n\n` +
+        `Company: ${company?.name || 'Unknown Company'}\n` +
+        `Inspection Type: Vehicle Inspection\n` +
+        `Vehicle: ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration}\n` +
+        `Operator: ${newInspection.employeeName}\n` +
+        `Date: ${newInspection.date}\n\n` +
+        `FAILED CHECKS:\n${failedChecksText}\n\n` +
+        (newInspection.additionalComments ? `ADDITIONAL COMMENTS:\n${newInspection.additionalComments}\n\n` : '') +
+        `Please review and take appropriate action.\n\n` +
+        `---\nThis is an automated message from CheckMate Inspection System`
+      );
+
+      Linking.openURL(`mailto:${recipients}?subject=${subject}&body=${body}`).catch(error => {
+        console.log('Email client not available:', error);
       });
     }
 
@@ -725,19 +767,33 @@ export const [AppProvider, useApp] = createContextHook(() => {
       });
 
     if (failedCheckDetails.length > 0) {
-      trpcClient.inspections.sendNotificationEmail.mutate({
-        inspectionType: 'bucket',
-        equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType,
-        operatorName: newInspection.employeeName,
-        date: newInspection.date,
-        projectName: project?.name,
-        failedChecks: failedCheckDetails,
-        companyName: company?.name || 'Unknown Company',
-        companyEmail: company?.email || '',
-        projectEmails: project?.emails,
-        adminEmails: adminUsers.map(u => u.email),
-      }).catch(error => {
-        console.error('Failed to send email notification:', error);
+      const recipients = [
+        company?.email,
+        ...(project?.emails || []),
+        ...adminUsers.map(u => u.email),
+      ].filter(Boolean).join(',');
+
+      const subject = encodeURIComponent(`⚠️ Bucket Change Inspection Alert - ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType}`);
+      
+      const failedChecksText = failedCheckDetails
+        .map(check => `• ${check.name} [${check.status}]${check.notes ? `: ${check.notes}` : ''}`)
+        .join('\n');
+
+      const body = encodeURIComponent(
+        `BUCKET CHANGE INSPECTION ALERT\n\n` +
+        `Company: ${company?.name || 'Unknown Company'}\n` +
+        `Inspection Type: Bucket Change Inspection\n` +
+        `Equipment: ${company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType}\n` +
+        (project?.name ? `Project: ${project.name}\n` : '') +
+        `Operator: ${newInspection.employeeName}\n` +
+        `Date: ${newInspection.date}\n\n` +
+        `FAILED CHECKS:\n${failedChecksText}\n\n` +
+        `Please review and take appropriate action.\n\n` +
+        `---\nThis is an automated message from CheckMate Inspection System`
+      );
+
+      Linking.openURL(`mailto:${recipients}?subject=${subject}&body=${body}`).catch(error => {
+        console.log('Email client not available:', error);
       });
     }
 
@@ -939,21 +995,31 @@ export const [AppProvider, useApp] = createContextHook(() => {
       (u.role === 'administrator' || u.role === 'management')
     );
 
-    trpcClient.interventions.sendNotificationEmail.mutate({
-      employeeName: newIntervention.employeeName,
-      date: newIntervention.date,
-      projectName: project?.name,
-      hazardDescription: newIntervention.hazardDescription,
-      severity: newIntervention.severity,
-      actionTaken: newIntervention.actionTaken,
-      site: newIntervention.site,
-      location: newIntervention.location,
-      companyName: company?.name || 'Unknown Company',
-      companyEmail: company?.email || '',
-      projectEmails: project?.emails,
-      adminEmails: adminUsers.map(u => u.email),
-    }).catch(error => {
-      console.error('Failed to send email notification:', error);
+    const recipients = [
+      company?.email,
+      ...(project?.emails || []),
+      ...adminUsers.map(u => u.email),
+    ].filter(Boolean).join(',');
+
+    const subject = encodeURIComponent(`🛡️ Positive Intervention - ${newIntervention.employeeName}`);
+
+    const body = encodeURIComponent(
+      `POSITIVE INTERVENTION REPORTED\n\n` +
+      `Company: ${company?.name || 'Unknown Company'}\n` +
+      `Submitted By: ${newIntervention.employeeName}\n` +
+      (project?.name ? `Project: ${project.name}\n` : '') +
+      (newIntervention.site ? `Site: ${newIntervention.site}\n` : '') +
+      (newIntervention.location ? `Location: ${newIntervention.location}\n` : '') +
+      `Date: ${newIntervention.date}\n` +
+      `Severity: ${newIntervention.severity.toUpperCase()}\n\n` +
+      `HAZARD DESCRIPTION:\n${newIntervention.hazardDescription}\n\n` +
+      `ACTION TAKEN:\n${newIntervention.actionTaken}\n\n` +
+      `Great work identifying and addressing this safety concern!\n\n` +
+      `---\nThis is an automated message from CheckMate Inspection System`
+    );
+
+    Linking.openURL(`mailto:${recipients}?subject=${subject}&body=${body}`).catch(error => {
+      console.log('Email client not available:', error);
     });
     return newIntervention;
   }, [positiveInterventions, company, users]);
