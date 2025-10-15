@@ -1,11 +1,11 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Shield, LogOut, Moon, Sun, ChevronRight, Users } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
+import { Shield, LogOut, Moon, Sun, ChevronRight, Mail } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Linking } from 'react-native';
 
 export default function SettingsScreen() {
-  const { user, logout } = useApp();
+  const { user, company, logout } = useApp();
   const { colors, isDarkMode, toggleTheme } = useTheme();
 
   const isOwner = user?.role === 'company';
@@ -22,6 +22,17 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  };
+
+  const handleContactSupport = () => {
+    const email = 'checkmatesafty@gmail.com';
+    const subject = 'CheckMate Support Request';
+    const body = `Hello CheckMate Support,\n\nI need help with:\n\n\n\nUser: ${user?.name || 'Unknown'}\nCompany: ${company?.name || 'N/A'}`;
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    Linking.openURL(mailtoUrl).catch(() => {
+      Alert.alert('Error', 'Unable to open email app. Please email us at checkmatesafty@gmail.com');
+    });
   };
 
   return (
@@ -84,6 +95,29 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
+          
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={handleContactSupport}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
+                <Mail size={20} color="#3b82f6" />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Contact Support</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Get help from our team
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
