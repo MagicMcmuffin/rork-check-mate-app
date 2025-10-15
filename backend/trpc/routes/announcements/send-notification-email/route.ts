@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { protectedProcedure } from '../../../create-context';
+import { publicProcedure } from '../../../create-context';
 import { sendEmail, generateAnnouncementEmailHTML } from '../../../../services/email';
 
-export const sendAnnouncementNotificationEmailProcedure = protectedProcedure
+export const sendAnnouncementNotificationEmailProcedure = publicProcedure
   .input(
     z.object({
       companyName: z.string(),
