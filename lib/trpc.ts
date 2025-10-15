@@ -9,14 +9,10 @@ const getBaseUrl = () => {
   const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || process.env.EXPO_PUBLIC_TOOLKIT_URL;
   
   if (!baseUrl || baseUrl === '') {
-    console.error('❌ Backend URL is not configured!');
-    console.error('Backend features (email notifications, PDF generation) will not work.');
-    console.error('This typically means the backend is not deployed yet.');
-    console.error('Please wait for deployment or contact support if this persists.');
+    console.warn('⚠️ Backend not deployed - email features disabled');
     return '';
   }
   
-  console.log('✅ tRPC Base URL configured:', baseUrl);
   return baseUrl;
 };
 
@@ -36,8 +32,7 @@ export const trpcReactClient = trpc.createClient({
       fetch: async (url, options) => {
         const baseUrl = getBaseUrl();
         if (!baseUrl) {
-          console.warn('⚠️ Backend not configured - skipping request');
-          throw new Error('Backend not available. Email notifications and PDF generation are disabled.');
+          throw new Error('Email notifications are not available. Backend service is not deployed.');
         }
         
         try {
@@ -46,20 +41,15 @@ export const trpcReactClient = trpc.createClient({
             const text = await response.text();
             
             if (response.status === 404 && text.includes('Site Not Found')) {
-              console.warn('⚠️ Backend not yet deployed - feature unavailable');
-              throw new Error('Backend service is currently unavailable. Please try again later.');
+              throw new Error('Email service is not available. Backend deployment is pending.');
             }
-            
-            console.error('❌ tRPC React Client Error:', response.status, response.statusText);
-            console.error('Response body:', text.substring(0, 200));
           }
           return response;
         } catch (error) {
-          if (error instanceof Error && error.message.includes('Backend service is currently unavailable')) {
+          if (error instanceof Error && error.message.includes('Email')) {
             throw error;
           }
-          console.error('❌ tRPC React Client fetch error:', error);
-          throw error;
+          throw new Error('Failed to connect to backend service.');
         }
       },
     }),
@@ -74,8 +64,7 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
       fetch: async (url, options) => {
         const baseUrl = getBaseUrl();
         if (!baseUrl) {
-          console.warn('⚠️ Backend not configured - skipping request');
-          throw new Error('Backend not available. Email notifications and PDF generation are disabled.');
+          throw new Error('Email notifications are not available. Backend service is not deployed.');
         }
         
         try {
@@ -84,20 +73,15 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
             const text = await response.text();
             
             if (response.status === 404 && text.includes('Site Not Found')) {
-              console.warn('⚠️ Backend not yet deployed - feature unavailable');
-              throw new Error('Backend service is currently unavailable. Please try again later.');
+              throw new Error('Email service is not available. Backend deployment is pending.');
             }
-            
-            console.error('❌ tRPC Proxy Client Error:', response.status, response.statusText);
-            console.error('Response body:', text.substring(0, 200));
           }
           return response;
         } catch (error) {
-          if (error instanceof Error && error.message.includes('Backend service is currently unavailable')) {
+          if (error instanceof Error && error.message.includes('Email')) {
             throw error;
           }
-          console.error('❌ tRPC Proxy Client fetch error:', error);
-          throw error;
+          throw new Error('Failed to connect to backend service.');
         }
       },
     }),
