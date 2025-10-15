@@ -8,13 +8,15 @@ export const trpc = createTRPCReact<AppRouter>();
 const getBaseUrl = () => {
   const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   
-  if (baseUrl) {
-    console.log('tRPC Base URL:', baseUrl);
-    return baseUrl;
+  if (!baseUrl || baseUrl === '') {
+    console.error('❌ EXPO_PUBLIC_RORK_API_BASE_URL is not set!');
+    console.error('Backend features (email notifications) will not work.');
+    console.error('Please ensure the backend is properly deployed.');
+    throw new Error('Backend URL not configured');
   }
-
-  console.warn('EXPO_PUBLIC_RORK_API_BASE_URL not set, backend features may not work');
-  return '';
+  
+  console.log('✅ tRPC Base URL configured:', baseUrl);
+  return baseUrl;
 };
 
 export const trpcReactClient = trpc.createClient({
@@ -27,13 +29,17 @@ export const trpcReactClient = trpc.createClient({
           console.log('tRPC React Client Request:', url);
           const response = await fetch(url, options);
           if (!response.ok) {
-            console.error('tRPC React Client Error:', response.status, response.statusText);
+            console.error('❌ tRPC React Client Error:', response.status, response.statusText);
             const text = await response.text();
-            console.error('Response body:', text.substring(0, 200));
+            console.error('Response body:', text.substring(0, 500));
+            
+            if (response.status === 404) {
+              throw new Error('Backend server not found (404). Please ensure the backend is deployed and EXPO_PUBLIC_RORK_API_BASE_URL is correct.');
+            }
           }
           return response;
         } catch (error) {
-          console.error('tRPC React Client fetch error:', error);
+          console.error('❌ tRPC React Client fetch error:', error);
           throw error;
         }
       },
@@ -51,13 +57,17 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
           console.log('tRPC Proxy Client Request:', url);
           const response = await fetch(url, options);
           if (!response.ok) {
-            console.error('tRPC Proxy Client Error:', response.status, response.statusText);
+            console.error('❌ tRPC Proxy Client Error:', response.status, response.statusText);
             const text = await response.text();
-            console.error('Response body:', text.substring(0, 200));
+            console.error('Response body:', text.substring(0, 500));
+            
+            if (response.status === 404) {
+              throw new Error('Backend server not found (404). Please ensure the backend is deployed and EXPO_PUBLIC_RORK_API_BASE_URL is correct.');
+            }
           }
           return response;
         } catch (error) {
-          console.error('tRPC Proxy Client fetch error:', error);
+          console.error('❌ tRPC Proxy Client fetch error:', error);
           throw error;
         }
       },
