@@ -15,7 +15,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
   }
 
   try {
-    const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const fromEmail = process.env.EMAIL_FROM || 'checkmatesafty@gmail.com';
     
     console.log('Attempting to send email...');
     console.log('From:', fromEmail);
@@ -180,7 +180,8 @@ export function generateInspectionEmailHTML(data: InspectionEmailData): string {
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
-            <p style="margin: 0;">This is an automated message from CheckMate Inspection System</p>
+            <p style="margin: 0;">This is an automated message from CheckMate Safety</p>
+            <p style="margin: 4px 0 0 0;">checkmatesafty@gmail.com</p>
           </div>
         </div>
       </body>
@@ -283,7 +284,8 @@ export function generatePositiveInterventionEmailHTML(data: PositiveIntervention
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
-            <p style="margin: 0;">This is an automated message from CheckMate Inspection System</p>
+            <p style="margin: 0;">This is an automated message from CheckMate Safety</p>
+            <p style="margin: 4px 0 0 0;">checkmatesafty@gmail.com</p>
           </div>
         </div>
       </body>
