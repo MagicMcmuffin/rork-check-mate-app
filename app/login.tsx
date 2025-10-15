@@ -58,12 +58,12 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={true}
         >
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#1e293b" />
+            <ArrowLeft size={24} color="#f1f5f9" />
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <LogIn size={32} color="#7c3aed" />
+              <LogIn size={32} color="#8b5cf6" />
             </View>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to your account</Text>
@@ -73,11 +73,11 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
               <View style={styles.inputWithIcon}>
-                <Mail size={20} color="#64748b" style={styles.inputIcon} />
+                <Mail size={20} color="#94a3b8" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, styles.inputWithPadding]}
                   placeholder="your.email@example.com"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#64748b"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -97,7 +97,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your password"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#64748b"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -127,7 +127,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0f172a',
   },
   keyboardView: {
     flex: 1,
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1e293b',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#ede9fe',
+    backgroundColor: '#312e81',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -166,12 +166,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: '#1e293b',
+    color: '#f1f5f9',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748b',
+    color: '#94a3b8',
   },
   form: {
     gap: 24,
@@ -187,21 +187,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1e293b',
+    color: '#f1f5f9',
   },
   forgotPassword: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#7c3aed',
+    color: '#8b5cf6',
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1e293b',
+    color: '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#334155',
   },
   inputWithIcon: {
     position: 'relative' as const,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     paddingLeft: 48,
   },
   loginButton: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#8b5cf6',
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',

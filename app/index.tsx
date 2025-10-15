@@ -18,7 +18,7 @@ export default function OnboardingScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1e40af" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
@@ -87,7 +87,7 @@ export default function OnboardingScreen() {
           onPress={() => router.push('/login')}
           activeOpacity={0.7}
         >
-          <LogIn size={24} color="#7c3aed" />
+          <LogIn size={24} color="#8b5cf6" />
           <Text style={styles.loginText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -99,13 +99,13 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0f172a',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0f172a',
   },
   scrollContent: {
     flexGrow: 1,
@@ -128,25 +128,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 42,
     fontWeight: '700' as const,
-    color: '#1e293b',
+    color: '#f1f5f9',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
+    color: '#94a3b8',
     fontWeight: '500' as const,
   },
   cardContainer: {
     gap: 20,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1e293b',
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 3,
     position: 'relative' as const,
@@ -162,12 +162,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 24,
     fontWeight: '700' as const,
-    color: '#1e293b',
+    color: '#f1f5f9',
     marginBottom: 8,
   },
   cardDescription: {
     fontSize: 15,
-    color: '#64748b',
+    color: '#94a3b8',
     textAlign: 'center' as const,
     lineHeight: 22,
   },
@@ -193,16 +193,16 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#334155',
   },
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: '#64748b',
+    color: '#94a3b8',
     fontWeight: '500' as const,
   },
   loginCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 18,
     flexDirection: 'row' as const,
@@ -210,11 +210,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     borderWidth: 2,
-    borderColor: '#7c3aed',
+    borderColor: '#8b5cf6',
   },
   loginText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#7c3aed',
+    color: '#8b5cf6',
   },
 });
