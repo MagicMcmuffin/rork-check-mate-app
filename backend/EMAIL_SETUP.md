@@ -1,153 +1,111 @@
-# Email Notification Setup Guide
+# Email Configuration Guide
 
-This guide explains how to configure email notifications for the CheckMate inspection system.
+CheckMate Safety uses Gmail to send email notifications from `checkmatesafty@gmail.com`.
 
-## Overview
+## Setup Instructions
 
-The app now automatically sends email notifications when:
-- Inspections are submitted with failed checks (status B or C)
-- Positive interventions are reported
-- Issues requiring attention are identified
+### Step 1: Enable Gmail App Password
+
+To allow the application to send emails via Gmail, you need to create an **App Password**:
+
+1. **Sign in to your Google Account** (checkmatesafty@gmail.com)
+2. Go to **Security** settings: https://myaccount.google.com/security
+3. Under "Signing in to Google", enable **2-Step Verification** if not already enabled
+4. Once 2-Step Verification is enabled, go back to Security settings
+5. Under "Signing in to Google", click on **App passwords**
+6. Click **Select app** and choose "Mail"
+7. Click **Select device** and choose "Other (Custom name)"
+8. Type "CheckMate App" and click **Generate**
+9. Copy the 16-character password (it will look like: `xxxx xxxx xxxx xxxx`)
+
+### Step 2: Configure Environment Variable
+
+You need to add the Gmail App Password as an environment variable.
+
+**For local development:**
+Create a `.env` file in the root of your project (if it doesn't exist) and add:
+
+```env
+GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
+```
+
+Replace `xxxxxxxxxxxxxxxx` with the 16-character app password (remove spaces).
+
+**For production/deployment:**
+Add the `GMAIL_APP_PASSWORD` environment variable to your hosting platform (e.g., Vercel, Railway, Heroku).
+
+### Step 3: Restart the Server
+
+After adding the environment variable, restart your development server for the changes to take effect.
+
+## Email Features
+
+The system sends emails for:
+
+1. **Inspection Alerts** - When inspections have failed checks (status B or C)
+2. **Positive Interventions** - When safety interventions are reported
+3. **Company Announcements** - When admins/management post announcements
 
 ## Email Recipients
 
 Emails are sent to:
-1. **Company email** - The main email associated with the company
-2. **Project emails** - If the inspection/intervention is linked to a project with configured emails
-3. **Admin/Management emails** - Users with roles: Administrator, Management, or Mechanic
-
-## Setup Options
-
-### Option 1: Using Resend (Recommended)
-
-[Resend](https://resend.com) is a modern email API that's easy to set up and has a generous free tier.
-
-1. Sign up for a free account at https://resend.com
-2. Get your API key from the Resend dashboard
-3. Add environment variables to your project:
-
-```bash
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-EMAIL_FROM="CheckMate <noreply@yourdomain.com>"
-```
-
-**Note:** For production, you'll need to verify your domain in Resend. For development/testing, you can use their sandbox domain.
-
-### Option 2: Using Nodemailer (Alternative)
-
-If you prefer to use SMTP (Gmail, SendGrid, etc.), you can modify `backend/services/email.ts`:
-
-```typescript
-import nodemailer from 'nodemailer';
-
-const transporter = nodemailer.createTransporter({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: to.join(', '),
-      subject,
-      html,
-    });
-    return { success: true };
-  } catch (error) {
-    console.error('Email send error:', error);
-    return { success: false, message: 'Email service error' };
-  }
-}
-```
-
-## Environment Variables
-
-Create or update your `.env` file with:
-
-```env
-# Email Configuration
-RESEND_API_KEY=your_api_key_here
-EMAIL_FROM="CheckMate <noreply@yourdomain.com>"
-
-# Or for Nodemailer/SMTP
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-EMAIL_FROM="CheckMate <your-email@gmail.com>"
-```
+- Company email address
+- Project-specific email addresses (if configured)
+- Admin/Management/Mechanic role users
 
 ## Testing
 
-If `RESEND_API_KEY` is not configured, the system will:
-- Log email details to the console
-- Continue working without actually sending emails
-- Show which recipients would receive the email
+To test if emails are working:
 
-This allows you to test the app without setting up email services immediately.
-
-## Email Templates
-
-The system includes two pre-designed HTML email templates:
-
-### 1. Inspection Alert Email
-- Sent when inspections have failed checks
-- Color-coded by severity (red for critical, yellow for warnings)
-- Includes:
-  - Company and equipment details
-  - Project information (if applicable)
-  - Failed check items with status and notes
-  - Additional defect notes
-
-### 2. Positive Intervention Email
-- Sent when positive interventions are reported
-- Green-themed design
-- Includes:
-  - Employee and site information
-  - Hazard description
-  - Action taken
-  - Severity level
-
-## Customization
-
-To customize email templates, edit the `generateInspectionEmailHTML()` and `generatePositiveInterventionEmailHTML()` functions in `backend/services/email.ts`.
+1. Complete an inspection with failed checks
+2. Check the console logs for email sending status
+3. Check the recipient inbox (may take a few seconds)
 
 ## Troubleshooting
 
-### Emails not sending
+### "Email service not configured" message
 
-1. Check console logs for errors
-2. Verify `RESEND_API_KEY` is set correctly
-3. Ensure email addresses are valid
-4. Check Resend dashboard for delivery status
+This means the `GMAIL_APP_PASSWORD` environment variable is not set. Follow Step 1 and Step 2 above.
 
-### Wrong sender address
+### "Invalid credentials" error
 
-Update the `EMAIL_FROM` environment variable:
-```env
-EMAIL_FROM="Your Company Name <noreply@yourdomain.com>"
-```
+- Double-check the app password is correct (no spaces)
+- Ensure 2-Step Verification is enabled on the Google account
+- Try generating a new app password
 
-### Testing in development
+### Emails not received
 
-Use a service like [Mailtrap](https://mailtrap.io) or Resend's test mode to catch all emails in development without sending to real addresses.
+- Check spam/junk folder
+- Verify recipient email addresses are valid
+- Check console logs for delivery status
+- Ensure the Gmail account has not hit sending limits (Gmail has a daily sending limit of ~500 emails)
 
-## Production Considerations
+### "Less secure app access" error
 
-1. **Domain Verification**: Verify your domain in Resend to send from your actual domain
-2. **Rate Limits**: Be aware of your email service's rate limits
-3. **Email Lists**: Consider using environment-specific recipient lists for testing
-4. **Monitoring**: Set up monitoring for email delivery failures
-5. **GDPR/Privacy**: Ensure email notifications comply with local privacy laws
+Google no longer supports "less secure apps". You must use App Passwords with 2-Step Verification enabled.
+
+## Security Notes
+
+- **Never commit the App Password to Git**
+- The `.env` file should be in `.gitignore`
+- App Passwords provide full account access - treat them like passwords
+- If compromised, revoke the app password in Google Account settings and generate a new one
+
+## Email Format
+
+All emails are sent in beautiful HTML format with:
+- Company branding
+- Color-coded priority/severity indicators
+- Detailed information about the inspection/intervention/announcement
+- Mobile-responsive design
+- Professional layout
 
 ## Support
 
-For issues with:
-- **Resend**: Check their [documentation](https://resend.com/docs)
-- **The app**: Check console logs for detailed error messages
+For Gmail-specific issues:
+- Visit https://support.google.com/accounts
+- Search for "App passwords"
+
+For application issues:
+- Check console logs for detailed error messages
+- Ensure all required fields are populated in the forms
