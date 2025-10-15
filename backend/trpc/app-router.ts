@@ -2,6 +2,7 @@ import { createTRPCRouter } from "./create-context";
 import hiRoute from "./routes/example/hi/route";
 import sendInspectionNotificationEmail from "./routes/inspections/send-notification-email/route";
 import sendInterventionNotificationEmail from "./routes/interventions/send-notification-email/route";
+import { sendAnnouncementNotificationEmailProcedure } from "./routes/announcements/send-notification-email/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -12,6 +13,9 @@ export const appRouter = createTRPCRouter({
   }),
   interventions: createTRPCRouter({
     sendNotificationEmail: sendInterventionNotificationEmail,
+  }),
+  announcements: createTRPCRouter({
+    sendNotificationEmail: sendAnnouncementNotificationEmailProcedure,
   }),
 });
 

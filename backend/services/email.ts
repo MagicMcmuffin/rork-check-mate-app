@@ -292,3 +292,82 @@ export function generatePositiveInterventionEmailHTML(data: PositiveIntervention
     </html>
   `;
 }
+
+interface AnnouncementEmailData {
+  companyName: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'normal' | 'high';
+  authorName: string;
+  date: string;
+}
+
+export function generateAnnouncementEmailHTML(data: AnnouncementEmailData): string {
+  const priorityConfig = {
+    high: { color: '#dc2626', bg: '#fee2e2', label: 'URGENT', icon: '🚨' },
+    normal: { color: '#1e40af', bg: '#dbeafe', label: 'NORMAL', icon: '📢' },
+    low: { color: '#64748b', bg: '#f1f5f9', label: 'INFO', icon: 'ℹ️' },
+  };
+  
+  const config = priorityConfig[data.priority];
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Company Announcement</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background-color: #f8fafc;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%); padding: 24px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: 700;">${config.icon} Company Announcement</h1>
+            </div>
+            
+            <div style="padding: 24px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <span style="display: inline-block; padding: 6px 12px; background: ${config.bg}; color: ${config.color}; border-radius: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase;">${config.label}</span>
+              </div>
+              
+              <h2 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 20px 0;">${data.title}</h2>
+              
+              <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid ${config.color};">
+                <p style="margin: 0; color: #1e293b; font-size: 15px; line-height: 1.8; white-space: pre-wrap;">${data.message}</p>
+              </div>
+              
+              <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569; width: 120px;">Company:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.companyName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Posted By:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.authorName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: 600; color: #475569;">Date:</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${data.date}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="margin: 0; color: #64748b; font-size: 14px;">
+                  This announcement was sent to all company members.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px;">
+            <p style="margin: 0;">This is an automated message from CheckMate Safety</p>
+            <p style="margin: 4px 0 0 0;">checkmatesafty@gmail.com</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}

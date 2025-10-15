@@ -1037,8 +1037,28 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updated));
     setAnnouncements(updated);
 
+    const companyUsers = users.filter(u => u.companyId === company.id && u.email);
+    const recipientEmails = companyUsers.map(u => u.email).filter(Boolean) as string[];
+
+    if (recipientEmails.length > 0 && company.email) {
+      try {
+        await trpcClient.announcements.sendNotificationEmail.mutate({
+          companyName: company.name,
+          title: newAnnouncement.title,
+          message: newAnnouncement.message,
+          priority: newAnnouncement.priority,
+          authorName: newAnnouncement.authorName,
+          date: new Date(newAnnouncement.createdAt).toLocaleDateString(),
+          recipientEmails,
+        });
+        console.log('Announcement email sent successfully');
+      } catch (error) {
+        console.error('Failed to send announcement email notification:', error);
+      }
+    }
+
     return newAnnouncement;
-  }, [user, company, announcements]);
+  }, [user, company, announcements, users]);
 
   const getCompanyAnnouncements = useCallback(() => {
     if (!company) return [];
