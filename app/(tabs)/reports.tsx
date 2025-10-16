@@ -45,14 +45,14 @@ export default function ReportsScreen() {
     getEmployeePositiveInterventions, 
   } = appContext;
   
-  const inspections = getCompanyInspections() || { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
-  const positiveInterventions = getCompanyPositiveInterventions() || [];
-  const fixLogs = getFixLogs() || [];
+  const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
+  const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
+  const fixLogs = getFixLogs ? getFixLogs() : [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
-  const myInspections = user ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
-  const myPositiveInterventions = user ? getEmployeePositiveInterventions(user.id) : [];
+  const myInspections = user && getEmployeeInspections ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
+  const myPositiveInterventions = user && getEmployeePositiveInterventions ? getEmployeePositiveInterventions(user.id) : [];
 
   const myAllInspections = [
     ...myInspections.plant.map(i => ({ ...i, type: 'plant' as const })),
