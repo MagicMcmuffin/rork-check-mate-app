@@ -68,7 +68,13 @@ const createCustomFetch = () => {
             }
             
             console.warn('⚠️ Backend did not start in time. Email will not be sent.');
-            throw new Error('Backend is still starting up. The inspection was saved, but email notification could not be sent at this time. Please check your inspection history.');
+            return new Response(JSON.stringify({ 
+              success: false, 
+              message: 'Backend is warming up. Email will not be sent.' 
+            }), { 
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            });
           }
           
           const errorText = await response.text();
@@ -96,7 +102,14 @@ const createCustomFetch = () => {
             await sleep(delay);
             continue;
           }
-          throw new Error('Backend request timed out. The inspection was saved, but email notification could not be sent.');
+          console.warn('⚠️ Backend timeout. Email will not be sent.');
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: 'Backend timeout. Email will not be sent.' 
+          }), { 
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
         }
         
         if (attempt < maxRetries && error instanceof Error && 

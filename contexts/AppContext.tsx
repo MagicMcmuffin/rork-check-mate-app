@@ -368,17 +368,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
         console.log('📤 Sending email with data:', JSON.stringify(emailData, null, 2));
         const result = await trpcClient.inspections.sendNotificationEmail.mutate(emailData);
         console.log('✅ Email mutation result:', JSON.stringify(result, null, 2));
-        console.log('Plant inspection email sent successfully');
-      } catch (error) {
-        console.error('❌ ERROR SENDING EMAIL:', error);
-        console.error('Error name:', (error as any)?.name);
-        console.error('Error message:', (error as any)?.message);
-        console.error('Error stack:', (error as any)?.stack);
-        console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-        if ((error as any)?.data) {
-          console.error('Error data:', JSON.stringify((error as any).data, null, 2));
+        if (result.success) {
+          console.log('Plant inspection email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
         }
-        console.log('Email notification failed - check backend logs');
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     } else {
       console.log('⚠️ Email not sent:');
@@ -440,7 +436,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     if (failedCheckDetails.length > 0 && company?.email) {
       try {
-        await trpcClient.inspections.sendNotificationEmail.mutate({
+        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
           inspectionType: 'quickhitch',
           equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails,
           operatorName: newInspection.operatorName,
@@ -453,9 +449,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
           projectEmails: project?.emails,
           adminEmails: adminUsers.map(u => u.email),
         });
-        console.log('Quick hitch inspection email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+        if (result.success) {
+          console.log('Quick hitch inspection email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     }
 
@@ -521,7 +521,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     if (failedCheckDetails.length > 0 && company?.email) {
       try {
-        await trpcClient.inspections.sendNotificationEmail.mutate({
+        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
           inspectionType: 'vehicle',
           equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration,
           operatorName: newInspection.employeeName,
@@ -532,9 +532,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
           companyEmail: company?.email,
           adminEmails: adminUsers.map(u => u.email),
         });
-        console.log('Vehicle inspection email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+        if (result.success) {
+          console.log('Vehicle inspection email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     }
 
@@ -794,7 +798,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     if (failedCheckDetails.length > 0 && company?.email) {
       try {
-        await trpcClient.inspections.sendNotificationEmail.mutate({
+        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
           inspectionType: 'bucket',
           equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType,
           operatorName: newInspection.employeeName,
@@ -806,9 +810,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
           projectEmails: project?.emails,
           adminEmails: adminUsers.map(u => u.email),
         });
-        console.log('Bucket change inspection email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+        if (result.success) {
+          console.log('Bucket change inspection email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     }
 
@@ -1012,7 +1020,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     if (company?.email) {
       try {
-        await trpcClient.interventions.sendNotificationEmail.mutate({
+        const result = await trpcClient.interventions.sendNotificationEmail.mutate({
           employeeName: newIntervention.employeeName,
           date: newIntervention.date,
           projectName: project?.name,
@@ -1026,9 +1034,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
           projectEmails: project?.emails,
           adminEmails: adminUsers.map(u => u.email),
         });
-        console.log('Positive intervention email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+        if (result.success) {
+          console.log('Positive intervention email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     }
     return newIntervention;
@@ -1095,7 +1107,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     if (recipientEmails.length > 0 && company.email) {
       try {
-        await trpcClient.announcements.sendNotificationEmail.mutate({
+        const result = await trpcClient.announcements.sendNotificationEmail.mutate({
           companyName: company.name,
           title: newAnnouncement.title,
           message: newAnnouncement.message,
@@ -1104,9 +1116,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
           date: new Date(newAnnouncement.createdAt).toLocaleDateString(),
           recipientEmails,
         });
-        console.log('Announcement email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+        if (result.success) {
+          console.log('Announcement email sent successfully');
+        } else {
+          console.warn('⚠️ Email notification could not be sent:', result.message);
+        }
+      } catch (error) {
+        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
       }
     }
 
