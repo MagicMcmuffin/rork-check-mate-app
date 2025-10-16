@@ -29,8 +29,8 @@ export default function ReportsScreen() {
     markInspectionFixed, 
     getCompanyPositiveInterventions, 
     getFixLogs, 
-    getEmployeeInspections, 
-    getEmployeePositiveInterventions, 
+    getEmployeeInspections = () => ({ plant: [], quickHitch: [], vehicle: [], bucketChange: [] }), 
+    getEmployeePositiveInterventions = () => [], 
   } = useApp();
   
   const inspections = getCompanyInspections();
@@ -39,8 +39,8 @@ export default function ReportsScreen() {
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
-  const myInspections = user && getEmployeeInspections ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
-  const myPositiveInterventions = user && getEmployeePositiveInterventions ? getEmployeePositiveInterventions(user.id) : [];
+  const myInspections = user ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
+  const myPositiveInterventions = user ? getEmployeePositiveInterventions(user.id) : [];
 
   const myAllInspections = [
     ...myInspections.plant.map(i => ({ ...i, type: 'plant' as const })),
