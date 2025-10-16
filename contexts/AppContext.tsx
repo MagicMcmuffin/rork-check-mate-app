@@ -2,8 +2,6 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement } from '@/types';
-import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
-import { trpcClient } from '@/lib/trpc';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -324,66 +322,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
-    const adminUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
-    );
-
-    const allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
-    const failedCheckDetails = newInspection.checks
-      .filter(c => c.status === 'B' || c.status === 'C')
-      .map(check => {
-        const item = allItems.find(i => i.id === check.itemId);
-        return {
-          name: item?.name || check.itemId,
-          status: check.status || '',
-          notes: check.notes,
-        };
-      });
-
-    if (failedCheckDetails.length > 0 && company?.email) {
-      console.log('========================================');
-      console.log('📧 ATTEMPTING TO SEND INSPECTION EMAIL');
-      console.log('========================================');
-      console.log('Failed checks count:', failedCheckDetails.length);
-      console.log('Company email:', company?.email);
-      console.log('Failed check details:', failedCheckDetails);
-      console.log('Admin users:', adminUsers.map(u => u.email));
-      console.log('========================================');
-      try {
-        const emailData = {
-          inspectionType: 'plant' as const,
-          equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`,
-          operatorName: newInspection.employeeName,
-          date: newInspection.date,
-          projectName: project?.name,
-          failedChecks: failedCheckDetails,
-          notesOnDefects: newInspection.notesOnDefects,
-          companyName: company?.name || 'Unknown Company',
-          companyEmail: company?.email,
-          projectEmails: project?.emails,
-          adminEmails: adminUsers.map(u => u.email).filter(Boolean),
-        };
-        console.log('📤 Sending email with data:', JSON.stringify(emailData, null, 2));
-        const result = await trpcClient.inspections.sendNotificationEmail.mutate(emailData);
-        console.log('✅ Email mutation result:', JSON.stringify(result, null, 2));
-        if (result.success) {
-          console.log('Plant inspection email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    } else {
-      console.log('⚠️ Email not sent:');
-      console.log('- Failed checks:', failedCheckDetails.length);
-      console.log('- Company email:', company?.email || 'NOT SET');
-    }
-
     return newInspection;
-  }, [plantInspections, company, notifications, users]);
+  }, [plantInspections, company, notifications]);
 
   const submitQuickHitchInspection = useCallback(async (inspection: Omit<QuickHitchInspection, 'id' | 'createdAt'>) => {
     const newInspection: QuickHitchInspection = {
@@ -417,50 +357,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
-    const adminUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
-    );
-
-    const failedCheckDetails = newInspection.checks
-      .filter(c => c.status === '✗' || c.status === false)
-      .map(check => {
-        const item = QUICK_HITCH_ITEMS.find(i => i.id === check.itemId);
-        return {
-          name: item?.name || check.itemId,
-          status: typeof check.status === 'boolean' ? (check.status ? '✓' : '✗') : check.status?.toString() || '✗',
-          notes: undefined,
-        };
-      });
-
-    if (failedCheckDetails.length > 0 && company?.email) {
-      try {
-        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
-          inspectionType: 'quickhitch',
-          equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.excavatorDetails,
-          operatorName: newInspection.operatorName,
-          date: newInspection.date,
-          projectName: project?.name,
-          failedChecks: failedCheckDetails,
-          notesOnDefects: newInspection.remarks,
-          companyName: company?.name || 'Unknown Company',
-          companyEmail: company?.email,
-          projectEmails: project?.emails,
-          adminEmails: adminUsers.map(u => u.email),
-        });
-        if (result.success) {
-          console.log('Quick hitch inspection email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    }
-
     return newInspection;
-  }, [quickHitchInspections, company, notifications, users]);
+  }, [quickHitchInspections, company, notifications]);
 
   const logout = useCallback(async () => {
     await Promise.all([
@@ -503,47 +401,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    const adminUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
-    );
-
-    const failedCheckDetails = newInspection.checks
-      .filter(c => c.status === 'B' || c.status === 'C')
-      .map(check => {
-        const item = VEHICLE_INSPECTION_ITEMS.find(i => i.id === check.itemId);
-        return {
-          name: item?.name || check.itemId,
-          status: check.status || '',
-          notes: check.notes,
-        };
-      });
-
-    if (failedCheckDetails.length > 0 && company?.email) {
-      try {
-        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
-          inspectionType: 'vehicle',
-          equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.vehicleRegistration,
-          operatorName: newInspection.employeeName,
-          date: newInspection.date,
-          failedChecks: failedCheckDetails,
-          notesOnDefects: newInspection.additionalComments,
-          companyName: company?.name || 'Unknown Company',
-          companyEmail: company?.email,
-          adminEmails: adminUsers.map(u => u.email),
-        });
-        if (result.success) {
-          console.log('Vehicle inspection email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    }
-
     return newInspection;
-  }, [vehicleInspections, company, notifications, users]);
+  }, [vehicleInspections, company, notifications]);
 
   const getCompanyInspections = useCallback(() => {
     if (!company) return { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
@@ -779,49 +638,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       setNotifications(updatedNotifications);
     }
 
-    const project = inspection.projectId ? company?.projects?.find(p => p.id === inspection.projectId) : undefined;
-    const adminUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'administrator' || u.role === 'management' || u.role === 'mechanic')
-    );
-
-    const failedCheckDetails = newInspection.checks
-      .filter(c => c.status === false)
-      .map(check => {
-        const item = BUCKET_CHANGE_ITEMS.find((i: { id: string; name: string }) => i.id === check.itemId);
-        return {
-          name: item?.name || check.itemId,
-          status: 'Failed',
-          notes: check.notes,
-        };
-      });
-
-    if (failedCheckDetails.length > 0 && company?.email) {
-      try {
-        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
-          inspectionType: 'bucket',
-          equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || inspection.bucketType,
-          operatorName: newInspection.employeeName,
-          date: newInspection.date,
-          projectName: project?.name,
-          failedChecks: failedCheckDetails,
-          companyName: company?.name || 'Unknown Company',
-          companyEmail: company?.email,
-          projectEmails: project?.emails,
-          adminEmails: adminUsers.map(u => u.email),
-        });
-        if (result.success) {
-          console.log('Bucket change inspection email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    }
-
     return newInspection;
-  }, [bucketChangeInspections, company, notifications, users]);
+  }, [bucketChangeInspections, company, notifications]);
 
   const switchCompany = useCallback(async (companyId: string) => {
     if (!user) throw new Error('No user found');
@@ -1012,39 +830,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.setItem(STORAGE_KEYS.POSITIVE_INTERVENTIONS, JSON.stringify(updated));
     setPositiveInterventions(updated);
 
-    const project = intervention.projectId ? company?.projects?.find(p => p.id === intervention.projectId) : undefined;
-    const adminUsers = users.filter(u => 
-      u.companyId === company?.id && 
-      (u.role === 'administrator' || u.role === 'management')
-    );
-
-    if (company?.email) {
-      try {
-        const result = await trpcClient.interventions.sendNotificationEmail.mutate({
-          employeeName: newIntervention.employeeName,
-          date: newIntervention.date,
-          projectName: project?.name,
-          hazardDescription: newIntervention.hazardDescription,
-          severity: newIntervention.severity,
-          actionTaken: newIntervention.actionTaken,
-          site: newIntervention.site,
-          location: newIntervention.location,
-          companyName: company?.name || 'Unknown Company',
-          companyEmail: company?.email,
-          projectEmails: project?.emails,
-          adminEmails: adminUsers.map(u => u.email),
-        });
-        if (result.success) {
-          console.log('Positive intervention email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    }
     return newIntervention;
-  }, [positiveInterventions, company, users]);
+  }, [positiveInterventions]);
 
   const getCompanyPositiveInterventions = useCallback(() => {
     if (!company) return [];
@@ -1069,8 +856,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const updated = [...apprenticeshipEntries, newEntry];
     await AsyncStorage.setItem(STORAGE_KEYS.APPRENTICESHIP_ENTRIES, JSON.stringify(updated));
     setApprenticeshipEntries(updated);
-
-
 
     return newEntry;
   }, [apprenticeshipEntries]);
@@ -1102,32 +887,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await AsyncStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updated));
     setAnnouncements(updated);
 
-    const companyUsers = users.filter(u => u.companyId === company.id && u.email);
-    const recipientEmails = companyUsers.map(u => u.email).filter(Boolean) as string[];
-
-    if (recipientEmails.length > 0 && company.email) {
-      try {
-        const result = await trpcClient.announcements.sendNotificationEmail.mutate({
-          companyName: company.name,
-          title: newAnnouncement.title,
-          message: newAnnouncement.message,
-          priority: newAnnouncement.priority,
-          authorName: newAnnouncement.authorName,
-          date: new Date(newAnnouncement.createdAt).toLocaleDateString(),
-          recipientEmails,
-        });
-        if (result.success) {
-          console.log('Announcement email sent successfully');
-        } else {
-          console.warn('⚠️ Email notification could not be sent:', result.message);
-        }
-      } catch (error) {
-        console.warn('⚠️ Email notification failed (non-critical):', (error as any)?.message || 'Unknown error');
-      }
-    }
-
     return newAnnouncement;
-  }, [user, company, announcements, users]);
+  }, [user, company, announcements]);
 
   const getCompanyAnnouncements = useCallback(() => {
     if (!company) return [];
