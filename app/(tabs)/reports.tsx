@@ -8,7 +8,18 @@ import { useState } from 'react';
 import { generatePlantInspectionPDF, generateQuickHitchInspectionPDF, generateVehicleInspectionPDF, generateBucketChangeInspectionPDF, generatePositiveInterventionPDF, generateApprenticeshipLearningPDF } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
-  const { user, company, getCompanyInspections, deleteInspection, markInspectionFixed, getCompanyPositiveInterventions, getFixLogs, getEmployeeInspections, getEmployeePositiveInterventions, getCompanyApprenticeshipEntries } = useApp();
+  const { 
+    user, 
+    company, 
+    getCompanyInspections, 
+    deleteInspection, 
+    markInspectionFixed, 
+    getCompanyPositiveInterventions, 
+    getFixLogs, 
+    getEmployeeInspections, 
+    getEmployeePositiveInterventions, 
+    getCompanyApprenticeshipEntries 
+  } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const inspections = getCompanyInspections();
@@ -148,7 +159,7 @@ export default function ReportsScreen() {
       } else if (selectedTab === 'interventions') {
         itemsToDownload = filteredInterventions.filter(i => isDateInRange(i.createdAt));
       } else if (selectedTab === 'apprenticeship') {
-        itemsToDownload = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
+        itemsToDownload = (getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : []).filter(e => isDateInRange(e.createdAt));
       }
 
       if (itemsToDownload.length === 0) {
@@ -550,7 +561,7 @@ export default function ReportsScreen() {
 
               {selectedTab === 'apprenticeship' ? (
                 (() => {
-                  const apprenticeshipEntries = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
+                  const apprenticeshipEntries = (getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : []).filter(e => isDateInRange(e.createdAt));
                   return apprenticeshipEntries.length === 0 ? (
                     <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                       <BookOpen size={48} color={colors.textSecondary} />
