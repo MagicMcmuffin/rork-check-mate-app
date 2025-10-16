@@ -130,7 +130,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return code;
   };
 
-  const registerCompany = useCallback(async (name: string, email: string, password: string, profilePicture?: string) => {
+  const registerCompany = useCallback(async (name: string, email: string, password: string, profilePicture?: string, companyLogo?: string) => {
     const code = generateCompanyCode();
     const newCompany: Company = {
       id: Date.now().toString(),
@@ -139,6 +139,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       email,
       projects: [],
       equipment: [],
+      logo: companyLogo,
       createdAt: new Date().toISOString(),
     };
 

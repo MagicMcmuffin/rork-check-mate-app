@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CompanyRegisterScreen() {
-  const { registerCompany, updateCompanyLogo } = useApp();
+  const { registerCompany } = useApp();
   const router = useRouter();
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
@@ -53,12 +53,7 @@ export default function CompanyRegisterScreen() {
 
     setIsLoading(true);
     try {
-      const company = await registerCompany(companyName.trim(), email.trim(), password.trim(), profilePicture || undefined);
-      
-      if (companyLogo) {
-        await updateCompanyLogo(companyLogo);
-      }
-      
+      const company = await registerCompany(companyName.trim(), email.trim(), password.trim(), profilePicture || undefined, companyLogo || undefined);
       setRegisteredCode(company.code);
     } catch (error) {
       Alert.alert('Error', 'Failed to register company. Please try again.');
@@ -236,7 +231,7 @@ export default function CompanyRegisterScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoTitle}>What happens next?</Text>
               <Text style={styles.infoText}>
-                • You'll receive a unique company code{'\n'}
+                • You&apos;ll receive a unique company code{'\n'}
                 • Share the code with your employees{'\n'}
                 • Employees can join and submit inspections{'\n'}
                 • Reports are sent to your email
