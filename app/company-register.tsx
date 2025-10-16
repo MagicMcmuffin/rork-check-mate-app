@@ -19,13 +19,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CompanyRegisterScreen() {
-  const { registerCompany } = useApp();
+  const { registerCompany, updateCompanyLogo } = useApp();
   const router = useRouter();
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [registeredCode, setRegisteredCode] = useState<string | null>(null);
 
@@ -53,6 +54,11 @@ export default function CompanyRegisterScreen() {
     setIsLoading(true);
     try {
       const company = await registerCompany(companyName.trim(), email.trim(), password.trim(), profilePicture || undefined);
+      
+      if (companyLogo) {
+        await updateCompanyLogo(companyLogo);
+      }
+      
       setRegisteredCode(company.code);
     } catch (error) {
       Alert.alert('Error', 'Failed to register company. Please try again.');
@@ -112,28 +118,59 @@ export default function CompanyRegisterScreen() {
           </View>
 
           <View style={styles.form}>
-            <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-                base64: true,
-              });
+            <View style={styles.imagesRow}>
+              <View style={styles.imageColumn}>
+                <Text style={styles.imageLabel}>Profile Photo</Text>
+                <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.5,
+                    base64: true,
+                  });
 
-              if (!result.canceled && result.assets[0].base64) {
-                setProfilePicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
-              }
-            }}>
-              {profilePicture ? (
-                <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
-              ) : (
-                <View style={styles.profilePicturePlaceholder}>
-                  <Camera size={32} color="#94a3b8" />
-                  <Text style={styles.profilePictureText}>Add Photo</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+                  if (!result.canceled && result.assets[0].base64) {
+                    setProfilePicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                  }
+                }}>
+                  {profilePicture ? (
+                    <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
+                  ) : (
+                    <View style={styles.profilePicturePlaceholder}>
+                      <Camera size={32} color="#94a3b8" />
+                      <Text style={styles.profilePictureText}>Add Photo</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.imageColumn}>
+                <Text style={styles.imageLabel}>Company Logo (Optional)</Text>
+                <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.5,
+                    base64: true,
+                  });
+
+                  if (!result.canceled && result.assets[0].base64) {
+                    setCompanyLogo(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                  }
+                }}>
+                  {companyLogo ? (
+                    <Image source={{ uri: companyLogo }} style={styles.profilePicture} />
+                  ) : (
+                    <View style={styles.profilePicturePlaceholder}>
+                      <Building2 size={32} color="#94a3b8" />
+                      <Text style={styles.profilePictureText}>Add Logo</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Company Name</Text>
@@ -429,5 +466,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#94a3b8',
     marginTop: 8,
+  },
+  imagesRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  imageColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  imageLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#64748b',
+    marginBottom: 8,
+    textAlign: 'center' as const,
   },
 });

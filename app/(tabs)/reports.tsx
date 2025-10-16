@@ -1,13 +1,13 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, BookOpen } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 export default function ReportsScreen() {
-  const { user, company, getCompanyInspections, deleteInspection, markInspectionFixed, getCompanyPositiveInterventions, getFixLogs, getEmployeeInspections, getEmployeePositiveInterventions } = useApp();
+  const { user, company, getCompanyInspections, deleteInspection, markInspectionFixed, getCompanyPositiveInterventions, getFixLogs, getEmployeeInspections, getEmployeePositiveInterventions, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const inspections = getCompanyInspections();
@@ -15,7 +15,7 @@ export default function ReportsScreen() {
   const fixLogs = getFixLogs();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks'>('reports');
-  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes'>('inspections');
+  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'apprenticeship'>('inspections');
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
@@ -220,6 +220,13 @@ export default function ReportsScreen() {
                   <Wrench size={18} color={selectedTab === 'fixes' ? '#f59e0b' : colors.textSecondary} />
                   <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'fixes' && styles.tabTextActive]}>Fixes</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, selectedTab === 'apprenticeship' && styles.tabActive]}
+                  onPress={() => setSelectedTab('apprenticeship')}
+                >
+                  <BookOpen size={18} color={selectedTab === 'apprenticeship' ? '#8b5cf6' : colors.textSecondary} />
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'apprenticeship' && styles.tabTextActive]}>Learning</Text>
+                </TouchableOpacity>
               </View>
 
               {company && company.projects.length > 0 && selectedTab === 'inspections' && (
@@ -390,7 +397,74 @@ export default function ReportsScreen() {
                 </View>
               )}
 
-              {selectedTab === 'inspections' && filteredInspections.length === 0 ? (
+              {selectedTab === 'apprenticeship' ? (
+                (() => {
+                  const apprenticeshipEntries = getCompanyApprenticeshipEntries();
+                  return apprenticeshipEntries.length === 0 ? (
+                    <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                      <BookOpen size={48} color={colors.textSecondary} />
+                      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Learning Entries Yet</Text>
+                      <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                        Apprenticeship learning entries will appear here
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.reportsList}>
+                      {apprenticeshipEntries.map((entry) => (
+                        <View key={entry.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
+                          <View style={styles.reportCardContent}>
+                            <View style={styles.reportHeader}>
+                              <View style={[styles.reportIcon, { backgroundColor: '#f3e8ff' }]}>
+                                <BookOpen size={20} color="#8b5cf6" />
+                              </View>
+                              <View style={styles.reportInfo}>
+                                <Text style={[styles.reportTitle, { color: colors.text }]}>Apprenticeship Learning</Text>
+                                <View style={styles.reportMeta}>
+                                  <User size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
+                                    {entry.apprenticeName}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            <View style={styles.reportDetails}>
+                              <View style={styles.reportDetail}>
+                                <Calendar size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatDate(entry.createdAt)}
+                                </Text>
+                              </View>
+                              <View style={styles.reportDetail}>
+                                <Clock size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatTime(entry.createdAt)}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Learning:</Text>
+                              <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={3}>
+                                {entry.learningDescription}
+                              </Text>
+                            </View>
+
+                            {entry.pictures && entry.pictures.length > 0 && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photos:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>
+                                  {entry.pictures.length} image{entry.pictures.length !== 1 ? 's' : ''}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()
+              ) : selectedTab === 'inspections' && filteredInspections.length === 0 ? (
                 <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                   <FileText size={48} color={colors.textSecondary} />
                   <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Reports Yet</Text>
