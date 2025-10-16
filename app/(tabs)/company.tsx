@@ -1181,7 +1181,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
     paddingHorizontal: 24,
   },
   modalButton: {
