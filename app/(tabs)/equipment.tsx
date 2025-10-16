@@ -654,13 +654,14 @@ const styles = StyleSheet.create({
   },
   modalScrollContent: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
   modalContent: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: 40,
+    minHeight: 600,
   },
   modalTitle: {
     fontSize: 24,
