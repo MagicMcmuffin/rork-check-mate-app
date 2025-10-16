@@ -1,11 +1,10 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Stack } from 'expo-router';
 import { VEHICLE_INSPECTION_ITEMS, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
 import { VehicleInspectionCheck, CheckStatus } from '@/types';
-import { useRouter } from 'expo-router';
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera } from 'lucide-react-native';
-import { useState, useRef } from 'react';
+import { useRouter, Stack } from 'expo-router';
+import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, ArrowLeft } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -17,20 +16,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  PanResponder,
-  Dimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { height } = Dimensions.get('window');
 
 export default function VehicleInspectionScreen() {
   const { user, company, submitVehicleInspection } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const [vehicleRegistration, setVehicleRegistration] = useState('');
   const [vehicleType, setVehicleType] = useState('');
   const [mileage, setMileage] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
@@ -40,42 +31,6 @@ export default function VehicleInspectionScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-
-  const translateY = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [scrollOffset, setScrollOffset] = useState(0);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return scrollOffset <= 0 && gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 150) {
-          Animated.timing(translateY, {
-            toValue: height,
-            duration: 300,
-            useNativeDriver: true,
-          }).start(() => {
-            router.back();
-          });
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 50,
-            friction: 8,
-          }).start();
-        }
-      },
-    })
-  ).current;
 
   const vehicleEquipment = company?.equipment?.filter(e => e.type === 'vehicle') || [];
 
@@ -148,8 +103,8 @@ export default function VehicleInspectionScreen() {
     const finalVehicleReg = selectedEquipment === 'other'
       ? customVehicle.trim()
       : selectedEquipment
-        ? vehicleEquipment.find(e => e.id === selectedEquipment)?.registration || vehicleRegistration.trim()
-        : vehicleRegistration.trim();
+        ? vehicleEquipment.find(e => e.id === selectedEquipment)?.registration || ''
+        : '';
 
     const finalVehicleType = selectedEquipment && selectedEquipment !== 'other'
       ? vehicleEquipment.find(e => e.id === selectedEquipment)?.name || vehicleType.trim()
@@ -200,29 +155,30 @@ export default function VehicleInspectionScreen() {
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginLeft: 8 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
-      <Animated.View
+      <View
         style={[
           styles.container,
-          { backgroundColor: colors.background, transform: [{ translateY }] },
+          { backgroundColor: colors.background },
         ]}
-        {...panResponder.panHandlers}
       >
         <KeyboardAvoidingView 
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-        <View style={styles.dragIndicatorContainer}>
-          <View style={[styles.dragIndicator, { backgroundColor: colors.border }]} />
-        </View>
         <ScrollView 
-          ref={scrollViewRef}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.y)}
-          scrollEventThrottle={16}
         >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Vehicle Daily Check</Text>
@@ -442,7 +398,7 @@ export default function VehicleInspectionScreen() {
         </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-      </Animated.View>
+      </View>
     </>
   );
 }
@@ -451,17 +407,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  dragIndicatorContainer: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingTop: 12,
-  },
-  dragIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#cbd5e1',
   },
   scrollContent: {
     padding: 20,
