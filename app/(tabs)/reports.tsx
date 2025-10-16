@@ -159,7 +159,7 @@ export default function ReportsScreen() {
       } else if (selectedTab === 'interventions') {
         itemsToDownload = filteredInterventions.filter(i => isDateInRange(i.createdAt));
       } else if (selectedTab === 'apprenticeship') {
-        const apprenticeshipEntries = getCompanyApprenticeshipEntries?.() || [];
+        const apprenticeshipEntries = getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : [];
         itemsToDownload = apprenticeshipEntries.filter(e => isDateInRange(e.createdAt));
       }
 
@@ -562,7 +562,7 @@ export default function ReportsScreen() {
 
               {selectedTab === 'apprenticeship' ? (
                 (() => {
-                  const allApprenticeshipEntries = getCompanyApprenticeshipEntries?.() || [];
+                  const allApprenticeshipEntries = getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : [];
                   const apprenticeshipEntries = allApprenticeshipEntries.filter(e => isDateInRange(e.createdAt));
                   return apprenticeshipEntries.length === 0 ? (
                     <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
