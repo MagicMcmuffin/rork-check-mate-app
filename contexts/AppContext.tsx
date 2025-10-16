@@ -130,16 +130,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return code;
   };
 
-  const registerCompany = useCallback(async (name: string, email: string, password: string, profilePicture?: string, companyLogo?: string) => {
+  const registerCompany = useCallback(async (ownerName: string, companyName: string, password: string) => {
     const code = generateCompanyCode();
+    const email = `${companyName.toLowerCase().replace(/\s+/g, '')}@checkmate.com`;
     const newCompany: Company = {
       id: Date.now().toString(),
-      name,
+      name: companyName,
       code,
       email,
       projects: [],
       equipment: [],
-      logo: companyLogo,
       createdAt: new Date().toISOString(),
     };
 
@@ -147,10 +147,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
       id: Date.now().toString(),
       role: 'company',
       companyId: newCompany.id,
-      name,
+      name: ownerName,
       email,
       password,
-      profilePicture,
       createdAt: new Date().toISOString(),
     };
 

@@ -1,8 +1,8 @@
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Building2, Mail, CheckCircle2, Camera } from 'lucide-react-native';
+import { ArrowLeft, Building2, CheckCircle2, User } from 'lucide-react-native';
 import { useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import {
   View,
   Text,
@@ -14,30 +14,23 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CompanyRegisterScreen() {
   const { registerCompany } = useApp();
+  const { colors } = useTheme();
   const router = useRouter();
+  const [ownerName, setOwnerName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [registeredCode, setRegisteredCode] = useState<string | null>(null);
 
   const handleRegister = async () => {
-    if (!companyName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!ownerName.trim() || !companyName.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
@@ -53,7 +46,7 @@ export default function CompanyRegisterScreen() {
 
     setIsLoading(true);
     try {
-      const company = await registerCompany(companyName.trim(), email.trim(), password.trim(), profilePicture || undefined, companyLogo || undefined);
+      const company = await registerCompany(ownerName.trim(), companyName.trim(), password.trim());
       setRegisteredCode(company.code);
     } catch (error) {
       Alert.alert('Error', 'Failed to register company. Please try again.');
@@ -69,23 +62,23 @@ export default function CompanyRegisterScreen() {
 
   if (registeredCode) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
             <CheckCircle2 size={64} color="#10b981" />
           </View>
-          <Text style={styles.successTitle}>Registration Complete!</Text>
-          <Text style={styles.successSubtitle}>Your company has been registered</Text>
+          <Text style={[styles.successTitle, { color: colors.text }]}>Registration Complete!</Text>
+          <Text style={[styles.successSubtitle, { color: colors.textSecondary }]}>Your company has been registered</Text>
 
-          <View style={styles.codeCard}>
-            <Text style={styles.codeLabel}>Company Code</Text>
-            <Text style={styles.codeValue}>{registeredCode}</Text>
-            <Text style={styles.codeDescription}>
+          <View style={[styles.codeCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.codeLabel, { color: colors.textSecondary }]}>Company Code</Text>
+            <Text style={[styles.codeValue, { color: colors.primary }]}>{registeredCode}</Text>
+            <Text style={[styles.codeDescription, { color: colors.textSecondary }]}>
               Share this code with your employees so they can join your company
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+          <TouchableOpacity style={[styles.continueButton, { backgroundColor: colors.primary }]} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
           </TouchableOpacity>
         </View>
@@ -94,118 +87,63 @@ export default function CompanyRegisterScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#1e293b" />
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
+            <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Building2 size={32} color="#1e40af" />
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Building2 size={32} color={colors.primary} />
             </View>
-            <Text style={styles.title}>Company Registration</Text>
-            <Text style={styles.subtitle}>Create your company account</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Company Registration</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Create your company account</Text>
           </View>
 
           <View style={styles.form}>
-            <View style={styles.imagesRow}>
-              <View style={styles.imageColumn}>
-                <Text style={styles.imageLabel}>Profile Photo</Text>
-                <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ['images'],
-                    allowsEditing: true,
-                    aspect: [1, 1],
-                    quality: 0.5,
-                    base64: true,
-                  });
-
-                  if (!result.canceled && result.assets[0].base64) {
-                    setProfilePicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
-                  }
-                }}>
-                  {profilePicture ? (
-                    <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
-                  ) : (
-                    <View style={styles.profilePicturePlaceholder}>
-                      <Camera size={32} color="#94a3b8" />
-                      <Text style={styles.profilePictureText}>Add Photo</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.imageColumn}>
-                <Text style={styles.imageLabel}>Company Logo (Optional)</Text>
-                <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ['images'],
-                    allowsEditing: true,
-                    aspect: [1, 1],
-                    quality: 0.5,
-                    base64: true,
-                  });
-
-                  if (!result.canceled && result.assets[0].base64) {
-                    setCompanyLogo(`data:image/jpeg;base64,${result.assets[0].base64}`);
-                  }
-                }}>
-                  {companyLogo ? (
-                    <Image source={{ uri: companyLogo }} style={styles.profilePicture} />
-                  ) : (
-                    <View style={styles.profilePicturePlaceholder}>
-                      <Building2 size={32} color="#94a3b8" />
-                      <Text style={styles.profilePictureText}>Add Logo</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Company Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter company name"
-                placeholderTextColor="#94a3b8"
-                value={companyName}
-                onChangeText={setCompanyName}
-                autoCapitalize="words"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Your Name</Text>
               <View style={styles.inputWithIcon}>
-                <Mail size={20} color="#64748b" style={styles.inputIcon} />
+                <User size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, styles.inputWithPadding]}
-                  placeholder="company@example.com"
-                  placeholderTextColor="#94a3b8"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={ownerName}
+                  onChangeText={setOwnerName}
+                  autoCapitalize="words"
                   editable={!isLoading}
                 />
               </View>
-              <Text style={styles.helperText}>
-                Inspection reports will be sent to this email
-              </Text>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Company Name</Text>
+              <View style={styles.inputWithIcon}>
+                <Building2 size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Enter company name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  autoCapitalize="words"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 placeholder="Enter password (min 6 characters)"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -215,11 +153,11 @@ export default function CompanyRegisterScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 placeholder="Re-enter password"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textSecondary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -228,18 +166,18 @@ export default function CompanyRegisterScreen() {
               />
             </View>
 
-            <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>What happens next?</Text>
-              <Text style={styles.infoText}>
+            <View style={[styles.infoCard, { backgroundColor: colors.primary + '15', borderLeftColor: colors.primary }]}>
+              <Text style={[styles.infoTitle, { color: colors.primary }]}>What happens next?</Text>
+              <Text style={[styles.infoText, { color: colors.primary }]}>
                 • You&apos;ll receive a unique company code{'\n'}
                 • Share the code with your employees{'\n'}
                 • Employees can join and submit inspections{'\n'}
-                • Reports are sent to your email
+                • Track all inspections and reports
               </Text>
             </View>
 
             <TouchableOpacity
-              style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+              style={[styles.registerButton, { backgroundColor: colors.primary }, isLoading && styles.registerButtonDisabled]}
               onPress={handleRegister}
               disabled={isLoading}
             >
@@ -259,7 +197,6 @@ export default function CompanyRegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   keyboardView: {
     flex: 1,
@@ -271,7 +208,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -289,7 +225,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -297,12 +232,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: '#1e293b',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748b',
   },
   form: {
     gap: 24,
@@ -313,16 +246,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1e293b',
   },
   input: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1e293b',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   inputWithIcon: {
     position: 'relative' as const,
@@ -336,30 +265,21 @@ const styles = StyleSheet.create({
   inputWithPadding: {
     paddingLeft: 48,
   },
-  helperText: {
-    fontSize: 13,
-    color: '#64748b',
-  },
   infoCard: {
-    backgroundColor: '#eff6ff',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#1e40af',
   },
   infoTitle: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1e40af',
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#1e40af',
     lineHeight: 22,
   },
   registerButton: {
-    backgroundColor: '#1e40af',
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
@@ -385,16 +305,13 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: '#1e293b',
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 16,
-    color: '#64748b',
     marginBottom: 40,
   },
   codeCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
@@ -409,24 +326,20 @@ const styles = StyleSheet.create({
   codeLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748b',
     marginBottom: 12,
   },
   codeValue: {
     fontSize: 36,
     fontWeight: '700' as const,
-    color: '#1e40af',
     letterSpacing: 4,
     marginBottom: 16,
   },
   codeDescription: {
     fontSize: 14,
-    color: '#64748b',
     textAlign: 'center' as const,
     lineHeight: 20,
   },
   continueButton: {
-    backgroundColor: '#1e40af',
     borderRadius: 12,
     padding: 18,
     width: '100%',
@@ -436,46 +349,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
-  },
-  profilePictureContainer: {
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-  profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  profilePicturePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderStyle: 'dashed' as const,
-  },
-  profilePictureText: {
-    fontSize: 13,
-    color: '#94a3b8',
-    marginTop: 8,
-  },
-  imagesRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
-  imageColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  imageLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#64748b',
-    marginBottom: 8,
-    textAlign: 'center' as const,
   },
 });
