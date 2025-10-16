@@ -18,7 +18,7 @@ export default function CompanyScreen() {
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [type, setType] = useState<'plant' | 'vehicle' | 'other'>('plant');
+  const [type, setType] = useState<'plant' | 'vehicles' | 'lifting' | 'electrical' | 'cat-genny' | 'other'>('plant');
   const [hitchType, setHitchType] = useState('');
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
@@ -276,6 +276,16 @@ export default function CompanyScreen() {
                   )}
                   {item.registration && (
                     <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>Reg: {item.registration}</Text>
+                  )}
+                  {item.type === 'plant' && item.thoroughExaminationDate && (
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>
+                        Examination: {new Date(item.thoroughExaminationDate).toLocaleDateString()}
+                      </Text>
+                      {item.thoroughExaminationCertificate && (
+                        <Text style={[styles.cardSerial, { color: colors.primary, marginTop: 2 }]}>✓ Certificate uploaded</Text>
+                      )}
+                    </View>
                   )}
                 </View>
                 {isAdmin && (
@@ -597,11 +607,37 @@ export default function CompanyScreen() {
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'vehicle' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('vehicle')}
+                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'vehicles' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => setType('vehicles')}
                   >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicle' && styles.typeButtonTextActive]}>
-                      Vehicle
+                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicles' && styles.typeButtonTextActive]}>
+                      Vehicles
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'lifting' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => setType('lifting')}
+                  >
+                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'lifting' && styles.typeButtonTextActive]}>
+                      Lifting
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={[styles.typeButtons, { marginTop: 8 }]}>
+                  <TouchableOpacity
+                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'electrical' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => setType('electrical')}
+                  >
+                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'electrical' && styles.typeButtonTextActive]}>
+                      Electrical
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'cat-genny' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => setType('cat-genny')}
+                  >
+                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'cat-genny' && styles.typeButtonTextActive]}>
+                      Cat&Genny
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -640,7 +676,7 @@ export default function CompanyScreen() {
                 </>
               )}
 
-              {(type === 'vehicle' || type === 'plant') && (
+              {(type === 'vehicles' || type === 'plant') && (
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Registration (Optional)</Text>
                   <TextInput
