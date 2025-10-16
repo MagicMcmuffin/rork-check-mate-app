@@ -1,15 +1,15 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Equipment } from '@/types';
 
-type Section = 'equipment' | 'projects';
+type Section = 'equipment' | 'projects' | 'announcements';
 
 export default function CompanyScreen() {
-  const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject } = useApp();
+  const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors } = useTheme();
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   
@@ -29,9 +29,15 @@ export default function CompanyScreen() {
   const [emailInput, setEmailInput] = useState('');
   const [emails, setEmails] = useState<string[]>([]);
 
+  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
+
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
   const projects = company?.projects || [];
+  const announcements = getCompanyAnnouncements();
 
   const handleAddEquipment = async () => {
     if (!equipmentName.trim() || !make.trim() || !model.trim() || !serialNumber.trim()) {
@@ -167,6 +173,52 @@ export default function CompanyScreen() {
     setProjectNumber('');
     setEmails([]);
     setEmailInput('');
+  };
+
+  const handleCreateAnnouncement = async () => {
+    if (!announcementTitle.trim()) {
+      Alert.alert('Error', 'Please enter an announcement title');
+      return;
+    }
+    if (!announcementMessage.trim()) {
+      Alert.alert('Error', 'Please enter an announcement message');
+      return;
+    }
+
+    try {
+      await createAnnouncement(announcementTitle.trim(), announcementMessage.trim(), announcementPriority);
+      setAnnouncementTitle('');
+      setAnnouncementMessage('');
+      setAnnouncementPriority('normal');
+      setAnnouncementModalVisible(false);
+      Alert.alert('Success', 'Announcement created successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create announcement');
+      console.error('Create announcement error:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = (announcementId: string) => {
+    Alert.alert(
+      'Delete Announcement',
+      'Are you sure you want to delete this announcement?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAnnouncement(announcementId);
+              Alert.alert('Success', 'Announcement deleted successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete announcement');
+              console.error('Delete announcement error:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const groupedEquipment = equipment.reduce((acc, item) => {
@@ -312,6 +364,76 @@ export default function CompanyScreen() {
     );
   };
 
+  const renderAnnouncementsSection = () => {
+    if (user?.role !== 'company') {
+      return (
+        <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+          <Megaphone size={48} color={colors.textSecondary} />
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Announcements Not Available</Text>
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            Only company accounts can manage announcements
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
+          onPress={() => setAnnouncementModalVisible(true)}
+        >
+          <Plus size={20} color="#ffffff" />
+          <Text style={styles.addButtonText}>Create Announcement</Text>
+        </TouchableOpacity>
+
+        {announcements.length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+            <Megaphone size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Announcements Yet</Text>
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              Create your first announcement to notify your team
+            </Text>
+          </View>
+        ) : (
+          announcements.map((announcement) => {
+            const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
+            return (
+              <View key={announcement.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: priorityColor }]}>
+                <View style={styles.announcementHeader}>
+                  <View style={[styles.announcementIcon, { backgroundColor: priorityColor + '20' }]}>
+                    <Megaphone size={24} color={priorityColor} />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <Text style={[styles.cardName, { color: colors.text }]}>{announcement.title}</Text>
+                      <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
+                        <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
+                          {announcement.priority.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.announcementText, { color: colors.textSecondary }]}>{announcement.message}</Text>
+                    <Text style={[styles.cardSerial, { color: colors.textSecondary, marginTop: 8 }]}>By {announcement.authorName}</Text>
+                    <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>
+                      {new Date(announcement.createdAt).toLocaleDateString()} at {new Date(announcement.createdAt).toLocaleTimeString()}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteAnnouncement(announcement.id)}
+                  >
+                    <Trash2 size={18} color="#dc2626" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })
+        )}
+      </>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
@@ -330,7 +452,7 @@ export default function CompanyScreen() {
         </View>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Company Management</Text>
         <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {equipment.length} equipment, {projects.length} projects
+          {equipment.length} equipment, {projects.length} projects, {announcements.length} announcements
         </Text>
       </View>
 
@@ -369,13 +491,29 @@ export default function CompanyScreen() {
             Projects
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.segmentButton,
+            activeSection === 'announcements' && { backgroundColor: colors.primary },
+          ]}
+          onPress={() => setActiveSection('announcements')}
+        >
+          <Megaphone size={20} color={activeSection === 'announcements' ? '#ffffff' : colors.textSecondary} />
+          <Text
+            style={[
+              styles.segmentText,
+              { color: activeSection === 'announcements' ? '#ffffff' : colors.textSecondary },
+            ]}
+          >
+            Announcements
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {activeSection === 'equipment' ? renderEquipmentSection() : renderProjectsSection()}
+        {activeSection === 'equipment' ? renderEquipmentSection() : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
       </ScrollView>
 
-      {/* Equipment Modal */}
       <Modal
         visible={equipmentModalVisible}
         animationType="slide"
@@ -511,7 +649,6 @@ export default function CompanyScreen() {
         </View>
       </Modal>
 
-      {/* Project Modal */}
       <Modal
         visible={projectModalVisible}
         animationType="slide"
@@ -599,6 +736,123 @@ export default function CompanyScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={announcementModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setAnnouncementModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={[styles.announcementModalContent, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Create Announcement</Text>
+                <TouchableOpacity onPress={() => setAnnouncementModalVisible(false)}>
+                  <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.announcementModalBody}>
+                <Text style={[styles.label, { color: colors.text }]}>Title</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={announcementTitle}
+                  onChangeText={setAnnouncementTitle}
+                  placeholder="Enter announcement title"
+                  placeholderTextColor={colors.textSecondary}
+                />
+
+                <Text style={[styles.label, { color: colors.text }]}>Message</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={announcementMessage}
+                  onChangeText={setAnnouncementMessage}
+                  placeholder="Enter announcement message"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+
+                <Text style={[styles.label, { color: colors.text }]}>Priority</Text>
+                <View style={styles.priorityButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      announcementPriority === 'low' && { backgroundColor: '#6b7280', borderColor: '#6b7280' }
+                    ]}
+                    onPress={() => setAnnouncementPriority('low')}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      { color: colors.textSecondary },
+                      announcementPriority === 'low' && { color: '#ffffff' }
+                    ]}>
+                      Low
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      announcementPriority === 'normal' && { backgroundColor: '#3b82f6', borderColor: '#3b82f6' }
+                    ]}
+                    onPress={() => setAnnouncementPriority('normal')}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      { color: colors.textSecondary },
+                      announcementPriority === 'normal' && { color: '#ffffff' }
+                    ]}>
+                      Normal
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      announcementPriority === 'high' && { backgroundColor: '#ef4444', borderColor: '#ef4444' }
+                    ]}
+                    onPress={() => setAnnouncementPriority('high')}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      { color: colors.textSecondary },
+                      announcementPriority === 'high' && { color: '#ffffff' }
+                    ]}>
+                      High
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setAnnouncementModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                  onPress={handleCreateAnnouncement}
+                >
+                  <Text style={styles.saveButtonText}>Create</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -928,6 +1182,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
+    paddingHorizontal: 24,
   },
   modalButton: {
     flex: 1,
@@ -950,5 +1205,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
+  },
+  announcementHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  announcementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  announcementText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  priorityBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+  },
+  announcementModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  announcementModalBody: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+  textArea: {
+    height: 120,
+    paddingTop: 12,
+  },
+  priorityButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  priorityButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
