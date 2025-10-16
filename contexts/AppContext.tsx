@@ -248,10 +248,25 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const login = useCallback(async (email: string, password: string) => {
     const usersData = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
+    console.log('Raw users data from storage:', usersData?.substring(0, 200));
+    
     const allUsers: User[] = usersData ? JSON.parse(usersData) : [];
+    console.log('Total users in database:', allUsers.length);
+    console.log('Users emails:', allUsers.map(u => ({ email: u.email, name: u.name })));
+    console.log('Trying to login with email:', email);
 
     const foundUser = allUsers.find((u: User) => u.email === email && u.password === password);
+    
     if (!foundUser) {
+      const emailMatch = allUsers.find((u: User) => u.email === email);
+      if (emailMatch) {
+        console.error('Email found but password mismatch');
+        console.error('Stored password:', emailMatch.password);
+        console.error('Provided password:', password);
+      } else {
+        console.error('Email not found in database');
+        console.error('Available emails:', allUsers.map(u => u.email));
+      }
       throw new Error('Invalid email or password');
     }
 
@@ -260,6 +275,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const foundCompany = allCompanies.find((c: Company) => c.id === foundUser.companyId);
 
     if (!foundCompany) {
+      console.error('Company not found for user:', foundUser.companyId);
       throw new Error('Company not found');
     }
 
@@ -272,6 +288,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setCompany(foundCompany);
     setUsers(allUsers);
 
+    console.log('Login successful for:', foundUser.email);
     return foundUser;
   }, []);
 
