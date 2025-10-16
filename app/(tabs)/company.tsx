@@ -1,16 +1,15 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Upload, Image as ImageIcon } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { Equipment } from '@/types';
 
-type Section = 'equipment' | 'projects' | 'announcements' | 'settings';
+type Section = 'equipment' | 'projects' | 'announcements';
 
 export default function CompanyScreen() {
-  const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo } = useApp();
+  const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors } = useTheme();
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   
@@ -35,8 +34,6 @@ export default function CompanyScreen() {
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
-
-  const [logoModalVisible, setLogoModalVisible] = useState(false);
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
@@ -220,57 +217,6 @@ export default function CompanyScreen() {
             } catch (error) {
               Alert.alert('Error', 'Failed to delete announcement');
               console.error('Delete announcement error:', error);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleUploadLogo = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to upload a logo.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
-        await updateCompanyLogo(imageUri);
-        setLogoModalVisible(false);
-        Alert.alert('Success', 'Company logo updated successfully');
-      }
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      Alert.alert('Error', 'Failed to upload logo');
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    Alert.alert(
-      'Remove Logo',
-      'Are you sure you want to remove the company logo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await updateCompanyLogo(undefined);
-              setLogoModalVisible(false);
-              Alert.alert('Success', 'Company logo removed successfully');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove logo');
             }
           },
         },
@@ -494,48 +440,7 @@ export default function CompanyScreen() {
     );
   };
 
-  const renderSettingsSection = () => {
-    if (user?.role !== 'company') {
-      return (
-        <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-          <Building2 size={48} color={colors.textSecondary} />
-          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Settings Not Available</Text>
-          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-            Only company accounts can manage settings
-          </Text>
-        </View>
-      );
-    }
 
-    return (
-      <>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.settingHeader}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.primary + '20' }]}>
-              <ImageIcon size={24} color={colors.primary} />
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={[styles.cardName, { color: colors.text }]}>Company Logo</Text>
-              <Text style={[styles.cardDetail, { color: colors.textSecondary }]}>
-                {company?.logo ? 'Logo uploaded' : 'No logo set'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              onPress={() => setLogoModalVisible(true)}
-            >
-              <Edit2 size={18} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-          {company?.logo && (
-            <View style={styles.logoPreview}>
-              <Image source={{ uri: company.logo }} style={styles.logoImage} />
-            </View>
-          )}
-        </View>
-      </>
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -615,27 +520,10 @@ export default function CompanyScreen() {
             Announce
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segmentButton,
-            activeSection === 'settings' && { backgroundColor: colors.primary },
-          ]}
-          onPress={() => setActiveSection('settings')}
-        >
-          <Building2 size={18} color={activeSection === 'settings' ? '#ffffff' : colors.textSecondary} />
-          <Text
-            style={[
-              styles.segmentText,
-              { color: activeSection === 'settings' ? '#ffffff' : colors.textSecondary },
-            ]}
-          >
-            Settings
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {activeSection === 'equipment' ? renderEquipmentSection() : activeSection === 'projects' ? renderProjectsSection() : activeSection === 'announcements' ? renderAnnouncementsSection() : renderSettingsSection()}
+        {activeSection === 'equipment' ? renderEquipmentSection() : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
       </ScrollView>
 
       <Modal
@@ -990,62 +878,6 @@ export default function CompanyScreen() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal
-        visible={logoModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setLogoModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Company Logo</Text>
-              <TouchableOpacity onPress={() => setLogoModalVisible(false)}>
-                <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.logoModalBody}>
-              {company?.logo && (
-                <View style={styles.currentLogo}>
-                  <Text style={[styles.label, { color: colors.text }]}>Current Logo</Text>
-                  <Image source={{ uri: company.logo }} style={styles.logoPreviewLarge} />
-                </View>
-              )}
-
-              <TouchableOpacity
-                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
-                onPress={handleUploadLogo}
-              >
-                <Upload size={20} color="#ffffff" />
-                <Text style={styles.uploadButtonText}>
-                  {company?.logo ? 'Change Logo' : 'Upload Logo'}
-                </Text>
-              </TouchableOpacity>
-
-              {company?.logo && (
-                <TouchableOpacity
-                  style={[styles.removeButton, { backgroundColor: '#fee2e2' }]}
-                  onPress={handleRemoveLogo}
-                >
-                  <Trash2 size={20} color="#dc2626" />
-                  <Text style={[styles.removeButtonText, { color: '#dc2626' }]}>Remove Logo</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setLogoModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </Modal>
     </View>
   );
@@ -1456,67 +1288,6 @@ const styles = StyleSheet.create({
   },
   priorityButtonText: {
     fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  settingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  logoPreview: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  logoModalBody: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-  },
-  currentLogo: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  logoPreviewLarge: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    marginTop: 12,
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  uploadButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#ffffff',
-  },
-  removeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  removeButtonText: {
-    fontSize: 16,
     fontWeight: '600' as const,
   },
 });
