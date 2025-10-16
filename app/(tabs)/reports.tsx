@@ -22,6 +22,17 @@ export default function ReportsScreen() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const appContext = useApp();
+  
+  if (!appContext) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   const { 
     user, 
     company, 
@@ -32,11 +43,11 @@ export default function ReportsScreen() {
     getFixLogs, 
     getEmployeeInspections, 
     getEmployeePositiveInterventions, 
-  } = appContext || {};
+  } = appContext;
   
-  const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
-  const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
-  const fixLogs = getFixLogs ? getFixLogs() : [];
+  const inspections = getCompanyInspections() || { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
+  const positiveInterventions = getCompanyPositiveInterventions() || [];
+  const fixLogs = getFixLogs() || [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -205,10 +216,8 @@ export default function ReportsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              if (deleteInspection) {
-                await deleteInspection(inspectionId, type);
-                console.log('Inspection deleted successfully');
-              }
+              await deleteInspection(inspectionId, type);
+              console.log('Inspection deleted successfully');
             } catch (error) {
               console.error('Error deleting inspection:', error);
               Alert.alert('Error', 'Failed to delete inspection');
@@ -229,10 +238,8 @@ export default function ReportsScreen() {
           text: 'Mark Fixed',
           onPress: async () => {
             try {
-              if (markInspectionFixed) {
-                await markInspectionFixed(inspectionId, type);
-                console.log('Inspection marked as fixed');
-              }
+              await markInspectionFixed(inspectionId, type);
+              console.log('Inspection marked as fixed');
             } catch (error) {
               console.error('Error marking inspection as fixed:', error);
               Alert.alert('Error', 'Failed to mark inspection as fixed');
