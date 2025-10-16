@@ -21,6 +21,7 @@ export default function CompanyScreen() {
   const [serialNumber, setSerialNumber] = useState('');
   const [type, setType] = useState<'plant' | 'vehicle' | 'other'>('plant');
   const [hitchType, setHitchType] = useState('');
+  const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
 
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -56,6 +57,7 @@ export default function CompanyScreen() {
         serialNumber: serialNumber.trim(),
         type,
         hitchType: hitchType.trim() || undefined,
+        hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
       });
 
@@ -65,6 +67,7 @@ export default function CompanyScreen() {
       setSerialNumber('');
       setType('plant');
       setHitchType('');
+      setHitchSerial('');
       setRegistration('');
       setEquipmentModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
@@ -321,6 +324,9 @@ export default function CompanyScreen() {
                   <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>S/N: {item.serialNumber}</Text>
                   {item.hitchType && (
                     <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>Hitch: {item.hitchType}</Text>
+                  )}
+                  {item.hitchSerial && (
+                    <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>Hitch S/N: {item.hitchSerial}</Text>
                   )}
                   {item.registration && (
                     <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>Reg: {item.registration}</Text>
@@ -722,16 +728,28 @@ export default function CompanyScreen() {
               </View>
 
               {type === 'plant' && (
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="e.g., Quick Hitch, Manual Hitch"
-                    placeholderTextColor={colors.textSecondary}
-                    value={hitchType}
-                    onChangeText={setHitchType}
-                  />
-                </View>
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="e.g., Quick Hitch, Manual Hitch"
+                      placeholderTextColor={colors.textSecondary}
+                      value={hitchType}
+                      onChangeText={setHitchType}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Hitch Serial (Optional)</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Enter hitch serial number"
+                      placeholderTextColor={colors.textSecondary}
+                      value={hitchSerial}
+                      onChangeText={setHitchSerial}
+                    />
+                  </View>
+                </>
               )}
 
               {(type === 'vehicle' || type === 'plant') && (
