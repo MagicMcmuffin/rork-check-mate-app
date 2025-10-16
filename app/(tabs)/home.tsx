@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -13,6 +13,9 @@ export default function InspectionsScreen() {
   const router = useRouter();
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [expandedPlantVehicle, setExpandedPlantVehicle] = useState(false);
+  const [expandedApprenticeship, setExpandedApprenticeship] = useState(false);
+  const [expandedImprovement, setExpandedImprovement] = useState(false);
   const userCompanies = getUserCompanies();
   const notifications = getCompanyNotifications();
   const unreadNotifications = notifications.filter(n => !n.isCompleted);
@@ -254,146 +257,203 @@ export default function InspectionsScreen() {
         )}
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Inspections</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Select a checklist to begin</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Inspections</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Select a category to view checklists</Text>
         </View>
 
         <View style={styles.checklistContainer}>
           <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/plant-inspection')}
+            style={[styles.categoryCard, { backgroundColor: colors.card }]}
+            onPress={() => setExpandedPlantVehicle(!expandedPlantVehicle)}
             activeOpacity={0.7}
           >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#dbeafe' }]}>
-                <ClipboardList size={28} color="#1e40af" />
-              </View>
-              <View style={styles.checklistBadge}>
-                <Text style={styles.checklistBadgeText}>1.1</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Plant Daily Inspection</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Complete daily checks for plant machinery including steering, brakes, hydraulics, and
-              more
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/quick-hitch-inspection')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#ccfbf1' }]}>
-                <ClipboardList size={28} color="#0d9488" />
-              </View>
-              <View style={[styles.checklistBadge, { backgroundColor: '#ccfbf1' }]}>
-                <Text style={[styles.checklistBadgeText, { color: '#0d9488' }]}>1.2</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Quick Hitch Inspection</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Daily inspection record for quick hitch systems including hydraulics, safety devices,
-              and greasing
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/(tabs)/vehicle-inspection' as any)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#fef3c7' }]}>
-                <ClipboardList size={28} color="#f59e0b" />
-              </View>
-              <View style={[styles.checklistBadge, { backgroundColor: '#fef3c7' }]}>
-                <Text style={[styles.checklistBadgeText, { color: '#f59e0b' }]}>1.3</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Vehicle Daily Check</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Complete daily inspection for vans, cars, and light vehicles including lights, tyres, fluids, and safety equipment
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/bucket-change-inspection')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#e0e7ff' }]}>
-                <ClipboardList size={28} color="#6366f1" />
-              </View>
-              <View style={[styles.checklistBadge, { backgroundColor: '#e0e7ff' }]}>
-                <Text style={[styles.checklistBadgeText, { color: '#6366f1' }]}>1.4</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Bucket/Implement Change</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Confirm bucket is on correct, shake rattle and roll tests completed, and signed by operator and witness
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/positive-intervention')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#dcfce7' }]}>
-                <AlertTriangle size={28} color="#10b981" />
-              </View>
-              <View style={[styles.checklistBadge, { backgroundColor: '#dcfce7' }]}>
-                <Text style={[styles.checklistBadgeText, { color: '#10b981' }]}>1.5</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Positive Intervention</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Report a hazard you identified and rectified to promote workplace safety
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.checklistCard, { backgroundColor: colors.card }]}
-            onPress={() => router.push('/apprenticeship-learning')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.checklistHeader}>
-              <View style={[styles.checklistIcon, { backgroundColor: '#fef3c7' }]}>
-                <BookOpen size={28} color="#f59e0b" />
-              </View>
-              <View style={[styles.checklistBadge, { backgroundColor: '#fef3c7' }]}>
-                <Text style={[styles.checklistBadgeText, { color: '#f59e0b' }]}>1.6</Text>
-              </View>
-            </View>
-            <Text style={[styles.checklistTitle, { color: colors.text }]}>Apprenticeship Learning</Text>
-            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-              Record what you learned today and track your development progress
-            </Text>
-          </TouchableOpacity>
-
-          {(user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management') && (
-            <TouchableOpacity
-              style={[styles.checklistCard, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/apprenticeship-history')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.checklistHeader}>
-                <View style={[styles.checklistIcon, { backgroundColor: '#e0e7ff' }]}>
-                  <History size={28} color="#6366f1" />
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryLeft}>
+                <View style={[styles.categoryIcon, { backgroundColor: '#dbeafe' }]}>
+                  <Wrench size={24} color="#1e40af" />
                 </View>
-                <View style={[styles.checklistBadge, { backgroundColor: '#e0e7ff' }]}>
-                  <Text style={[styles.checklistBadgeText, { color: '#6366f1' }]}>1.7</Text>
+                <View>
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>Plant & Vehicle</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>4 inspections</Text>
                 </View>
               </View>
-              <Text style={[styles.checklistTitle, { color: colors.text }]}>View Learning History</Text>
-              <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-                View and download all apprenticeship learning entries
-              </Text>
-            </TouchableOpacity>
+              <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
+                {expandedPlantVehicle ? (
+                  <ChevronUp size={20} color={colors.text} />
+                ) : (
+                  <ChevronDown size={20} color={colors.text} />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {expandedPlantVehicle && (
+            <View style={styles.subItemsContainer}>
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/plant-inspection')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#dbeafe' }]}>
+                  <ClipboardList size={20} color="#1e40af" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Plant Daily Inspection</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Steering, brakes, hydraulics checks</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/quick-hitch-inspection')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#ccfbf1' }]}>
+                  <ClipboardList size={20} color="#0d9488" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Quick Hitch Inspection</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Hydraulics, safety devices, greasing</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/(tabs)/vehicle-inspection' as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#fef3c7' }]}>
+                  <Car size={20} color="#f59e0b" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Vehicle Daily Check</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Lights, tyres, fluids, safety equipment</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/bucket-change-inspection')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#e0e7ff' }]}>
+                  <ClipboardList size={20} color="#6366f1" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Bucket/Implement Change</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Shake, rattle & roll tests</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.categoryCard, { backgroundColor: colors.card }]}
+            onPress={() => setExpandedApprenticeship(!expandedApprenticeship)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryLeft}>
+                <View style={[styles.categoryIcon, { backgroundColor: '#fef3c7' }]}>
+                  <BookOpen size={24} color="#f59e0b" />
+                </View>
+                <View>
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>Apprenticeship</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>Learning & tracking</Text>
+                </View>
+              </View>
+              <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
+                {expandedApprenticeship ? (
+                  <ChevronUp size={20} color={colors.text} />
+                ) : (
+                  <ChevronDown size={20} color={colors.text} />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {expandedApprenticeship && (
+            <View style={styles.subItemsContainer}>
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/apprenticeship-learning')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#fef3c7' }]}>
+                  <BookOpen size={20} color="#f59e0b" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Record Learning</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Track daily development progress</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {(user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management') && (
+                <TouchableOpacity
+                  style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                  onPress={() => router.push('/apprenticeship-history')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.subItemIcon, { backgroundColor: '#e0e7ff' }]}>
+                    <History size={20} color="#6366f1" />
+                  </View>
+                  <View style={styles.subItemContent}>
+                    <Text style={[styles.subItemTitle, { color: colors.text }]}>View Learning History</Text>
+                    <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>View and download entries</Text>
+                  </View>
+                  <ChevronRight size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.categoryCard, { backgroundColor: colors.card }]}
+            onPress={() => setExpandedImprovement(!expandedImprovement)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryLeft}>
+                <View style={[styles.categoryIcon, { backgroundColor: '#dcfce7' }]}>
+                  <AlertTriangle size={24} color="#10b981" />
+                </View>
+                <View>
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>Improvement & Hazards</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>Safety reporting</Text>
+                </View>
+              </View>
+              <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
+                {expandedImprovement ? (
+                  <ChevronUp size={20} color={colors.text} />
+                ) : (
+                  <ChevronDown size={20} color={colors.text} />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {expandedImprovement && (
+            <View style={styles.subItemsContainer}>
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/positive-intervention')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#dcfce7' }]}>
+                  <AlertTriangle size={20} color="#10b981" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Positive Intervention</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Report hazards you identified and fixed</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -880,48 +940,83 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   checklistContainer: {
-    gap: 16,
+    gap: 12,
   },
-  checklistCard: {
+  categoryCard: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  checklistHeader: {
+  categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  checklistIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  categoryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  categoryIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checklistBadge: {
-    backgroundColor: '#dbeafe',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  checklistBadgeText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#1e40af',
-  },
-  checklistTitle: {
-    fontSize: 18,
+  categoryTitle: {
+    fontSize: 17,
     fontWeight: '700' as const,
-    marginBottom: 8,
+    marginBottom: 2,
   },
-  checklistDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+  categorySubtitle: {
+    fontSize: 13,
+  },
+  expandIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subItemsContainer: {
+    marginTop: 8,
+    marginLeft: 12,
+    gap: 8,
+  },
+  subItemCard: {
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  subItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subItemContent: {
+    flex: 1,
+  },
+  subItemTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  subItemDescription: {
+    fontSize: 13,
   },
 });
