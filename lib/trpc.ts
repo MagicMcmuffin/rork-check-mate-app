@@ -24,34 +24,41 @@ const getTRPCUrl = () => {
   return `${baseUrl}/api/trpc`;
 };
 
+const createCustomFetch = () => {
+  return async (url: RequestInfo | URL, options?: RequestInit) => {
+    const baseUrl = getBaseUrl();
+    if (!baseUrl) {
+      throw new Error('Email notifications are not available. Backend service is not deployed.');
+    }
+    
+    try {
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType?.includes('text/html')) {
+          await response.text();
+          throw new Error('Email service is not available. Backend deployment is pending.');
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Email')) {
+        throw error;
+      }
+      throw new Error('Failed to connect to backend service.');
+    }
+  };
+};
+
 export const trpcReactClient = trpc.createClient({
   links: [
     httpLink({
       url: getTRPCUrl(),
       transformer: superjson,
-      fetch: async (url, options) => {
-        const baseUrl = getBaseUrl();
-        if (!baseUrl) {
-          throw new Error('Email notifications are not available. Backend service is not deployed.');
-        }
-        
-        try {
-          const response = await fetch(url, options);
-          if (!response.ok) {
-            const contentType = response.headers.get('content-type');
-            
-            if (response.status === 404 && contentType?.includes('text/html')) {
-              throw new Error('Email service is not available. Backend deployment is pending.');
-            }
-          }
-          return response;
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('Email')) {
-            throw error;
-          }
-          throw new Error('Failed to connect to backend service.');
-        }
-      },
+      fetch: createCustomFetch(),
     }),
   ],
 });
@@ -61,29 +68,7 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
     httpLink({
       url: getTRPCUrl(),
       transformer: superjson,
-      fetch: async (url, options) => {
-        const baseUrl = getBaseUrl();
-        if (!baseUrl) {
-          throw new Error('Email notifications are not available. Backend service is not deployed.');
-        }
-        
-        try {
-          const response = await fetch(url, options);
-          if (!response.ok) {
-            const contentType = response.headers.get('content-type');
-            
-            if (response.status === 404 && contentType?.includes('text/html')) {
-              throw new Error('Email service is not available. Backend deployment is pending.');
-            }
-          }
-          return response;
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('Email')) {
-            throw error;
-          }
-          throw new Error('Failed to connect to backend service.');
-        }
-      },
+      fetch: createCustomFetch(),
     }),
   ],
 });
