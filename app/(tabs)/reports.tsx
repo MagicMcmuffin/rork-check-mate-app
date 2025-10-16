@@ -159,7 +159,7 @@ export default function ReportsScreen() {
       } else if (selectedTab === 'interventions') {
         itemsToDownload = filteredInterventions.filter(i => isDateInRange(i.createdAt));
       } else if (selectedTab === 'apprenticeship') {
-        itemsToDownload = (getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : []).filter(e => isDateInRange(e.createdAt));
+        itemsToDownload = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
       }
 
       if (itemsToDownload.length === 0) {
@@ -561,7 +561,7 @@ export default function ReportsScreen() {
 
               {selectedTab === 'apprenticeship' ? (
                 (() => {
-                  const apprenticeshipEntries = (getCompanyApprenticeshipEntries ? getCompanyApprenticeshipEntries() : []).filter(e => isDateInRange(e.createdAt));
+                  const apprenticeshipEntries = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
                   return apprenticeshipEntries.length === 0 ? (
                     <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                       <BookOpen size={48} color={colors.textSecondary} />
