@@ -59,27 +59,27 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS),
       ]);
 
-      const safeJSONParse = (data: string | null, key: string) => {
+      const safeJSONParse = (data: string | null, storageKey: string) => {
         if (!data) return null;
         if (typeof data !== 'string') {
-          console.error(`Invalid data type for ${key}:`, typeof data);
+          console.error(`Invalid data type for ${storageKey}:`, typeof data);
           return null;
         }
         try {
           const parsed = JSON.parse(data);
           return parsed;
         } catch (error) {
-          console.error(`Error parsing ${key}:`, error);
-          console.error(`Invalid data for ${key}:`, data.substring(0, 100));
-          AsyncStorage.removeItem(STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]).catch(() => {});
+          console.error(`Error parsing ${storageKey}:`, error);
+          console.error(`Invalid data for ${storageKey}:`, data.substring(0, 100));
+          AsyncStorage.removeItem(storageKey).catch(() => {});
           return null;
         }
       };
 
-      const parsedUser = safeJSONParse(userData, 'USER');
+      const parsedUser = safeJSONParse(userData, STORAGE_KEYS.USER);
       if (parsedUser) setUser(parsedUser);
 
-      const parsedCompany = safeJSONParse(companyData, 'COMPANY');
+      const parsedCompany = safeJSONParse(companyData, STORAGE_KEYS.COMPANY);
       if (parsedCompany) {
         setCompany({
           ...parsedCompany,
@@ -88,37 +88,37 @@ export const [AppProvider, useApp] = createContextHook(() => {
         });
       }
 
-      const parsedCompanies = safeJSONParse(companiesData, 'COMPANIES');
+      const parsedCompanies = safeJSONParse(companiesData, STORAGE_KEYS.COMPANIES);
       if (parsedCompanies) setCompanies(parsedCompanies);
 
-      const parsedUsers = safeJSONParse(usersData, 'USERS');
+      const parsedUsers = safeJSONParse(usersData, STORAGE_KEYS.USERS);
       if (parsedUsers) setUsers(parsedUsers);
 
-      const parsedPlant = safeJSONParse(plantData, 'PLANT_INSPECTIONS');
+      const parsedPlant = safeJSONParse(plantData, STORAGE_KEYS.PLANT_INSPECTIONS);
       if (parsedPlant) setPlantInspections(parsedPlant);
 
-      const parsedQuickHitch = safeJSONParse(quickHitchData, 'QUICK_HITCH_INSPECTIONS');
+      const parsedQuickHitch = safeJSONParse(quickHitchData, STORAGE_KEYS.QUICK_HITCH_INSPECTIONS);
       if (parsedQuickHitch) setQuickHitchInspections(parsedQuickHitch);
 
-      const parsedVehicle = safeJSONParse(vehicleData, 'VEHICLE_INSPECTIONS');
+      const parsedVehicle = safeJSONParse(vehicleData, STORAGE_KEYS.VEHICLE_INSPECTIONS);
       if (parsedVehicle) setVehicleInspections(parsedVehicle);
 
-      const parsedBucket = safeJSONParse(bucketData, 'BUCKET_CHANGE_INSPECTIONS');
+      const parsedBucket = safeJSONParse(bucketData, STORAGE_KEYS.BUCKET_CHANGE_INSPECTIONS);
       if (parsedBucket) setBucketChangeInspections(parsedBucket);
 
-      const parsedNotifications = safeJSONParse(notificationsData, 'NOTIFICATIONS');
+      const parsedNotifications = safeJSONParse(notificationsData, STORAGE_KEYS.NOTIFICATIONS);
       if (parsedNotifications) setNotifications(parsedNotifications);
 
-      const parsedInterventions = safeJSONParse(positiveInterventionsData, 'POSITIVE_INTERVENTIONS');
+      const parsedInterventions = safeJSONParse(positiveInterventionsData, STORAGE_KEYS.POSITIVE_INTERVENTIONS);
       if (parsedInterventions) setPositiveInterventions(parsedInterventions);
 
-      const parsedFixLogs = safeJSONParse(fixLogsData, 'FIX_LOGS');
+      const parsedFixLogs = safeJSONParse(fixLogsData, STORAGE_KEYS.FIX_LOGS);
       if (parsedFixLogs) setFixLogs(parsedFixLogs);
 
-      const parsedApprenticeshipEntries = safeJSONParse(apprenticeshipData, 'APPRENTICESHIP_ENTRIES');
+      const parsedApprenticeshipEntries = safeJSONParse(apprenticeshipData, STORAGE_KEYS.APPRENTICESHIP_ENTRIES);
       if (parsedApprenticeshipEntries) setApprenticeshipEntries(parsedApprenticeshipEntries);
 
-      const parsedAnnouncements = safeJSONParse(announcementsData, 'ANNOUNCEMENTS');
+      const parsedAnnouncements = safeJSONParse(announcementsData, STORAGE_KEYS.ANNOUNCEMENTS);
       if (parsedAnnouncements) setAnnouncements(parsedAnnouncements);
     } catch (error) {
       console.error('Error loading data:', error);
