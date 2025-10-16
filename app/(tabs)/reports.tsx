@@ -211,7 +211,7 @@ export default function ReportsScreen() {
                   onPress={() => setSelectedTab('interventions')}
                 >
                   <AlertTriangle size={18} color={selectedTab === 'interventions' ? '#10b981' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'interventions' && styles.tabTextActive]}>Interventions</Text>
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'interventions' && styles.tabTextActive]}>PI's</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.tab, selectedTab === 'fixes' && styles.tabActive]}
