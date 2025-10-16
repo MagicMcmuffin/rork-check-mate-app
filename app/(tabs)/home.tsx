@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -363,7 +363,7 @@ export default function InspectionsScreen() {
           >
             <View style={styles.checklistHeader}>
               <View style={[styles.checklistIcon, { backgroundColor: '#fef3c7' }]}>
-                <ClipboardList size={28} color="#f59e0b" />
+                <BookOpen size={28} color="#f59e0b" />
               </View>
               <View style={[styles.checklistBadge, { backgroundColor: '#fef3c7' }]}>
                 <Text style={[styles.checklistBadgeText, { color: '#f59e0b' }]}>1.6</Text>
@@ -374,6 +374,27 @@ export default function InspectionsScreen() {
               Record what you learned today and track your development progress
             </Text>
           </TouchableOpacity>
+
+          {(user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management') && (
+            <TouchableOpacity
+              style={[styles.checklistCard, { backgroundColor: colors.card }]}
+              onPress={() => router.push('/apprenticeship-history')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.checklistHeader}>
+                <View style={[styles.checklistIcon, { backgroundColor: '#e0e7ff' }]}>
+                  <History size={28} color="#6366f1" />
+                </View>
+                <View style={[styles.checklistBadge, { backgroundColor: '#e0e7ff' }]}>
+                  <Text style={[styles.checklistBadgeText, { color: '#6366f1' }]}>1.7</Text>
+                </View>
+              </View>
+              <Text style={[styles.checklistTitle, { color: colors.text }]}>View Learning History</Text>
+              <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
+                View and download all apprenticeship learning entries
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
