@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Shield, LogOut, Moon, Sun, ChevronRight, Mail } from 'lucide-react-native';
+import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Linking } from 'react-native';
 
 export default function SettingsScreen() {
@@ -71,6 +71,48 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+          
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => Alert.alert('Coming Soon', 'This feature will be available soon')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
+                <User size={20} color="#3b82f6" />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Your Details</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  View and edit your profile
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => Alert.alert('Coming Soon', 'This feature will be available soon')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
+                <Bell size={20} color="#3b82f6" />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Notifications</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Manage notification preferences
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
         {isOwner && (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Administration</Text>
@@ -120,7 +162,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions</Text>
           
           <TouchableOpacity
             style={styles.settingRow}
