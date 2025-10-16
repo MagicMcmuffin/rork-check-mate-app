@@ -20,6 +20,7 @@ export interface Equipment {
   serialNumber: string;
   type: 'plant' | 'vehicle' | 'other';
   hitchType?: string;
+  hitchSerial?: string;
   registration?: string;
   createdAt: string;
 }

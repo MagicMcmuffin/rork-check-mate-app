@@ -16,6 +16,7 @@ export default function EquipmentScreen() {
   const [serialNumber, setSerialNumber] = useState('');
   const [type, setType] = useState<'plant' | 'vehicle' | 'other'>('plant');
   const [hitchType, setHitchType] = useState('');
+  const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
@@ -35,6 +36,7 @@ export default function EquipmentScreen() {
         serialNumber: serialNumber.trim(),
         type,
         hitchType: hitchType.trim() || undefined,
+        hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
       });
 
@@ -44,6 +46,7 @@ export default function EquipmentScreen() {
       setSerialNumber('');
       setType('plant');
       setHitchType('');
+      setHitchSerial('');
       setRegistration('');
       setModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
@@ -142,6 +145,9 @@ export default function EquipmentScreen() {
                     <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>S/N: {item.serialNumber}</Text>
                     {item.hitchType && (
                       <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>Hitch: {item.hitchType}</Text>
+                    )}
+                    {item.hitchSerial && (
+                      <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>Hitch S/N: {item.hitchSerial}</Text>
                     )}
                     {item.registration && (
                       <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>Reg: {item.registration}</Text>
@@ -253,16 +259,39 @@ export default function EquipmentScreen() {
             </View>
 
             {type === 'plant' && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="e.g., Quick Hitch, Manual Hitch"
-                  placeholderTextColor={colors.textSecondary}
-                  value={hitchType}
-                  onChangeText={setHitchType}
-                />
-              </View>
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., Quick Hitch, Manual Hitch"
+                    placeholderTextColor={colors.textSecondary}
+                    value={hitchType}
+                    onChangeText={setHitchType}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Hitch Serial (Optional)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="Enter hitch serial number"
+                    placeholderTextColor={colors.textSecondary}
+                    value={hitchSerial}
+                    onChangeText={setHitchSerial}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Registration (Optional)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., AB12 CDE"
+                    placeholderTextColor={colors.textSecondary}
+                    value={registration}
+                    onChangeText={setRegistration}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </>
             )}
 
             {type === 'vehicle' && (
