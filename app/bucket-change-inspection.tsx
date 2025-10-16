@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { BUCKET_CHANGE_ITEMS, IMPLEMENT_TYPES } from '@/constants/inspections';
 import { BucketChangeCheck, CheckStatus } from '@/types';
 import { useRouter, Stack } from 'expo-router';
-import { CheckCircle2, X, Check, ChevronDown } from 'lucide-react-native';
+import { CheckCircle2, X, Check, ChevronDown, ArrowLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -134,6 +134,14 @@ export default function BucketChangeInspectionScreen() {
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginLeft: 8 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <ScrollView 
