@@ -343,8 +343,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
       });
 
     if (failedCheckDetails.length > 0 && company?.email) {
+      console.log('========================================');
+      console.log('📧 ATTEMPTING TO SEND INSPECTION EMAIL');
+      console.log('========================================');
+      console.log('Failed checks count:', failedCheckDetails.length);
+      console.log('Company email:', company?.email);
+      console.log('Failed check details:', failedCheckDetails);
+      console.log('Admin users:', adminUsers.map(u => u.email));
+      console.log('========================================');
       try {
-        await trpcClient.inspections.sendNotificationEmail.mutate({
+        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
           inspectionType: 'plant',
           equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`,
           operatorName: newInspection.employeeName,
@@ -357,10 +365,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
           projectEmails: project?.emails,
           adminEmails: adminUsers.map(u => u.email),
         });
+        console.log('✅ Email mutation result:', result);
         console.log('Plant inspection email sent successfully');
-      } catch {
-        console.log('Email notification simulated (dev mode)');
+      } catch (error) {
+        console.error('❌ ERROR SENDING EMAIL:', error);
+        console.error('Error details:', error instanceof Error ? error.message : error);
+        console.log('Email notification failed - check backend logs');
       }
+    } else {
+      console.log('⚠️ Email not sent:');
+      console.log('- Failed checks:', failedCheckDetails.length);
+      console.log('- Company email:', company?.email || 'NOT SET');
     }
 
     return newInspection;

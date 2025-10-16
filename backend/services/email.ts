@@ -16,10 +16,22 @@ const transporter = nodemailer.createTransport({
 
 export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<{ success: boolean; message: string }> {
   try {
-    console.log('Email service called');
+    console.log('========================================');
+    console.log('📧 EMAIL SERVICE CALLED');
+    console.log('========================================');
+    console.log('Gmail Account:', 'checkmatesafty@gmail.com');
+    console.log('App Password Set:', process.env.GMAIL_APP_PASSWORD ? 'Yes (from env)' : 'Yes (hardcoded)');
     console.log('Recipients:', to);
     console.log('Subject:', subject);
+    console.log('Recipients count:', to.length);
+    console.log('========================================');
 
+    if (to.length === 0) {
+      console.error('❌ No recipients provided');
+      return { success: false, message: 'No recipients provided' };
+    }
+
+    console.log('🔄 Attempting to send email...');
     const info = await transporter.sendMail({
       from: '"CheckMate Safety" <checkmatesafty@gmail.com>',
       to: to.join(', '),
@@ -27,12 +39,22 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
       html,
     });
 
-    console.log('✅ Email sent successfully:', info.messageId);
-    console.log('📧 Recipients:', to.join(', '));
+    console.log('✅ EMAIL SENT SUCCESSFULLY!');
+    console.log('Message ID:', info.messageId);
+    console.log('📧 Delivered to:', to.join(', '));
+    console.log('========================================');
     
     return { success: true, message: 'Email sent successfully' };
   } catch (error) {
-    console.error('❌ Error sending email:', error);
+    console.error('========================================');
+    console.error('❌ EMAIL SENDING FAILED');
+    console.error('========================================');
+    console.error('Error details:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    console.error('========================================');
     return { 
       success: false, 
       message: error instanceof Error ? error.message : 'Failed to send email' 
