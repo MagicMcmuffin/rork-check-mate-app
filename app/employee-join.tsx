@@ -1,8 +1,8 @@
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Users, KeyRound, CheckCircle2, Camera } from 'lucide-react-native';
+import { ArrowLeft, Users, KeyRound, CheckCircle2 } from 'lucide-react-native';
 import { useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
 import {
   View,
   Text,
@@ -14,19 +14,18 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EmployeeJoinScreen() {
   const { joinCompany } = useApp();
+  const { colors } = useTheme();
   const router = useRouter();
   const [employeeName, setEmployeeName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyCode, setCompanyCode] = useState('');
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [joinedCompany, setJoinedCompany] = useState<string | null>(null);
 
@@ -53,7 +52,7 @@ export default function EmployeeJoinScreen() {
 
     setIsLoading(true);
     try {
-      const company = await joinCompany(companyCode.trim().toUpperCase(), employeeName.trim(), email.trim(), password.trim(), profilePicture || undefined);
+      const company = await joinCompany(companyCode.trim().toUpperCase(), employeeName.trim(), email.trim(), password.trim(), undefined);
       setJoinedCompany(company.name);
     } catch (error) {
       Alert.alert('Error', 'Invalid company code. Please check and try again.');
@@ -69,16 +68,16 @@ export default function EmployeeJoinScreen() {
 
   if (joinedCompany) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
             <CheckCircle2 size={64} color="#10b981" />
           </View>
-          <Text style={styles.successTitle}>Welcome Aboard!</Text>
-          <Text style={styles.successSubtitle}>You&apos;ve joined {joinedCompany}</Text>
+          <Text style={[styles.successTitle, { color: colors.text }]}>Welcome Aboard!</Text>
+          <Text style={[styles.successSubtitle, { color: colors.textSecondary }]}>You&apos;ve joined {joinedCompany}</Text>
 
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>
+          <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
               You can now start submitting daily inspection checklists. All reports will be sent to
               your company.
             </Text>
@@ -93,52 +92,29 @@ export default function EmployeeJoinScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#1e293b" />
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
+            <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <Users size={32} color="#0d9488" />
             </View>
-            <Text style={styles.title}>Join Company</Text>
-            <Text style={styles.subtitle}>Enter your details to get started</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Join Company</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter your details to get started</Text>
           </View>
 
           <View style={styles.form}>
-            <TouchableOpacity style={styles.profilePictureContainer} onPress={async () => {
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-                base64: true,
-              });
-
-              if (!result.canceled && result.assets[0].base64) {
-                setProfilePicture(`data:image/jpeg;base64,${result.assets[0].base64}`);
-              }
-            }}>
-              {profilePicture ? (
-                <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
-              ) : (
-                <View style={styles.profilePicturePlaceholder}>
-                  <Camera size={32} color="#94a3b8" />
-                  <Text style={styles.profilePictureText}>Add Photo</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Your Name</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Your Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 placeholder="Enter your full name"
                 placeholderTextColor="#94a3b8"
                 value={employeeName}
@@ -149,9 +125,9 @@ export default function EmployeeJoinScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 placeholder="your.email@example.com"
                 placeholderTextColor="#94a3b8"
                 value={email}
@@ -163,9 +139,9 @@ export default function EmployeeJoinScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 placeholder="Enter password (min 6 characters)"
                 placeholderTextColor="#94a3b8"
                 value={password}
@@ -177,9 +153,9 @@ export default function EmployeeJoinScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 placeholder="Re-enter password"
                 placeholderTextColor="#94a3b8"
                 value={confirmPassword}
@@ -191,11 +167,11 @@ export default function EmployeeJoinScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Company Code</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Company Code</Text>
               <View style={styles.inputWithIcon}>
-                <KeyRound size={20} color="#64748b" style={styles.inputIcon} />
+                <KeyRound size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, styles.inputWithPadding, styles.codeInput]}
+                  style={[styles.input, styles.inputWithPadding, styles.codeInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                   placeholder="XXXXXX"
                   placeholderTextColor="#94a3b8"
                   value={companyCode}
@@ -205,7 +181,7 @@ export default function EmployeeJoinScreen() {
                   editable={!isLoading}
                 />
               </View>
-              <Text style={styles.helperText}>
+              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
                 Ask your company administrator for the 6-character code
               </Text>
             </View>
@@ -241,7 +217,6 @@ export default function EmployeeJoinScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   keyboardView: {
     flex: 1,
@@ -253,7 +228,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -279,12 +253,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: '#1e293b',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748b',
   },
   form: {
     gap: 24,
@@ -295,16 +267,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#1e293b',
   },
   input: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1e293b',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   inputWithIcon: {
     position: 'relative' as const,
@@ -324,7 +292,6 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 13,
-    color: '#64748b',
   },
   featureCard: {
     backgroundColor: '#f0fdfa',
@@ -371,16 +338,13 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: '#1e293b',
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 16,
-    color: '#64748b',
     marginBottom: 32,
   },
   infoCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -393,7 +357,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 15,
-    color: '#64748b',
     textAlign: 'center' as const,
     lineHeight: 22,
   },
@@ -408,30 +371,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
-  },
-  profilePictureContainer: {
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-  profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  profilePicturePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderStyle: 'dashed' as const,
-  },
-  profilePictureText: {
-    fontSize: 13,
-    color: '#94a3b8',
-    marginTop: 8,
   },
 });
