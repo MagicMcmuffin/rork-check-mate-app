@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, Camera, MapPin, FileText, ChevronDown, X, Building2 } from 'lucide-react-native';
+import { AlertTriangle, Camera, MapPin, FileText, ChevronDown, X, Building2, ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PositiveInterventionScreen() {
@@ -112,7 +112,19 @@ export default function PositiveInterventionScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <View style={styles.darkHeader}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <AlertTriangle size={28} color="#10b981" />
+          <Text style={styles.headerTitle}>Positive Intervention</Text>
+        </View>
+      </View>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
@@ -122,10 +134,8 @@ export default function PositiveInterventionScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-        <View style={styles.header}>
-          <AlertTriangle size={32} color="#10b981" />
-          <Text style={[styles.title, { color: colors.text }]}>Positive Intervention</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <View style={styles.introCard}>
+          <Text style={[styles.introText, { color: colors.textSecondary }]}>
             Report a hazard you identified and rectified
           </Text>
         </View>
@@ -322,6 +332,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  darkHeader: {
+    backgroundColor: '#1a1a1a',
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
   keyboardAvoid: {
     flex: 1,
   },
@@ -329,17 +362,10 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 40,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
+  introCard: {
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  subtitle: {
+  introText: {
     fontSize: 15,
     textAlign: 'center' as const,
     lineHeight: 22,
