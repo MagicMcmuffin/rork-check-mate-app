@@ -24,6 +24,8 @@ const getTRPCUrl = () => {
   return `${baseUrl}/api/trpc`;
 };
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const createCustomFetch = () => {
   return async (url: RequestInfo | URL, options?: RequestInit) => {
     const baseUrl = getBaseUrl();
@@ -32,42 +34,66 @@ const createCustomFetch = () => {
       throw new Error('Backend service is not configured. Email notifications are unavailable in this environment.');
     }
     
-    try {
-      console.log('🔄 Attempting backend request to:', url);
-      const response = await fetch(url, options);
-      
-      console.log('📡 Backend response status:', response.status);
-      
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        console.log('Response content-type:', contentType);
+    const maxRetries = 3;
+    const retryDelays = [1000, 2000, 3000];
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const attemptLog = attempt > 0 ? ` (Attempt ${attempt + 1}/${maxRetries + 1})` : '';
+        console.log(`🔄 Backend request${attemptLog}:`, url);
         
-        if (contentType?.includes('text/html')) {
-          const htmlText = await response.text();
-          console.error('❌ Received HTML response instead of JSON. Backend endpoint may not be available.');
-          console.log('HTML response preview:', htmlText.substring(0, 200));
-          throw new Error('Backend service is starting up. Please wait a moment and try again.');
+        const response = await fetch(url, options);
+        console.log('📡 Response status:', response.status);
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType?.includes('text/html')) {
+            await response.text();
+            console.log('⚠️ Received HTML (backend starting)');
+            
+            if (attempt < maxRetries) {
+              const delay = retryDelays[attempt];
+              console.log(`⏳ Waiting ${delay}ms before retry...`);
+              await sleep(delay);
+              continue;
+            }
+            
+            throw new Error('Backend is still starting up. Please try again in a moment.');
+          }
+          
+          const errorText = await response.text();
+          console.error('❌ Backend error:', errorText);
+          throw new Error(`Backend error: ${response.status}`);
         }
         
-        const errorText = await response.text();
-        console.error('❌ Backend error response:', errorText);
-        throw new Error(`Backend error: ${response.status} ${response.statusText}`);
-      }
-      
-      console.log('✅ Backend request successful');
-      return response;
-    } catch (error) {
-      console.error('❌ Backend request failed:', error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Backend') || error.message.includes('Email')) {
-          throw error;
+        console.log('✅ Request successful');
+        return response;
+      } catch (error) {
+        if (attempt < maxRetries && error instanceof Error && 
+            (error.message.includes('starting') || 
+             error.message.includes('fetch') ||
+             error.message.includes('network'))) {
+          const delay = retryDelays[attempt];
+          console.log(`⏳ Retrying in ${delay}ms...`);
+          await sleep(delay);
+          continue;
         }
-        throw new Error(`Connection failed: ${error.message}`);
+        
+        console.error('❌ Request failed:', error);
+        
+        if (error instanceof Error) {
+          if (error.message.includes('Backend') || error.message.includes('starting')) {
+            throw error;
+          }
+          throw new Error(`Connection failed: ${error.message}`);
+        }
+        
+        throw new Error('Failed to connect to backend.');
       }
-      
-      throw new Error('Failed to connect to backend service.');
     }
+    
+    throw new Error('Backend is unavailable after multiple retries.');
   };
 };
 
