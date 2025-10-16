@@ -45,6 +45,17 @@ export default function ReportsScreen() {
     getEmployeePositiveInterventions, 
   } = appContext;
   
+  if (!deleteInspection || !markInspectionFixed) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Error Loading</Text>
+          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>Required functions are not available</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
   const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
   const fixLogs = getFixLogs ? getFixLogs() : [];
