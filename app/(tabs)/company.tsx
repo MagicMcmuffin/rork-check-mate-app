@@ -22,6 +22,10 @@ export default function CompanyScreen() {
   const [hitchType, setHitchType] = useState('');
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
+  const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
+  const [nextServiceDate, setNextServiceDate] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [notes, setNotes] = useState('');
 
   const [projectModalVisible, setProjectModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState<string | null>(null);
@@ -42,7 +46,7 @@ export default function CompanyScreen() {
 
   const handleAddEquipment = async () => {
     if (!equipmentName.trim() || !make.trim() || !model.trim() || !serialNumber.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -56,6 +60,10 @@ export default function CompanyScreen() {
         hitchType: hitchType.trim() || undefined,
         hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
+        thoroughExaminationDate: thoroughExaminationDate.trim() || undefined,
+        nextServiceDate: nextServiceDate.trim() || undefined,
+        purchaseDate: purchaseDate.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
 
       setEquipmentName('');
@@ -66,6 +74,10 @@ export default function CompanyScreen() {
       setHitchType('');
       setHitchSerial('');
       setRegistration('');
+      setThoroughExaminationDate('');
+      setNextServiceDate('');
+      setPurchaseDate('');
+      setNotes('');
       setEquipmentModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
     } catch (error) {
@@ -542,111 +554,106 @@ export default function CompanyScreen() {
         transparent={true}
         onRequestClose={() => setEquipmentModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <ScrollView 
-            style={styles.modalScrollView}
-            contentContainerStyle={styles.modalScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Add Equipment</Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Equipment Name</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="e.g., Excavator 1"
-                  placeholderTextColor={colors.textSecondary}
-                  value={equipmentName}
-                  onChangeText={setEquipmentName}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Make</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="e.g., Caterpillar"
-                  placeholderTextColor={colors.textSecondary}
-                  value={make}
-                  onChangeText={setMake}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Model</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="e.g., 320D"
-                  placeholderTextColor={colors.textSecondary}
-                  value={model}
-                  onChangeText={setModel}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Serial Number</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="Enter serial number"
-                  placeholderTextColor={colors.textSecondary}
-                  value={serialNumber}
-                  onChangeText={setSerialNumber}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Type</Text>
-                <View style={styles.typeButtons}>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'plant' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('plant')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'plant' && styles.typeButtonTextActive]}>
-                      Plant
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'vehicles' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('vehicles')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicles' && styles.typeButtonTextActive]}>
-                      Vehicles
-                    </Text>
-                  </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.equipmentModalContainer}>
+            <View style={[styles.equipmentModalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={[styles.modalIconCircle, { backgroundColor: colors.primary + '20' }]}>
+                  <Wrench size={24} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Add Equipment</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Fill in all required fields</Text>
                 </View>
               </View>
+              <TouchableOpacity onPress={() => setEquipmentModalVisible(false)} style={styles.modalCloseButton}>
+                <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-              {type === 'plant' && (
-                <>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                      placeholder="e.g., Quick Hitch, Manual Hitch"
-                      placeholderTextColor={colors.textSecondary}
-                      value={hitchType}
-                      onChangeText={setHitchType}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.text }]}>Hitch Serial (Optional)</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                      placeholder="Enter hitch serial number"
-                      placeholderTextColor={colors.textSecondary}
-                      value={hitchSerial}
-                      onChangeText={setHitchSerial}
-                    />
-                  </View>
-                </>
-              )}
-
-              {(type === 'vehicles' || type === 'plant') && (
+            <ScrollView 
+              style={styles.equipmentModalBody}
+              contentContainerStyle={styles.equipmentModalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                <Text style={[styles.sectionLabel, { color: colors.text }]}>BASIC INFORMATION</Text>
+                
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Registration (Optional)</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Equipment Name *</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., Excavator 1"
+                    placeholderTextColor={colors.textSecondary}
+                    value={equipmentName}
+                    onChangeText={setEquipmentName}
+                  />
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Make *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="e.g., Caterpillar"
+                      placeholderTextColor={colors.textSecondary}
+                      value={make}
+                      onChangeText={setMake}
+                    />
+                  </View>
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Model *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="e.g., 320D"
+                      placeholderTextColor={colors.textSecondary}
+                      value={model}
+                      onChangeText={setModel}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Serial Number *</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="Enter serial number"
+                    placeholderTextColor={colors.textSecondary}
+                    value={serialNumber}
+                    onChangeText={setSerialNumber}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Type *</Text>
+                  <View style={styles.typeButtons}>
+                    <TouchableOpacity
+                      style={[styles.typeButton, { backgroundColor: colors.card, borderColor: colors.border }, type === 'plant' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      onPress={() => setType('plant')}
+                    >
+                      <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'plant' && styles.typeButtonTextActive]}>
+                        Plant
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeButton, { backgroundColor: colors.card, borderColor: colors.border }, type === 'vehicles' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      onPress={() => setType('vehicles')}
+                    >
+                      <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicles' && styles.typeButtonTextActive]}>
+                        Vehicles
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Registration</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                     placeholder="e.g., AB12 CDE"
                     placeholderTextColor={colors.textSecondary}
                     value={registration}
@@ -654,25 +661,108 @@ export default function CompanyScreen() {
                     autoCapitalize="characters"
                   />
                 </View>
+              </View>
+
+              {type === 'plant' && (
+                <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>HITCH DETAILS</Text>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Hitch Type</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="e.g., Quick Hitch, Manual Hitch"
+                      placeholderTextColor={colors.textSecondary}
+                      value={hitchType}
+                      onChangeText={setHitchType}
+                    />
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Hitch Serial Number</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Enter hitch serial number"
+                      placeholderTextColor={colors.textSecondary}
+                      value={hitchSerial}
+                      onChangeText={setHitchSerial}
+                    />
+                  </View>
+                </View>
               )}
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setEquipmentModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                  onPress={handleAddEquipment}
-                >
-                  <Text style={styles.saveButtonText}>Add Equipment</Text>
-                </TouchableOpacity>
+              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                <Text style={[styles.sectionLabel, { color: colors.text }]}>DATES & CERTIFICATION</Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Date of Thorough Examination</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textSecondary}
+                    value={thoroughExaminationDate}
+                    onChangeText={setThoroughExaminationDate}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Next Service Date</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textSecondary}
+                    value={nextServiceDate}
+                    onChangeText={setNextServiceDate}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Purchase Date</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textSecondary}
+                    value={purchaseDate}
+                    onChangeText={setPurchaseDate}
+                  />
+                </View>
               </View>
+
+              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                <Text style={[styles.sectionLabel, { color: colors.text }]}>ADDITIONAL INFORMATION</Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    placeholder="Add any additional notes or information"
+                    placeholderTextColor={colors.textSecondary}
+                    value={notes}
+                    onChangeText={setNotes}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={[styles.equipmentModalFooter, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setEquipmentModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleAddEquipment}
+              >
+                <Text style={styles.saveButtonText}>Add Equipment</Text>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -1086,6 +1176,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  equipmentModalContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '92%',
+    height: '92%',
+  },
+  equipmentModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  equipmentModalBody: {
+    flex: 1,
+  },
+  equipmentModalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  equipmentModalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  formSection: {
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   modalScrollView: {
     maxHeight: '90%',

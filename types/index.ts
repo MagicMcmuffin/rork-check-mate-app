@@ -24,6 +24,9 @@ export interface Equipment {
   registration?: string;
   thoroughExaminationDate?: string;
   thoroughExaminationCertificate?: string;
+  nextServiceDate?: string;
+  purchaseDate?: string;
+  notes?: string;
   createdAt: string;
 }
 
