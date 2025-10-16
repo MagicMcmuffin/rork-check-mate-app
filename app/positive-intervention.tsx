@@ -3,7 +3,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { HAZARD_SEVERITY_OPTIONS } from '@/constants/inspections';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { AlertTriangle, Camera, MapPin, FileText, ChevronDown, X, Building2, ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -112,7 +111,7 @@ export default function PositiveInterventionScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <View style={[styles.container, { backgroundColor: '#1a1a1a' }]}>
       <View style={styles.darkHeader}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -133,6 +132,7 @@ export default function PositiveInterventionScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          style={{ backgroundColor: colors.background }}
         >
         <View style={styles.introCard}>
           <Text style={[styles.introText, { color: colors.textSecondary }]}>
@@ -324,7 +324,7 @@ export default function PositiveInterventionScreen() {
         </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
