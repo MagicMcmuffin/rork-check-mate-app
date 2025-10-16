@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Building2, CheckCircle2, User } from 'lucide-react-native';
+import { ArrowLeft, Building2, CheckCircle2, User, Mail } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -23,14 +23,27 @@ export default function CompanyRegisterScreen() {
   const router = useRouter();
   const [ownerName, setOwnerName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [personalEmail, setPersonalEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [registeredCode, setRegisteredCode] = useState<string | null>(null);
 
   const handleRegister = async () => {
-    if (!ownerName.trim() || !companyName.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!ownerName.trim() || !companyName.trim() || !companyEmail.trim() || !personalEmail.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(companyEmail.trim())) {
+      Alert.alert('Error', 'Please enter a valid company email');
+      return;
+    }
+
+    if (!emailRegex.test(personalEmail.trim())) {
+      Alert.alert('Error', 'Please enter a valid personal email');
       return;
     }
 
@@ -46,7 +59,7 @@ export default function CompanyRegisterScreen() {
 
     setIsLoading(true);
     try {
-      const company = await registerCompany(ownerName.trim(), companyName.trim(), password.trim());
+      const company = await registerCompany(ownerName.trim(), companyName.trim(), companyEmail.trim(), personalEmail.trim(), password.trim());
       setRegisteredCode(company.code);
     } catch (error) {
       Alert.alert('Error', 'Failed to register company. Please try again.');
@@ -133,6 +146,40 @@ export default function CompanyRegisterScreen() {
                   value={companyName}
                   onChangeText={setCompanyName}
                   autoCapitalize="words"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Company Email</Text>
+              <View style={styles.inputWithIcon}>
+                <Mail size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                  placeholder="company@example.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={companyEmail}
+                  onChangeText={setCompanyEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Your Email</Text>
+              <View style={styles.inputWithIcon}>
+                <Mail size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                  placeholder="your@example.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={personalEmail}
+                  onChangeText={setPersonalEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                   editable={!isLoading}
                 />
               </View>
