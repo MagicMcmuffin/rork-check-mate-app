@@ -77,6 +77,22 @@ export default function ReportsScreen() {
     ...myPositiveInterventions.map(i => ({ ...i, itemType: 'intervention' as const })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const isDateInRange = (dateString: string) => {
+    if (!searchStartDate && !searchEndDate) return true;
+    const date = new Date(dateString);
+    const start = searchStartDate ? new Date(searchStartDate) : null;
+    const end = searchEndDate ? new Date(searchEndDate) : null;
+    
+    if (start && end) {
+      return date >= start && date <= end;
+    } else if (start) {
+      return date >= start;
+    } else if (end) {
+      return date <= end;
+    }
+    return true;
+  };
+
   const allInspections = [
     ...inspections.plant.map(i => ({ ...i, type: 'plant' as const })),
     ...inspections.quickHitch.map(i => ({ ...i, type: 'quickhitch' as const })),
@@ -144,22 +160,6 @@ export default function ReportsScreen() {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const isDateInRange = (dateString: string) => {
-    if (!searchStartDate && !searchEndDate) return true;
-    const date = new Date(dateString);
-    const start = searchStartDate ? new Date(searchStartDate) : null;
-    const end = searchEndDate ? new Date(searchEndDate) : null;
-    
-    if (start && end) {
-      return date >= start && date <= end;
-    } else if (start) {
-      return date >= start;
-    } else if (end) {
-      return date <= end;
-    }
-    return true;
   };
 
   const clearDateSearch = () => {
