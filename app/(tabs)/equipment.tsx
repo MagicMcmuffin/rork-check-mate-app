@@ -1,9 +1,9 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText } from 'lucide-react-native';
+import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText, X, Check, Upload } from 'lucide-react-native';
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { Equipment } from '@/types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -258,216 +258,285 @@ export default function EquipmentScreen() {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <ScrollView 
-            style={styles.modalScrollView}
-            contentContainerStyle={styles.modalScrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={true}
-          >
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Add Equipment</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Equipment Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="e.g., Excavator 1"
-                placeholderTextColor={colors.textSecondary}
-                value={name}
-                onChangeText={setName}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Make</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="e.g., Caterpillar"
-                placeholderTextColor={colors.textSecondary}
-                value={make}
-                onChangeText={setMake}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Model</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="e.g., 320D"
-                placeholderTextColor={colors.textSecondary}
-                value={model}
-                onChangeText={setModel}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Serial Number</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="Enter serial number"
-                placeholderTextColor={colors.textSecondary}
-                value={serialNumber}
-                onChangeText={setSerialNumber}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Type</Text>
-              <View style={styles.typeButtons}>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'plant' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('plant')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'plant' && styles.typeButtonTextActive]}>
-                    Plant
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'vehicles' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('vehicles')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicles' && styles.typeButtonTextActive]}>
-                    Vehicles
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'lifting' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('lifting')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'lifting' && styles.typeButtonTextActive]}>
-                    Lifting
-                  </Text>
-                </TouchableOpacity>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <View style={styles.modalHeaderContent}>
+                <View style={[styles.modalIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <Wrench size={24} color={colors.primary} />
+                </View>
+                <View style={styles.modalHeaderText}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Add Equipment</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Fill in the details below</Text>
+                </View>
               </View>
-              <View style={[styles.typeButtons, { marginTop: 8 }]}>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'electrical' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('electrical')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'electrical' && styles.typeButtonTextActive]}>
-                    Electrical
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'cat-genny' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('cat-genny')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'cat-genny' && styles.typeButtonTextActive]}>
-                    Cat&Genny
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'other' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setType('other')}
-                >
-                  <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'other' && styles.typeButtonTextActive]}>
-                    Other
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {type === 'plant' && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Hitch Type (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="e.g., Quick Hitch, Manual Hitch"
-                    placeholderTextColor={colors.textSecondary}
-                    value={hitchType}
-                    onChangeText={setHitchType}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Hitch Serial (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="Enter hitch serial number"
-                    placeholderTextColor={colors.textSecondary}
-                    value={hitchSerial}
-                    onChangeText={setHitchSerial}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Registration (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="e.g., AB12 CDE"
-                    placeholderTextColor={colors.textSecondary}
-                    value={registration}
-                    onChangeText={setRegistration}
-                    autoCapitalize="characters"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Date of Thorough Examination (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textSecondary}
-                    value={thoroughExaminationDate}
-                    onChangeText={setThoroughExaminationDate}
-                  />
-                  <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                    Valid for 12 months. You&apos;ll be notified when nearly expired.
-                  </Text>
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Upload Certificate (Optional)</Text>
-                  <TouchableOpacity
-                    style={[styles.uploadButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={handlePickDocument}
-                  >
-                    <FileText size={20} color={colors.primary} />
-                    <Text style={[styles.uploadButtonText, { color: colors.text }]}>
-                      {thoroughExaminationCertificate ? 'Certificate Selected' : 'Choose PDF or Image'}
-                    </Text>
-                  </TouchableOpacity>
-                  {thoroughExaminationCertificate && (
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => setThoroughExaminationCertificate('')}
-                    >
-                      <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </>
-            )}
-
-            {type === 'vehicles' && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Registration (Optional)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="e.g., AB12 CDE"
-                  placeholderTextColor={colors.textSecondary}
-                  value={registration}
-                  onChangeText={setRegistration}
-                  autoCapitalize="characters"
-                />
-              </View>
-            )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+              <TouchableOpacity 
+                style={[styles.modalCloseButton, { backgroundColor: colors.background }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>Basic Information</Text>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Equipment Name *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="e.g., Excavator 1"
+                      placeholderTextColor={colors.textSecondary}
+                      value={name}
+                      onChangeText={setName}
+                    />
+                  </View>
+
+                  <View style={styles.inputRow}>
+                    <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                      <Text style={[styles.label, { color: colors.text }]}>Make *</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                        placeholder="e.g., Caterpillar"
+                        placeholderTextColor={colors.textSecondary}
+                        value={make}
+                        onChangeText={setMake}
+                      />
+                    </View>
+                    <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                      <Text style={[styles.label, { color: colors.text }]}>Model *</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                        placeholder="e.g., 320D"
+                        placeholderTextColor={colors.textSecondary}
+                        value={model}
+                        onChangeText={setModel}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Serial Number *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Enter serial number"
+                      placeholderTextColor={colors.textSecondary}
+                      value={serialNumber}
+                      onChangeText={setSerialNumber}
+                    />
+                  </View>
+                </View>
+
+                <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>Equipment Type *</Text>
+                  <View style={styles.typeGrid}>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeCard,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        type === 'plant' && { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 2 }
+                      ]}
+                      onPress={() => setType('plant')}
+                    >
+                      {type === 'plant' && (
+                        <View style={[styles.typeCheckmark, { backgroundColor: colors.primary }]}>
+                          <Check size={12} color="#ffffff" />
+                        </View>
+                      )}
+                      <Text style={[
+                        styles.typeCardText,
+                        { color: colors.textSecondary },
+                        type === 'plant' && { color: colors.primary, fontWeight: '700' as const }
+                      ]}>
+                        Plant
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[
+                        styles.typeCard,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        type === 'vehicles' && { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 2 }
+                      ]}
+                      onPress={() => setType('vehicles')}
+                    >
+                      {type === 'vehicles' && (
+                        <View style={[styles.typeCheckmark, { backgroundColor: colors.primary }]}>
+                          <Check size={12} color="#ffffff" />
+                        </View>
+                      )}
+                      <Text style={[
+                        styles.typeCardText,
+                        { color: colors.textSecondary },
+                        type === 'vehicles' && { color: colors.primary, fontWeight: '700' as const }
+                      ]}>
+                        Vehicles
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.typeCard,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        type === 'other' && { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 2 }
+                      ]}
+                      onPress={() => setType('other')}
+                    >
+                      {type === 'other' && (
+                        <View style={[styles.typeCheckmark, { backgroundColor: colors.primary }]}>
+                          <Check size={12} color="#ffffff" />
+                        </View>
+                      )}
+                      <Text style={[
+                        styles.typeCardText,
+                        { color: colors.textSecondary },
+                        type === 'other' && { color: colors.primary, fontWeight: '700' as const }
+                      ]}>
+                        Other
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {type === 'plant' && (
+                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Plant Details</Text>
+                    
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                        placeholder="e.g., AB12 CDE"
+                        placeholderTextColor={colors.textSecondary}
+                        value={registration}
+                        onChangeText={setRegistration}
+                        autoCapitalize="characters"
+                      />
+                    </View>
+
+                    <View style={styles.inputRow}>
+                      <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <Text style={[styles.label, { color: colors.text }]}>Hitch Type</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                          placeholder="e.g., Quick Hitch"
+                          placeholderTextColor={colors.textSecondary}
+                          value={hitchType}
+                          onChangeText={setHitchType}
+                        />
+                      </View>
+                      <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <Text style={[styles.label, { color: colors.text }]}>Hitch Serial</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                          placeholder="Serial number"
+                          placeholderTextColor={colors.textSecondary}
+                          value={hitchSerial}
+                          onChangeText={setHitchSerial}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {type === 'plant' && (
+                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                    <View style={styles.sectionHeader}>
+                      <Calendar size={18} color={colors.primary} />
+                      <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Thorough Examination</Text>
+                    </View>
+                    <Text style={[styles.sectionHelper, { color: colors.textSecondary }]}>Certificate valid for 12 months. We'll notify you when it's nearly expired.</Text>
+                    
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: colors.text }]}>Examination Date</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={colors.textSecondary}
+                        value={thoroughExaminationDate}
+                        onChangeText={setThoroughExaminationDate}
+                      />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: colors.text }]}>Certificate Document</Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.uploadArea,
+                          { backgroundColor: colors.card, borderColor: colors.border },
+                          thoroughExaminationCertificate && { borderColor: colors.primary }
+                        ]}
+                        onPress={handlePickDocument}
+                      >
+                        {thoroughExaminationCertificate ? (
+                          <>
+                            <View style={[styles.uploadIconSuccess, { backgroundColor: colors.primary + '20' }]}>
+                              <Check size={24} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.uploadText, { color: colors.primary }]}>Certificate Uploaded</Text>
+                            <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>Tap to change</Text>
+                          </>
+                        ) : (
+                          <>
+                            <View style={[styles.uploadIcon, { backgroundColor: colors.background }]}>
+                              <Upload size={24} color={colors.textSecondary} />
+                            </View>
+                            <Text style={[styles.uploadText, { color: colors.text }]}>Upload Certificate</Text>
+                            <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>PDF or Image (Max 10MB)</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {type === 'vehicles' && (
+                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Vehicle Details</Text>
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                        placeholder="e.g., AB12 CDE"
+                        placeholderTextColor={colors.textSecondary}
+                        value={registration}
+                        onChangeText={setRegistration}
+                        autoCapitalize="characters"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={[styles.modalFooter, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.footerButton, styles.footerButtonCancel, { backgroundColor: colors.background }]}
+                onPress={() => setModalVisible(false)}
+              >
+                <X size={18} color={colors.textSecondary} />
+                <Text style={[styles.footerButtonText, { color: colors.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                style={[styles.footerButton, styles.footerButtonSave, { backgroundColor: colors.primary }]}
                 onPress={handleAddEquipment}
               >
-                <Text style={styles.saveButtonText}>Add Equipment</Text>
+                <Check size={18} color="#ffffff" />
+                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Add Equipment</Text>
               </TouchableOpacity>
             </View>
           </View>
-          </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -646,98 +715,189 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
   },
-  modalScrollView: {
-    maxHeight: '90%',
+  modalContainer: {
+    flex: 1,
+    maxHeight: '95%',
+    marginTop: 'auto',
   },
-  modalScrollContent: {
-    flexGrow: 1,
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    minHeight: 600,
+    borderBottomWidth: 1,
+  },
+  modalHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderText: {
+    marginLeft: 12,
+    flex: 1,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700' as const,
-    color: '#1e293b',
-    marginBottom: 24,
+    marginBottom: 2,
   },
-  inputGroup: {
-    marginBottom: 16,
+  modalSubtitle: {
+    fontSize: 13,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1e293b',
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    paddingBottom: 20,
+  },
+  modalContent: {
+    padding: 20,
+    gap: 16,
+  },
+  formSection: {
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  sectionHelper: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
   },
-  typeButtons: {
-    flexDirection: 'row',
+  inputGroup: {
     gap: 8,
   },
-  typeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    alignItems: 'center',
+  inputRow: {
+    flexDirection: 'row',
+    gap: 0,
   },
-  typeButtonActive: {
-    backgroundColor: '#1e40af',
-    borderColor: '#1e40af',
-  },
-  typeButtonText: {
-    fontSize: 14,
+  label: {
+    fontSize: 13,
     fontWeight: '600' as const,
-    color: '#64748b',
   },
-  typeButtonTextActive: {
-    color: '#ffffff',
+  input: {
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    borderWidth: 1.5,
   },
-  modalButtons: {
+  typeGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 24,
   },
-  modalButton: {
+  typeCard: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative' as const,
+  },
+  typeCheckmark: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#f1f5f9',
-  },
-  cancelButtonText: {
-    fontSize: 16,
+  typeCardText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748b',
   },
-  saveButton: {
-    backgroundColor: '#1e40af',
+  uploadArea: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed' as const,
+    padding: 24,
+    alignItems: 'center',
+    gap: 8,
   },
-  saveButtonText: {
-    fontSize: 16,
+  uploadIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  uploadIconSuccess: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  uploadText: {
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: '#ffffff',
+  },
+  uploadSubtext: {
+    fontSize: 13,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+    borderTopWidth: 1,
+  },
+  footerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  footerButtonCancel: {
+    flex: 0.8,
+  },
+  footerButtonSave: {
+    flex: 1.2,
+  },
+  footerButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  footerButtonTextSave: {
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
 });
