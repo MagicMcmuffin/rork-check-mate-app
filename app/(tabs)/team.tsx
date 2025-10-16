@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw } from 'lucide-react-native';
+import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Building2 } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
 import { UserRole } from '@/types';
 import * as Clipboard from 'expo-clipboard';
@@ -211,11 +211,22 @@ export default function TeamScreen() {
       <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'team' ? (
         <>
+        <View style={styles.companyHeader}>
+          {company?.logo ? (
+            <Image source={{ uri: company.logo }} style={styles.companyLogo} />
+          ) : (
+            <View style={[styles.companyLogoPlaceholder, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
+              <Building2 size={32} color="#1e40af" />
+            </View>
+          )}
+          <Text style={[styles.companyName, { color: colors.text }]}>{company?.name}</Text>
+        </View>
+
         <View style={styles.header}>
           <View style={[styles.headerIcon, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
             <Users size={28} color="#1e40af" />
           </View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{company?.name}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Team Members</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             {companyUsers.length} {companyUsers.length === 1 ? 'member' : 'members'}
           </Text>
@@ -762,6 +773,30 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  companyHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 8,
+  },
+  companyLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  companyLogoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  companyName: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
   },
   header: {
     alignItems: 'center',
