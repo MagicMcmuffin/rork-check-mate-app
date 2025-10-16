@@ -505,7 +505,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'announcements' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Announcements
+            Announce
           </Text>
         </TouchableOpacity>
       </View>
