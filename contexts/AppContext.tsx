@@ -61,11 +61,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const safeJSONParse = (data: string | null, key: string) => {
         if (!data) return null;
+        if (typeof data !== 'string') {
+          console.error(`Invalid data type for ${key}:`, typeof data);
+          return null;
+        }
         try {
-          return JSON.parse(data);
+          const parsed = JSON.parse(data);
+          return parsed;
         } catch (error) {
           console.error(`Error parsing ${key}:`, error);
           console.error(`Invalid data for ${key}:`, data.substring(0, 100));
+          AsyncStorage.removeItem(STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]).catch(() => {});
           return null;
         }
       };
