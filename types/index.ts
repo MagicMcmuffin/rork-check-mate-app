@@ -18,7 +18,7 @@ export interface Equipment {
   make: string;
   model: string;
   serialNumber: string;
-  type: 'plant' | 'vehicle' | 'other';
+  type: 'plant' | 'vehicles' | 'lifting' | 'electrical' | 'cat-genny' | 'other';
   hitchType?: string;
   hitchSerial?: string;
   registration?: string;
