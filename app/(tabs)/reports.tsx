@@ -18,7 +18,7 @@ export default function ReportsScreen() {
     getFixLogs, 
     getEmployeeInspections, 
     getEmployeePositiveInterventions, 
-    getCompanyApprenticeshipEntries 
+    getCompanyApprenticeshipEntries, 
   } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
