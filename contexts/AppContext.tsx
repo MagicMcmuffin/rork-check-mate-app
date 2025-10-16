@@ -527,9 +527,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
       createdAt: new Date().toISOString(),
     };
 
+    const sortedProjects = [...(company.projects || []), newProject].sort((a, b) => 
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    );
+
     const updatedCompany = {
       ...company,
-      projects: [...(company.projects || []), newProject],
+      projects: sortedProjects,
     };
 
     const updatedCompanies = companies.map(c => 
