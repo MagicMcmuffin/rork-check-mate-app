@@ -18,7 +18,7 @@ export default function CompanyScreen() {
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [type, setType] = useState<'plant' | 'vehicles' | 'lifting' | 'electrical' | 'cat-genny' | 'other'>('plant');
+  const [type, setType] = useState<'plant' | 'vehicles'>('plant');
   const [hitchType, setHitchType] = useState('');
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
@@ -493,7 +493,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'equipment' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Equipment
+            Machinery
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -612,40 +612,6 @@ export default function CompanyScreen() {
                   >
                     <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'vehicles' && styles.typeButtonTextActive]}>
                       Vehicles
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'lifting' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('lifting')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'lifting' && styles.typeButtonTextActive]}>
-                      Lifting
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={[styles.typeButtons, { marginTop: 8 }]}>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'electrical' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('electrical')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'electrical' && styles.typeButtonTextActive]}>
-                      Electrical
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'cat-genny' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('cat-genny')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'cat-genny' && styles.typeButtonTextActive]}>
-                      Cat&Genny
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.typeButton, { backgroundColor: colors.background, borderColor: colors.border }, type === 'other' && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setType('other')}
-                  >
-                    <Text style={[styles.typeButtonText, { color: colors.textSecondary }, type === 'other' && styles.typeButtonTextActive]}>
-                      Other
                     </Text>
                   </TouchableOpacity>
                 </View>
