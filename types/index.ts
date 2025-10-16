@@ -30,6 +30,7 @@ export interface Company {
   name: string;
   code: string;
   email: string;
+  logo?: string;
   projects: Project[];
   equipment: Equipment[];
   createdAt: string;

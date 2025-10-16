@@ -1081,6 +1081,27 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setAnnouncements(updated);
   }, [announcements]);
 
+  const updateCompanyLogo = useCallback(async (logoUri?: string) => {
+    if (!company) throw new Error('No company found');
+
+    const updatedCompany = {
+      ...company,
+      logo: logoUri,
+    };
+
+    const updatedCompanies = companies.map(c => 
+      c.id === company.id ? updatedCompany : c
+    );
+
+    await Promise.all([
+      AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(updatedCompany)),
+      AsyncStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(updatedCompanies)),
+    ]);
+
+    setCompany(updatedCompany);
+    setCompanies(updatedCompanies);
+  }, [company, companies]);
+
   return useMemo(() => ({
     user,
     company,
@@ -1132,5 +1153,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     createAnnouncement,
     getCompanyAnnouncements,
     deleteAnnouncement,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement]);
+    updateCompanyLogo,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo]);
 });
