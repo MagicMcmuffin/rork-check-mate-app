@@ -1211,8 +1211,9 @@ const styles = StyleSheet.create({
   },
   equipmentModalContent: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 20,
   },
   equipmentModalFooter: {
     flexDirection: 'row',
@@ -1222,9 +1223,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   formSection: {
-    padding: 16,
+    padding: 20,
     borderRadius: 12,
     gap: 12,
+    marginBottom: 4,
   },
   sectionLabel: {
     fontSize: 12,
@@ -1272,7 +1274,7 @@ const styles = StyleSheet.create({
     maxHeight: '60%',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   label: {
     fontSize: 14,
