@@ -1,10 +1,12 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Wrench, Plus, Trash2, Edit2 } from 'lucide-react-native';
+import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText } from 'lucide-react-native';
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform } from 'react-native';
 import { Equipment } from '@/types';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function EquipmentScreen() {
   const { user, company, addEquipment, deleteEquipment } = useApp();
@@ -18,6 +20,8 @@ export default function EquipmentScreen() {
   const [hitchType, setHitchType] = useState('');
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
+  const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
+  const [thoroughExaminationCertificate, setThoroughExaminationCertificate] = useState('');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
@@ -38,6 +42,8 @@ export default function EquipmentScreen() {
         hitchType: hitchType.trim() || undefined,
         hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
+        thoroughExaminationDate: type === 'plant' && thoroughExaminationDate ? thoroughExaminationDate : undefined,
+        thoroughExaminationCertificate: type === 'plant' && thoroughExaminationCertificate ? thoroughExaminationCertificate : undefined,
       });
 
       setName('');
@@ -48,6 +54,8 @@ export default function EquipmentScreen() {
       setHitchType('');
       setHitchSerial('');
       setRegistration('');
+      setThoroughExaminationDate('');
+      setThoroughExaminationCertificate('');
       setModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
     } catch (error) {
@@ -86,6 +94,53 @@ export default function EquipmentScreen() {
     acc[item.type].push(item);
     return acc;
   }, {} as Record<string, Equipment[]>);
+
+  const getExpiryStatus = (examinationDate?: string) => {
+    if (!examinationDate) return null;
+    
+    const examDate = new Date(examinationDate);
+    const today = new Date();
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+    const expiryDate = new Date(examDate.getTime() + oneYear);
+    const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    
+    if (daysUntilExpiry < 0) {
+      return { status: 'expired', days: Math.abs(daysUntilExpiry), color: '#dc2626' };
+    } else if (daysUntilExpiry <= 30) {
+      return { status: 'expiring-soon', days: daysUntilExpiry, color: '#f59e0b' };
+    } else {
+      return { status: 'valid', days: daysUntilExpiry, color: '#10b981' };
+    }
+  };
+
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        if (Platform.OS === 'web') {
+          setThoroughExaminationCertificate(asset.uri);
+        } else {
+          const fileInfo = await FileSystem.getInfoAsync(asset.uri);
+          if (fileInfo.exists && fileInfo.size && fileInfo.size < 10 * 1024 * 1024) {
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            setThoroughExaminationCertificate(`data:${asset.mimeType || 'application/pdf'};base64,${base64}`);
+          } else {
+            Alert.alert('Error', 'File is too large. Maximum size is 10MB.');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'Failed to pick document');
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -151,6 +206,35 @@ export default function EquipmentScreen() {
                     )}
                     {item.registration && (
                       <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>Reg: {item.registration}</Text>
+                    )}
+                    {item.type === 'plant' && item.thoroughExaminationDate && (
+                      <View style={styles.examinationInfo}>
+                        <View style={styles.examinationRow}>
+                          <Calendar size={14} color={getExpiryStatus(item.thoroughExaminationDate)?.color || colors.textSecondary} />
+                          <Text style={[styles.equipmentSerial, { color: colors.textSecondary, marginLeft: 4 }]}>
+                            Examination: {new Date(item.thoroughExaminationDate).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        {getExpiryStatus(item.thoroughExaminationDate) && (
+                          <View style={[styles.expiryBadge, { backgroundColor: getExpiryStatus(item.thoroughExaminationDate)!.color + '20' }]}>
+                            <AlertCircle size={12} color={getExpiryStatus(item.thoroughExaminationDate)!.color} />
+                            <Text style={[styles.expiryText, { color: getExpiryStatus(item.thoroughExaminationDate)!.color }]}>
+                              {getExpiryStatus(item.thoroughExaminationDate)!.status === 'expired' 
+                                ? `Expired ${getExpiryStatus(item.thoroughExaminationDate)!.days} days ago`
+                                : getExpiryStatus(item.thoroughExaminationDate)!.status === 'expiring-soon'
+                                ? `Expires in ${getExpiryStatus(item.thoroughExaminationDate)!.days} days`
+                                : `Valid for ${getExpiryStatus(item.thoroughExaminationDate)!.days} days`
+                              }
+                            </Text>
+                          </View>
+                        )}
+                        {item.thoroughExaminationCertificate && (
+                          <View style={styles.certificateInfo}>
+                            <FileText size={12} color={colors.primary} />
+                            <Text style={[styles.certificateText, { color: colors.primary }]}>Certificate attached</Text>
+                          </View>
+                        )}
+                      </View>
                     )}
                   </View>
                   {isAdmin && (
@@ -317,6 +401,39 @@ export default function EquipmentScreen() {
                     autoCapitalize="characters"
                   />
                 </View>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Date of Thorough Examination (Optional)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textSecondary}
+                    value={thoroughExaminationDate}
+                    onChangeText={setThoroughExaminationDate}
+                  />
+                  <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                    Valid for 12 months. You&apos;ll be notified when nearly expired.
+                  </Text>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Upload Certificate (Optional)</Text>
+                  <TouchableOpacity
+                    style={[styles.uploadButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={handlePickDocument}
+                  >
+                    <FileText size={20} color={colors.primary} />
+                    <Text style={[styles.uploadButtonText, { color: colors.text }]}>
+                      {thoroughExaminationCertificate ? 'Certificate Selected' : 'Choose PDF or Image'}
+                    </Text>
+                  </TouchableOpacity>
+                  {thoroughExaminationCertificate && (
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={() => setThoroughExaminationCertificate('')}
+                    >
+                      <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </>
             )}
 
@@ -446,6 +563,62 @@ const styles = StyleSheet.create({
   equipmentSerial: {
     fontSize: 13,
     color: '#94a3b8',
+  },
+  examinationInfo: {
+    marginTop: 8,
+    gap: 6,
+  },
+  examinationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  expiryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  expiryText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  certificateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  certificateText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed' as const,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  clearButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  clearButtonText: {
+    fontSize: 14,
+    textDecorationLine: 'underline' as const,
   },
   deleteButton: {
     padding: 8,

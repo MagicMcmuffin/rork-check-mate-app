@@ -22,6 +22,8 @@ export interface Equipment {
   hitchType?: string;
   hitchSerial?: string;
   registration?: string;
+  thoroughExaminationDate?: string;
+  thoroughExaminationCertificate?: string;
   createdAt: string;
 }
 
