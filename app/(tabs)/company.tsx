@@ -1,9 +1,10 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Equipment } from '@/types';
 
 type Section = 'equipment' | 'projects' | 'announcements';
@@ -23,8 +24,11 @@ export default function CompanyScreen() {
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
+  const [showExaminationDatePicker, setShowExaminationDatePicker] = useState(false);
   const [nextServiceDate, setNextServiceDate] = useState('');
+  const [showServiceDatePicker, setShowServiceDatePicker] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState('');
+  const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
 
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -697,35 +701,83 @@ export default function CompanyScreen() {
                 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>{type === 'vehicles' ? 'MOT' : 'Date of Thorough Examination'}</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textSecondary}
-                    value={thoroughExaminationDate}
-                    onChangeText={setThoroughExaminationDate}
-                  />
+                  <TouchableOpacity
+                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => setShowExaminationDatePicker(true)}
+                  >
+                    <Calendar size={18} color={colors.textSecondary} />
+                    <Text style={[thoroughExaminationDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: thoroughExaminationDate ? colors.text : colors.textSecondary }]}>
+                      {thoroughExaminationDate || 'Select date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showExaminationDatePicker && (
+                    <DateTimePicker
+                      value={thoroughExaminationDate ? new Date(thoroughExaminationDate) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selectedDate) => {
+                        setShowExaminationDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          const formattedDate = selectedDate.toISOString().split('T')[0];
+                          setThoroughExaminationDate(formattedDate);
+                        }
+                      }}
+                    />
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Next Service Date</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textSecondary}
-                    value={nextServiceDate}
-                    onChangeText={setNextServiceDate}
-                  />
+                  <TouchableOpacity
+                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => setShowServiceDatePicker(true)}
+                  >
+                    <Calendar size={18} color={colors.textSecondary} />
+                    <Text style={[nextServiceDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: nextServiceDate ? colors.text : colors.textSecondary }]}>
+                      {nextServiceDate || 'Select date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showServiceDatePicker && (
+                    <DateTimePicker
+                      value={nextServiceDate ? new Date(nextServiceDate) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selectedDate) => {
+                        setShowServiceDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          const formattedDate = selectedDate.toISOString().split('T')[0];
+                          setNextServiceDate(formattedDate);
+                        }
+                      }}
+                    />
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Purchase Date</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textSecondary}
-                    value={purchaseDate}
-                    onChangeText={setPurchaseDate}
-                  />
+                  <TouchableOpacity
+                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => setShowPurchaseDatePicker(true)}
+                  >
+                    <Calendar size={18} color={colors.textSecondary} />
+                    <Text style={[purchaseDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: purchaseDate ? colors.text : colors.textSecondary }]}>
+                      {purchaseDate || 'Select date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showPurchaseDatePicker && (
+                    <DateTimePicker
+                      value={purchaseDate ? new Date(purchaseDate) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selectedDate) => {
+                        setShowPurchaseDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          const formattedDate = selectedDate.toISOString().split('T')[0];
+                          setPurchaseDate(formattedDate);
+                        }
+                      }}
+                    />
+                  )}
                 </View>
               </View>
 
@@ -1446,5 +1498,20 @@ const styles = StyleSheet.create({
   priorityButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+  },
+  datePickerText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  datePickerPlaceholder: {
+    fontSize: 15,
   },
 });

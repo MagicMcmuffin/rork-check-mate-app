@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText, X, Check, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Equipment } from '@/types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -21,6 +22,7 @@ export default function EquipmentScreen() {
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [thoroughExaminationCertificate, setThoroughExaminationCertificate] = useState('');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
@@ -459,13 +461,29 @@ export default function EquipmentScreen() {
                     
                     <View style={styles.inputGroup}>
                       <Text style={[styles.label, { color: colors.text }]}>Examination Date</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor={colors.textSecondary}
-                        value={thoroughExaminationDate}
-                        onChangeText={setThoroughExaminationDate}
-                      />
+                      <TouchableOpacity
+                        style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => setShowDatePicker(true)}
+                      >
+                        <Calendar size={18} color={colors.textSecondary} />
+                        <Text style={[thoroughExaminationDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: thoroughExaminationDate ? colors.text : colors.textSecondary }]}>
+                          {thoroughExaminationDate || 'Select date'}
+                        </Text>
+                      </TouchableOpacity>
+                      {showDatePicker && (
+                        <DateTimePicker
+                          value={thoroughExaminationDate ? new Date(thoroughExaminationDate) : new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          onChange={(event, selectedDate) => {
+                            setShowDatePicker(Platform.OS === 'ios');
+                            if (selectedDate) {
+                              const formattedDate = selectedDate.toISOString().split('T')[0];
+                              setThoroughExaminationDate(formattedDate);
+                            }
+                          }}
+                        />
+                      )}
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -899,5 +917,20 @@ const styles = StyleSheet.create({
   footerButtonTextSave: {
     fontSize: 15,
     fontWeight: '700' as const,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1.5,
+  },
+  datePickerText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  datePickerPlaceholder: {
+    fontSize: 15,
   },
 });
