@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { QUICK_HITCH_ITEMS, DAYS_OF_WEEK } from '@/constants/inspections';
 import { QuickHitchCheck, DayOfWeek, CheckStatus } from '@/types';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { CheckCircle2, X, Check, ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -149,6 +149,15 @@ export default function QuickHitchInspectionScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Quick Hitch Inspection',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

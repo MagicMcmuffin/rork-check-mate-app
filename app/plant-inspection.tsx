@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, DAYS_OF_WEEK, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
 import { PlantInspectionCheck, DayOfWeek, CheckStatus } from '@/types';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -181,6 +181,15 @@ export default function PlantInspectionScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Plant Inspection',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Plant Daily Inspection</Text>

@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { BookOpen, Camera, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
@@ -87,6 +87,15 @@ export default function ApprenticeshipLearningScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Apprenticeship Learning',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={[styles.header, { backgroundColor: colors.card }]}>

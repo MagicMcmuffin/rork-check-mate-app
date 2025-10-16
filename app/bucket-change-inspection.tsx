@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BUCKET_CHANGE_ITEMS, IMPLEMENT_TYPES } from '@/constants/inspections';
 import { BucketChangeCheck, CheckStatus } from '@/types';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { CheckCircle2, X, Check, ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -127,6 +127,15 @@ export default function BucketChangeInspectionScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Bucket Change Inspection',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
