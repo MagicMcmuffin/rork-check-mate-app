@@ -38,9 +38,9 @@ export const trpcReactClient = trpc.createClient({
         try {
           const response = await fetch(url, options);
           if (!response.ok) {
-            const text = await response.text();
+            const contentType = response.headers.get('content-type');
             
-            if (response.status === 404 && text.includes('Site Not Found')) {
+            if (response.status === 404 && contentType?.includes('text/html')) {
               throw new Error('Email service is not available. Backend deployment is pending.');
             }
           }
@@ -70,9 +70,9 @@ export const trpcClient = createTRPCProxyClient<AppRouter>({
         try {
           const response = await fetch(url, options);
           if (!response.ok) {
-            const text = await response.text();
+            const contentType = response.headers.get('content-type');
             
-            if (response.status === 404 && text.includes('Site Not Found')) {
+            if (response.status === 404 && contentType?.includes('text/html')) {
               throw new Error('Email service is not available. Backend deployment is pending.');
             }
           }
