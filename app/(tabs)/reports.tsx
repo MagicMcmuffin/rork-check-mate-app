@@ -1,13 +1,14 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, BookOpen } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, BookOpen, Download, Search, X } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { generatePlantInspectionPDF, generateQuickHitchInspectionPDF, generateVehicleInspectionPDF, generateBucketChangeInspectionPDF, generatePositiveInterventionPDF, generateApprenticeshipLearningPDF } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
-  const { user, company, getCompanyInspections, deleteInspection, markInspectionFixed, getCompanyPositiveInterventions, getFixLogs, getEmployeeInspections, getEmployeePositiveInterventions, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries } = useApp();
+  const { user, company, getCompanyInspections, deleteInspection, markInspectionFixed, getCompanyPositiveInterventions, getFixLogs, getEmployeeInspections, getEmployeePositiveInterventions, getCompanyApprenticeshipEntries } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const inspections = getCompanyInspections();
@@ -19,6 +20,10 @@ export default function ReportsScreen() {
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+  const [dateSearchVisible, setDateSearchVisible] = useState(false);
+  const [searchStartDate, setSearchStartDate] = useState('');
+  const [searchEndDate, setSearchEndDate] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -48,6 +53,8 @@ export default function ReportsScreen() {
     ? allInspections
     : allInspections.filter(i => i.projectId === selectedProject);
 
+  filteredInspections = filteredInspections.filter(i => isDateInRange(i.createdAt));
+
   if (selectedType !== 'all') {
     filteredInspections = filteredInspections.filter(i => i.type === selectedType);
   }
@@ -60,9 +67,11 @@ export default function ReportsScreen() {
     }
   }
 
-  const filteredInterventions = selectedSeverity === 'all'
+  let filteredInterventions = selectedSeverity === 'all'
     ? positiveInterventions
     : positiveInterventions.filter(i => i.severity === selectedSeverity);
+
+  filteredInterventions = filteredInterventions.filter(i => isDateInRange(i.createdAt));
 
   const projectStats = company?.projects.map(project => {
     const count = positiveInterventions.filter(i => i.projectId === project.id).length;
@@ -100,6 +109,80 @@ export default function ReportsScreen() {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isDateInRange = (dateString: string) => {
+    if (!searchStartDate && !searchEndDate) return true;
+    const date = new Date(dateString);
+    const start = searchStartDate ? new Date(searchStartDate) : null;
+    const end = searchEndDate ? new Date(searchEndDate) : null;
+    
+    if (start && end) {
+      return date >= start && date <= end;
+    } else if (start) {
+      return date >= start;
+    } else if (end) {
+      return date <= end;
+    }
+    return true;
+  };
+
+  const clearDateSearch = () => {
+    setSearchStartDate('');
+    setSearchEndDate('');
+  };
+
+  const handleDownloadAllReports = async () => {
+    if (!company) return;
+    
+    setIsDownloading(true);
+    try {
+      const projectName = selectedProject !== 'all' 
+        ? company.projects.find(p => p.id === selectedProject)?.name 
+        : undefined;
+
+      let itemsToDownload: any[] = [];
+
+      if (selectedTab === 'inspections') {
+        itemsToDownload = filteredInspections.filter(i => isDateInRange(i.createdAt));
+      } else if (selectedTab === 'interventions') {
+        itemsToDownload = filteredInterventions.filter(i => isDateInRange(i.createdAt));
+      } else if (selectedTab === 'apprenticeship') {
+        itemsToDownload = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
+      }
+
+      if (itemsToDownload.length === 0) {
+        Alert.alert('No Reports', 'No reports found for the selected filters and date range.');
+        return;
+      }
+
+      for (const item of itemsToDownload) {
+        if (selectedTab === 'inspections') {
+          const type = item.type;
+          if (type === 'plant') {
+            await generatePlantInspectionPDF(item, company.name, projectName);
+          } else if (type === 'quickhitch') {
+            await generateQuickHitchInspectionPDF(item, company.name, projectName);
+          } else if (type === 'vehicle') {
+            await generateVehicleInspectionPDF(item, company.name, projectName);
+          } else if (type === 'bucketchange') {
+            await generateBucketChangeInspectionPDF(item, company.name, projectName);
+          }
+        } else if (selectedTab === 'interventions') {
+          await generatePositiveInterventionPDF(item, company.name, projectName);
+        } else if (selectedTab === 'apprenticeship') {
+          await generateApprenticeshipLearningPDF(item, company.name);
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      Alert.alert('Success', `${itemsToDownload.length} report(s) downloaded successfully!`);
+    } catch (error) {
+      console.error('Error downloading reports:', error);
+      Alert.alert('Error', 'Failed to download some reports. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleDeleteInspection = (inspectionId: string, type: string) => {
@@ -151,9 +234,77 @@ export default function ReportsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Reports & Checks</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>View reports and your inspection history</Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.title, { color: colors.text }]}>Reports & Checks</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>View reports and your inspection history</Text>
+          </View>
+          {canViewReports && mainTab === 'reports' && (
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.card }]}
+                onPress={() => setDateSearchVisible(!dateSearchVisible)}
+              >
+                <Search size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.primary }]}
+                onPress={handleDownloadAllReports}
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Download size={20} color="#ffffff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
+
+        {dateSearchVisible && mainTab === 'reports' && canViewReports && (
+          <View style={[styles.dateSearchCard, { backgroundColor: colors.card }]}>
+            <View style={styles.dateSearchHeader}>
+              <View style={styles.dateSearchTitle}>
+                <Calendar size={18} color={colors.primary} />
+                <Text style={[styles.dateSearchTitleText, { color: colors.text }]}>Search by Date Range</Text>
+              </View>
+              <TouchableOpacity onPress={() => setDateSearchVisible(false)}>
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateInputsContainer}>
+              <View style={styles.dateInputWrapper}>
+                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>Start Date</Text>
+                <TextInput
+                  style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={searchStartDate}
+                  onChangeText={setSearchStartDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+              <View style={styles.dateInputWrapper}>
+                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>End Date</Text>
+                <TextInput
+                  style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={searchEndDate}
+                  onChangeText={setSearchEndDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+            </View>
+            {(searchStartDate || searchEndDate) && (
+              <TouchableOpacity
+                style={[styles.clearButton, { backgroundColor: colors.background }]}
+                onPress={clearDateSearch}
+              >
+                <X size={16} color={colors.textSecondary} />
+                <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear Filters</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         <View style={[styles.mainTabsContainer, { backgroundColor: colors.card }]}>
           <TouchableOpacity
@@ -211,7 +362,7 @@ export default function ReportsScreen() {
                   onPress={() => setSelectedTab('interventions')}
                 >
                   <AlertTriangle size={18} color={selectedTab === 'interventions' ? '#10b981' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'interventions' && styles.tabTextActive]}>PI's</Text>
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'interventions' && styles.tabTextActive]}>PIs</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.tab, selectedTab === 'fixes' && styles.tabActive]}
@@ -399,7 +550,7 @@ export default function ReportsScreen() {
 
               {selectedTab === 'apprenticeship' ? (
                 (() => {
-                  const apprenticeshipEntries = getCompanyApprenticeshipEntries();
+                  const apprenticeshipEntries = getCompanyApprenticeshipEntries().filter(e => isDateInRange(e.createdAt));
                   return apprenticeshipEntries.length === 0 ? (
                     <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                       <BookOpen size={48} color={colors.textSecondary} />
@@ -938,7 +1089,30 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 24,
+    gap: 16,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
     fontSize: 28,
@@ -1317,5 +1491,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     minWidth: 32,
+  },
+  dateSearchCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  dateSearchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dateSearchTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateSearchTitleText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  dateInputsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateInputWrapper: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  clearButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });
