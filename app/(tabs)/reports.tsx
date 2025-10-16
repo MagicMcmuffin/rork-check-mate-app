@@ -8,22 +8,8 @@ import { useState } from 'react';
 import { generatePlantInspectionPDF, generateQuickHitchInspectionPDF, generateVehicleInspectionPDF, generateBucketChangeInspectionPDF, generatePositiveInterventionPDF } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
-  const { 
-    user, 
-    company, 
-    getCompanyInspections, 
-    deleteInspection, 
-    markInspectionFixed, 
-    getCompanyPositiveInterventions, 
-    getFixLogs, 
-    getEmployeeInspections, 
-    getEmployeePositiveInterventions, 
-  } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
-  const inspections = getCompanyInspections();
-  const positiveInterventions = getCompanyPositiveInterventions();
-  const fixLogs = getFixLogs();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks'>('reports');
   const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes'>('inspections');
@@ -35,10 +21,26 @@ export default function ReportsScreen() {
   const [searchEndDate, setSearchEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
 
+  const { 
+    user, 
+    company, 
+    getCompanyInspections, 
+    deleteInspection, 
+    markInspectionFixed, 
+    getCompanyPositiveInterventions, 
+    getFixLogs, 
+    getEmployeeInspections, 
+    getEmployeePositiveInterventions, 
+  } = useApp();
+  
+  const inspections = getCompanyInspections();
+  const positiveInterventions = getCompanyPositiveInterventions();
+  const fixLogs = getFixLogs();
+
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
-  const myInspections = user ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
-  const myPositiveInterventions = user ? getEmployeePositiveInterventions(user.id) : [];
+  const myInspections = user && getEmployeeInspections ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
+  const myPositiveInterventions = user && getEmployeePositiveInterventions ? getEmployeePositiveInterventions(user.id) : [];
 
   const myAllInspections = [
     ...myInspections.plant.map(i => ({ ...i, type: 'plant' as const })),
@@ -202,8 +204,10 @@ export default function ReportsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteInspection(inspectionId, type);
-              console.log('Inspection deleted successfully');
+              if (deleteInspection) {
+                await deleteInspection(inspectionId, type);
+                console.log('Inspection deleted successfully');
+              }
             } catch (error) {
               console.error('Error deleting inspection:', error);
               Alert.alert('Error', 'Failed to delete inspection');
@@ -224,8 +228,10 @@ export default function ReportsScreen() {
           text: 'Mark Fixed',
           onPress: async () => {
             try {
-              await markInspectionFixed(inspectionId, type);
-              console.log('Inspection marked as fixed');
+              if (markInspectionFixed) {
+                await markInspectionFixed(inspectionId, type);
+                console.log('Inspection marked as fixed');
+              }
             } catch (error) {
               console.error('Error marking inspection as fixed:', error);
               Alert.alert('Error', 'Failed to mark inspection as fixed');
