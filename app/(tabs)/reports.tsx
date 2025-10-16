@@ -5,7 +5,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { generatePlantInspectionPDF, generateQuickHitchInspectionPDF, generateVehicleInspectionPDF, generateBucketChangeInspectionPDF, generatePositiveInterventionPDF } from '@/lib/pdf-generator';
+import {
+  generatePlantInspectionPDF,
+  generateQuickHitchInspectionPDF,
+  generateVehicleInspectionPDF,
+  generateBucketChangeInspectionPDF,
+  generatePositiveInterventionPDF
+} from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
   const { colors } = useTheme();
