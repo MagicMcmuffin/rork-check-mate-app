@@ -5,7 +5,7 @@ import { VEHICLE_INSPECTION_ITEMS, CHECK_STATUS_OPTIONS } from '@/constants/insp
 import { VehicleInspectionCheck, CheckStatus } from '@/types';
 import { useRouter } from 'expo-router';
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,8 +17,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const { height } = Dimensions.get('window');
 
 export default function VehicleInspectionScreen() {
   const { user, company, submitVehicleInspection } = useApp();
@@ -35,6 +40,42 @@ export default function VehicleInspectionScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const translateY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollOffset, setScrollOffset] = useState(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return scrollOffset <= 0 && gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150) {
+          Animated.timing(translateY, {
+            toValue: height,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => {
+            router.back();
+          });
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const vehicleEquipment = company?.equipment?.filter(e => e.type === 'vehicle') || [];
 
@@ -151,24 +192,37 @@ export default function VehicleInspectionScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, transform: [{ translateY }] },
+      ]}
+      {...panResponder.panHandlers}
     >
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: 'Vehicle Inspection',
-          headerStyle: { backgroundColor: colors.card },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-        }}
-      />
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Vehicle Inspection',
+            headerStyle: { backgroundColor: colors.card },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.dragIndicatorContainer}>
+          <View style={[styles.dragIndicator, { backgroundColor: colors.border }]} />
+        </View>
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={16}
+        >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Vehicle Daily Check</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete all required checks</Text>
@@ -387,6 +441,7 @@ export default function VehicleInspectionScreen() {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
 
@@ -394,6 +449,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+  },
+  dragIndicatorContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingTop: 12,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#cbd5e1',
   },
   scrollContent: {
     padding: 20,
