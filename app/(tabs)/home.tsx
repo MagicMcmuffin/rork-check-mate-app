@@ -301,26 +301,24 @@ export default function InspectionsScreen() {
             </Text>
           </TouchableOpacity>
 
-          {user?.role === 'apprentice' && (
-            <TouchableOpacity
-              style={[styles.checklistCard, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/apprenticeship-learning')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.checklistHeader}>
-                <View style={[styles.checklistIcon, { backgroundColor: '#fef3c7' }]}>
-                  <ClipboardList size={28} color="#f59e0b" />
-                </View>
-                <View style={[styles.checklistBadge, { backgroundColor: '#fef3c7' }]}>
-                  <Text style={[styles.checklistBadgeText, { color: '#f59e0b' }]}>1.6</Text>
-                </View>
+          <TouchableOpacity
+            style={[styles.checklistCard, { backgroundColor: colors.card }]}
+            onPress={() => router.push('/apprenticeship-learning')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.checklistHeader}>
+              <View style={[styles.checklistIcon, { backgroundColor: '#fef3c7' }]}>
+                <ClipboardList size={28} color="#f59e0b" />
               </View>
-              <Text style={[styles.checklistTitle, { color: colors.text }]}>Apprenticeship Learning</Text>
-              <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
-                Record what you learned today and track your development progress
-              </Text>
-            </TouchableOpacity>
-          )}
+              <View style={[styles.checklistBadge, { backgroundColor: '#fef3c7' }]}>
+                <Text style={[styles.checklistBadgeText, { color: '#f59e0b' }]}>1.6</Text>
+              </View>
+            </View>
+            <Text style={[styles.checklistTitle, { color: colors.text }]}>Apprenticeship Learning</Text>
+            <Text style={[styles.checklistDescription, { color: colors.textSecondary }]}>
+              Record what you learned today and track your development progress
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
