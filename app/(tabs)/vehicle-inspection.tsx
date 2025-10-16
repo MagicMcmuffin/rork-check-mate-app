@@ -192,27 +192,28 @@ export default function VehicleInspectionScreen() {
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background, transform: [{ translateY }] },
-      ]}
-      {...panResponder.panHandlers}
-    >
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Vehicle Inspection',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }}
+      />
+      <Animated.View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, transform: [{ translateY }] },
+        ]}
+        {...panResponder.panHandlers}
       >
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Vehicle Inspection',
-            headerStyle: { backgroundColor: colors.card },
-            headerTintColor: colors.text,
-            headerShadowVisible: false,
-          }}
-        />
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
         <View style={styles.dragIndicatorContainer}>
           <View style={[styles.dragIndicator, { backgroundColor: colors.border }]} />
         </View>
@@ -439,9 +440,10 @@ export default function VehicleInspectionScreen() {
             </>
           )}
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
-    </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      </Animated.View>
+    </>
   );
 }
 
