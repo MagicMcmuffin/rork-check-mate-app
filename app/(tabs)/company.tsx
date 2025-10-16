@@ -574,19 +574,20 @@ export default function CompanyScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView 
-              style={styles.equipmentModalBody}
-              contentContainerStyle={styles.equipmentModalContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={true}
-            >
-              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+            <View style={[styles.equipmentModalBodyBackground, { backgroundColor: colors.background }]}>
+              <ScrollView 
+                style={styles.equipmentModalBody}
+                contentContainerStyle={styles.equipmentModalContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={[styles.formSection, { backgroundColor: colors.card }]}>
                 <Text style={[styles.sectionLabel, { color: colors.text }]}>BASIC INFORMATION</Text>
                 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Equipment Name *</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="e.g., Excavator 1"
                     placeholderTextColor={colors.textSecondary}
                     value={equipmentName}
@@ -598,7 +599,7 @@ export default function CompanyScreen() {
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>Make *</Text>
                     <TextInput
-                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                       placeholder="e.g., Caterpillar"
                       placeholderTextColor={colors.textSecondary}
                       value={make}
@@ -608,7 +609,7 @@ export default function CompanyScreen() {
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>Model *</Text>
                     <TextInput
-                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                       placeholder="e.g., 320D"
                       placeholderTextColor={colors.textSecondary}
                       value={model}
@@ -620,7 +621,7 @@ export default function CompanyScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Serial Number *</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="Enter serial number"
                     placeholderTextColor={colors.textSecondary}
                     value={serialNumber}
@@ -653,7 +654,7 @@ export default function CompanyScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Registration</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="e.g., AB12 CDE"
                     placeholderTextColor={colors.textSecondary}
                     value={registration}
@@ -664,13 +665,13 @@ export default function CompanyScreen() {
               </View>
 
               {type === 'plant' && (
-                <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>HITCH DETAILS</Text>
+                <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.sectionLabel, { color: colors.text }]}>HITCH DETAILS (OPTIONAL)</Text>
                   
                   <View style={styles.inputGroup}>
                     <Text style={[styles.label, { color: colors.text }]}>Hitch Type</Text>
                     <TextInput
-                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                       placeholder="e.g., Quick Hitch, Manual Hitch"
                       placeholderTextColor={colors.textSecondary}
                       value={hitchType}
@@ -681,7 +682,7 @@ export default function CompanyScreen() {
                   <View style={styles.inputGroup}>
                     <Text style={[styles.label, { color: colors.text }]}>Hitch Serial Number</Text>
                     <TextInput
-                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                       placeholder="Enter hitch serial number"
                       placeholderTextColor={colors.textSecondary}
                       value={hitchSerial}
@@ -691,13 +692,13 @@ export default function CompanyScreen() {
                 </View>
               )}
 
-              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-                <Text style={[styles.sectionLabel, { color: colors.text }]}>DATES & CERTIFICATION</Text>
+              <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+                <Text style={[styles.sectionLabel, { color: colors.text }]}>DATES & CERTIFICATION (OPTIONAL)</Text>
                 
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Date of Thorough Examination</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>{type === 'vehicles' ? 'MOT' : 'Date of Thorough Examination'}</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor={colors.textSecondary}
                     value={thoroughExaminationDate}
@@ -708,7 +709,7 @@ export default function CompanyScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Next Service Date</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor={colors.textSecondary}
                     value={nextServiceDate}
@@ -719,7 +720,7 @@ export default function CompanyScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Purchase Date</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor={colors.textSecondary}
                     value={purchaseDate}
@@ -728,13 +729,13 @@ export default function CompanyScreen() {
                 </View>
               </View>
 
-              <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+              <View style={[styles.formSection, { backgroundColor: colors.card }]}>
                 <Text style={[styles.sectionLabel, { color: colors.text }]}>ADDITIONAL INFORMATION</Text>
                 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
                   <TextInput
-                    style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                    style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="Add any additional notes or information"
                     placeholderTextColor={colors.textSecondary}
                     value={notes}
@@ -746,6 +747,7 @@ export default function CompanyScreen() {
                 </View>
               </View>
             </ScrollView>
+          </View>
 
             <View style={[styles.equipmentModalFooter, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
               <TouchableOpacity
@@ -1206,12 +1208,15 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     padding: 8,
   },
+  equipmentModalBodyBackground: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
   equipmentModalBody: {
     flex: 1,
   },
   equipmentModalContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
     paddingBottom: 24,
     gap: 20,
   },
@@ -1223,10 +1228,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   formSection: {
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
     gap: 12,
-    marginBottom: 4,
   },
   sectionLabel: {
     fontSize: 12,
