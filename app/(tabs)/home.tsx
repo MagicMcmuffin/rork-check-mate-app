@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function InspectionsScreen() {
-  const { user, company, logout, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification } = useApp();
+  const { user, company, logout, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, getCompanyAnnouncements } = useApp();
   const { isDarkMode, toggleTheme, colors } = useTheme();
   const router = useRouter();
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -16,6 +16,8 @@ export default function InspectionsScreen() {
   const userCompanies = getUserCompanies();
   const notifications = getCompanyNotifications();
   const unreadNotifications = notifications.filter(n => !n.isCompleted);
+  const announcements = getCompanyAnnouncements();
+  const recentAnnouncements = announcements.slice(0, 3);
 
   const handleUpdateProfilePicture = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -141,6 +143,59 @@ export default function InspectionsScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {announcements.length > 0 && (
+          <View style={[styles.announcementsCard, { backgroundColor: colors.card }]}>
+            <View style={styles.announcementsHeader}>
+              <View style={styles.announcementsTitleRow}>
+                <View style={[styles.announcementsIcon, { backgroundColor: '#dbeafe' }]}>
+                  <Megaphone size={20} color="#1e40af" />
+                </View>
+                <Text style={[styles.announcementsTitle, { color: colors.text }]}>Company Announcements</Text>
+              </View>
+              {announcements.length > 3 && (
+                <TouchableOpacity 
+                  style={styles.viewAllButton}
+                  onPress={() => router.push('/(tabs)/company')}
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                  <ChevronRight size={16} color="#1e40af" />
+                </TouchableOpacity>
+              )}
+            </View>
+            {recentAnnouncements.map((announcement) => {
+              const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
+              return (
+                <View
+                  key={announcement.id}
+                  style={[styles.announcementItem, { backgroundColor: colors.background, borderLeftColor: priorityColor }]}
+                >
+                  <View style={styles.announcementContent}>
+                    <View style={styles.announcementTitleRow}>
+                      <Text style={[styles.announcementTitle, { color: colors.text }]}>{announcement.title}</Text>
+                      <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
+                        <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
+                          {announcement.priority.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.announcementMessage, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {announcement.message}
+                    </Text>
+                    <View style={styles.announcementMeta}>
+                      <Text style={[styles.announcementAuthor, { color: colors.textSecondary }]}>
+                        By {announcement.authorName}
+                      </Text>
+                      <Text style={[styles.announcementDate, { color: colors.textSecondary }]}>
+                        {new Date(announcement.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {showNotifications && notifications.length > 0 && (
           <View style={[styles.notificationsPanel, { backgroundColor: colors.card }]}>
@@ -539,6 +594,93 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#10b981',
     marginTop: 4,
+  },
+  announcementsCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  announcementsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  announcementsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  announcementsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  announcementsTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1e40af',
+  },
+  announcementItem: {
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+  },
+  announcementContent: {
+    gap: 8,
+  },
+  announcementTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  announcementTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  priorityBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+  },
+  announcementMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  announcementMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  announcementAuthor: {
+    fontSize: 12,
+  },
+  announcementDate: {
+    fontSize: 12,
   },
   notificationActions: {
     flexDirection: 'row',
