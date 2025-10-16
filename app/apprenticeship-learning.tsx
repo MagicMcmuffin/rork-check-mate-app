@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter, Stack } from 'expo-router';
-import { BookOpen, Camera, X } from 'lucide-react-native';
+import { BookOpen, Camera, X, ArrowLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -94,9 +94,17 @@ export default function ApprenticeshipLearningScreen() {
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={[styles.header, { backgroundColor: colors.card }]}>
             <View style={[styles.iconCircle, { backgroundColor: isDarkMode ? '#1e3a5f' : '#fef3c7' }]}>
