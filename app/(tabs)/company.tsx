@@ -509,7 +509,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'equipment' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Machinery
+            Plant
           </Text>
         </TouchableOpacity>
         <TouchableOpacity

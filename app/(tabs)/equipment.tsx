@@ -172,7 +172,7 @@ export default function EquipmentScreen() {
             onPress={() => setModalVisible(true)}
           >
             <Plus size={20} color="#ffffff" />
-            <Text style={styles.addButtonText}>Add Equipment</Text>
+            <Text style={styles.addButtonText}>+ Add New</Text>
           </TouchableOpacity>
         )}
 
@@ -550,7 +550,7 @@ export default function EquipmentScreen() {
                 onPress={handleAddEquipment}
               >
                 <Check size={18} color="#ffffff" />
-                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Add Equipment</Text>
+                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>
