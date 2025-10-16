@@ -21,6 +21,7 @@ export default function ReportsScreen() {
   const [searchEndDate, setSearchEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
 
+  const appContext = useApp();
   const { 
     user, 
     company, 
@@ -31,7 +32,7 @@ export default function ReportsScreen() {
     getFixLogs, 
     getEmployeeInspections, 
     getEmployeePositiveInterventions, 
-  } = useApp();
+  } = appContext || {};
   
   const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
   const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
