@@ -6,12 +6,18 @@ export interface SendEmailParams {
   html: string;
 }
 
+const GMAIL_USER = 'checkmatesafty@gmail.com';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'asgp rimm vddj gqob';
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'checkmatesafty@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'asgprimmvddjgqo',
+    user: GMAIL_USER,
+    pass: GMAIL_APP_PASSWORD,
   },
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
 });
 
 export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<{ success: boolean; message: string }> {
@@ -19,8 +25,8 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     console.log('========================================');
     console.log('📧 EMAIL SERVICE CALLED');
     console.log('========================================');
-    console.log('Gmail Account:', 'checkmatesafty@gmail.com');
-    console.log('App Password Set:', process.env.GMAIL_APP_PASSWORD ? 'Yes (from env)' : 'Yes (hardcoded)');
+    console.log('Gmail Account:', GMAIL_USER);
+    console.log('App Password:', GMAIL_APP_PASSWORD.substring(0, 4) + '****' + GMAIL_APP_PASSWORD.substring(GMAIL_APP_PASSWORD.length - 4));
     console.log('Recipients:', to);
     console.log('Subject:', subject);
     console.log('Recipients count:', to.length);
@@ -32,8 +38,12 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     }
 
     console.log('🔄 Attempting to send email...');
+    
+    await transporter.verify();
+    console.log('✅ SMTP connection verified');
+    
     const info = await transporter.sendMail({
-      from: '"CheckMate Safety" <checkmatesafty@gmail.com>',
+      from: `"CheckMate Safety" <${GMAIL_USER}>`,
       to: to.join(', '),
       subject,
       html,
