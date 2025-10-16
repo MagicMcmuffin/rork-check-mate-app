@@ -352,8 +352,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       console.log('Admin users:', adminUsers.map(u => u.email));
       console.log('========================================');
       try {
-        const result = await trpcClient.inspections.sendNotificationEmail.mutate({
-          inspectionType: 'plant',
+        const emailData = {
+          inspectionType: 'plant' as const,
           equipmentName: company?.equipment?.find(e => e.id === inspection.equipmentId)?.name || `Plant #${inspection.plantNumber}`,
           operatorName: newInspection.employeeName,
           date: newInspection.date,
@@ -363,13 +363,21 @@ export const [AppProvider, useApp] = createContextHook(() => {
           companyName: company?.name || 'Unknown Company',
           companyEmail: company?.email,
           projectEmails: project?.emails,
-          adminEmails: adminUsers.map(u => u.email),
-        });
-        console.log('✅ Email mutation result:', result);
+          adminEmails: adminUsers.map(u => u.email).filter(Boolean),
+        };
+        console.log('📤 Sending email with data:', JSON.stringify(emailData, null, 2));
+        const result = await trpcClient.inspections.sendNotificationEmail.mutate(emailData);
+        console.log('✅ Email mutation result:', JSON.stringify(result, null, 2));
         console.log('Plant inspection email sent successfully');
       } catch (error) {
         console.error('❌ ERROR SENDING EMAIL:', error);
-        console.error('Error details:', error instanceof Error ? error.message : error);
+        console.error('Error name:', (error as any)?.name);
+        console.error('Error message:', (error as any)?.message);
+        console.error('Error stack:', (error as any)?.stack);
+        console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        if ((error as any)?.data) {
+          console.error('Error data:', JSON.stringify((error as any).data, null, 2));
+        }
         console.log('Email notification failed - check backend logs');
       }
     } else {
