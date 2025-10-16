@@ -34,15 +34,23 @@ const createCustomFetch = () => {
       throw new Error('Backend service is not configured. Email notifications are unavailable in this environment.');
     }
     
-    const maxRetries = 3;
-    const retryDelays = [1000, 2000, 3000];
+    const maxRetries = 5;
+    const retryDelays = [2000, 3000, 4000, 5000, 6000];
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const attemptLog = attempt > 0 ? ` (Attempt ${attempt + 1}/${maxRetries + 1})` : '';
         console.log(`🔄 Backend request${attemptLog}:`, url);
         
-        const response = await fetch(url, options);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
         console.log('📡 Response status:', response.status);
         
         if (!response.ok) {
@@ -50,30 +58,52 @@ const createCustomFetch = () => {
           
           if (contentType?.includes('text/html')) {
             await response.text();
-            console.log('⚠️ Received HTML (backend starting)');
+            console.log('⚠️ Received HTML response (backend still starting up)');
             
             if (attempt < maxRetries) {
               const delay = retryDelays[attempt];
-              console.log(`⏳ Waiting ${delay}ms before retry...`);
+              console.log(`⏳ Backend is warming up. Waiting ${delay}ms before retry...`);
               await sleep(delay);
               continue;
             }
             
-            throw new Error('Backend is still starting up. Please try again in a moment.');
+            console.warn('⚠️ Backend did not start in time. Email will not be sent.');
+            throw new Error('Backend is still starting up. The inspection was saved, but email notification could not be sent at this time. Please check your inspection history.');
           }
           
           const errorText = await response.text();
           console.error('❌ Backend error:', errorText);
+          
+          if (response.status >= 500 && attempt < maxRetries) {
+            const delay = retryDelays[attempt];
+            console.log(`⏳ Server error, retrying in ${delay}ms...`);
+            await sleep(delay);
+            continue;
+          }
+          
           throw new Error(`Backend error: ${response.status}`);
         }
         
         console.log('✅ Request successful');
         return response;
       } catch (error) {
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.error('❌ Request timeout');
+          if (attempt < maxRetries) {
+            const delay = retryDelays[attempt];
+            console.log(`⏳ Request timed out, retrying in ${delay}ms...`);
+            await sleep(delay);
+            continue;
+          }
+          throw new Error('Backend request timed out. The inspection was saved, but email notification could not be sent.');
+        }
+        
         if (attempt < maxRetries && error instanceof Error && 
             (error.message.includes('starting') || 
              error.message.includes('fetch') ||
-             error.message.includes('network'))) {
+             error.message.includes('network') ||
+             error.message.includes('timeout'))) {
           const delay = retryDelays[attempt];
           console.log(`⏳ Retrying in ${delay}ms...`);
           await sleep(delay);
@@ -83,7 +113,7 @@ const createCustomFetch = () => {
         console.error('❌ Request failed:', error);
         
         if (error instanceof Error) {
-          if (error.message.includes('Backend') || error.message.includes('starting')) {
+          if (error.message.includes('Backend') || error.message.includes('starting') || error.message.includes('saved')) {
             throw error;
           }
           throw new Error(`Connection failed: ${error.message}`);
@@ -93,7 +123,7 @@ const createCustomFetch = () => {
       }
     }
     
-    throw new Error('Backend is unavailable after multiple retries.');
+    throw new Error('Backend is unavailable after multiple retries. The inspection was saved locally.');
   };
 };
 
