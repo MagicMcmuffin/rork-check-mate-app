@@ -3,13 +3,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { HAZARD_SEVERITY_OPTIONS } from '@/constants/inspections';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { AlertTriangle, Camera, MapPin, FileText, ChevronDown, X, Building2, ArrowLeft } from 'lucide-react-native';
+import { useRouter, Stack } from 'expo-router';
+import { Camera, MapPin, FileText, ChevronDown, X, Building2, ArrowLeft } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PositiveInterventionScreen() {
   const { user, company, submitPositiveIntervention } = useApp();
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const router = useRouter();
   const [hazardDescription, setHazardDescription] = useState('');
   const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
@@ -110,30 +111,38 @@ export default function PositiveInterventionScreen() {
     }
   };
 
+  const backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
+
   return (
-    <View style={[styles.container, { backgroundColor: '#1a1a1a' }]}>
-      <View style={styles.darkHeader}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
+    <View style={{ flex: 1, backgroundColor }}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Positive Intervention',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <ArrowLeft size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <AlertTriangle size={28} color="#10b981" />
-          <Text style={styles.headerTitle}>Positive Intervention</Text>
-        </View>
-      </View>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          style={{ backgroundColor: colors.background }}
-        >
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            style={styles.scrollView}
+          >
         <View style={styles.introCard}>
           <Text style={[styles.introText, { color: colors.textSecondary }]}>
             Report a hazard you identified and rectified
@@ -315,15 +324,16 @@ export default function PositiveInterventionScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          <Text style={styles.submitButtonText}>{isSubmitting ? 'Submitting...' : 'Submit Intervention'}</Text>
-        </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitButtonText}>{isSubmitting ? 'Submitting...' : 'Submit Intervention'}</Text>
+          </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -332,30 +342,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  darkHeader: {
-    backgroundColor: '#1a1a1a',
-    paddingTop: Platform.OS === 'ios' ? 60 : 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
   keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
