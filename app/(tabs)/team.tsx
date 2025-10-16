@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
 import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Megaphone, AlertCircle, Plus, X } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { UserRole } from '@/types';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -776,79 +776,91 @@ export default function TeamScreen() {
         animationType="slide"
         onRequestClose={() => setShowAnnouncementModal(false)}
       >
-        <TouchableOpacity
+        <KeyboardAvoidingView
           style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowAnnouncementModal(false)}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={[styles.announcementModalContent, { backgroundColor: colors.card }]} onStartShouldSetResponder={() => true}>
-            <View style={styles.announcementModalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>New Announcement</Text>
-              <TouchableOpacity onPress={() => setShowAnnouncementModal(false)}>
-                <X size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.modalOverlayInner}
+            activeOpacity={1}
+            onPress={() => setShowAnnouncementModal(false)}
+          >
+            <View style={[styles.announcementModalContent, { backgroundColor: colors.card }]} onStartShouldSetResponder={() => true}>
+              <View style={styles.announcementModalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>New Announcement</Text>
+                <TouchableOpacity onPress={() => setShowAnnouncementModal(false)}>
+                  <X size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.announcementModalBody}
+                contentContainerStyle={styles.announcementModalBodyContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Title</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Enter announcement title"
+                  placeholderTextColor={colors.textSecondary}
+                  value={announcementTitle}
+                  onChangeText={setAnnouncementTitle}
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Message</Text>
+                <TextInput
+                  style={[styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Enter announcement message"
+                  placeholderTextColor={colors.textSecondary}
+                  value={announcementMessage}
+                  onChangeText={setAnnouncementMessage}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
+
+                <Text style={[styles.inputLabel, { color: colors.text }]}>Priority</Text>
+                <View style={styles.prioritySelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityOption,
+                      { backgroundColor: announcementPriority === 'low' ? '#f1f5f9' : colors.background, borderColor: announcementPriority === 'low' ? '#64748b' : colors.border }
+                    ]}
+                    onPress={() => setAnnouncementPriority('low')}
+                  >
+                    <Text style={[styles.priorityOptionText, { color: announcementPriority === 'low' ? '#64748b' : colors.textSecondary }]}>Info</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityOption,
+                      { backgroundColor: announcementPriority === 'normal' ? '#dbeafe' : colors.background, borderColor: announcementPriority === 'normal' ? '#1e40af' : colors.border }
+                    ]}
+                    onPress={() => setAnnouncementPriority('normal')}
+                  >
+                    <Text style={[styles.priorityOptionText, { color: announcementPriority === 'normal' ? '#1e40af' : colors.textSecondary }]}>Normal</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.priorityOption,
+                      { backgroundColor: announcementPriority === 'high' ? '#fee2e2' : colors.background, borderColor: announcementPriority === 'high' ? '#dc2626' : colors.border }
+                    ]}
+                    onPress={() => setAnnouncementPriority('high')}
+                  >
+                    <Text style={[styles.priorityOptionText, { color: announcementPriority === 'high' ? '#dc2626' : colors.textSecondary }]}>Urgent</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.postButton, { backgroundColor: '#1e40af' }]}
+                  onPress={handleCreateAnnouncement}
+                >
+                  <Text style={styles.postButtonText}>Post Announcement</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
-
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Title</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-              placeholder="Enter announcement title"
-              placeholderTextColor={colors.textSecondary}
-              value={announcementTitle}
-              onChangeText={setAnnouncementTitle}
-            />
-
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Message</Text>
-            <TextInput
-              style={[styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-              placeholder="Enter announcement message"
-              placeholderTextColor={colors.textSecondary}
-              value={announcementMessage}
-              onChangeText={setAnnouncementMessage}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
-
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Priority</Text>
-            <View style={styles.prioritySelector}>
-              <TouchableOpacity
-                style={[
-                  styles.priorityOption,
-                  { backgroundColor: announcementPriority === 'low' ? '#f1f5f9' : colors.background, borderColor: announcementPriority === 'low' ? '#64748b' : colors.border }
-                ]}
-                onPress={() => setAnnouncementPriority('low')}
-              >
-                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'low' ? '#64748b' : colors.textSecondary }]}>Info</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.priorityOption,
-                  { backgroundColor: announcementPriority === 'normal' ? '#dbeafe' : colors.background, borderColor: announcementPriority === 'normal' ? '#1e40af' : colors.border }
-                ]}
-                onPress={() => setAnnouncementPriority('normal')}
-              >
-                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'normal' ? '#1e40af' : colors.textSecondary }]}>Normal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.priorityOption,
-                  { backgroundColor: announcementPriority === 'high' ? '#fee2e2' : colors.background, borderColor: announcementPriority === 'high' ? '#dc2626' : colors.border }
-                ]}
-                onPress={() => setAnnouncementPriority('high')}
-              >
-                <Text style={[styles.priorityOptionText, { color: announcementPriority === 'high' ? '#dc2626' : colors.textSecondary }]}>Urgent</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.postButton, { backgroundColor: '#1e40af' }]}
-              onPress={handleCreateAnnouncement}
-            >
-              <Text style={styles.postButtonText}>Post Announcement</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -1146,6 +1158,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalOverlayInner: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -1452,7 +1467,6 @@ const styles = StyleSheet.create({
   },
   announcementModalContent: {
     borderRadius: 20,
-    padding: 24,
     width: '100%',
     maxWidth: 500,
     maxHeight: '90%',
@@ -1461,12 +1475,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 5,
+    overflow: 'hidden',
   },
   announcementModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    padding: 24,
+    paddingBottom: 16,
+  },
+  announcementModalBody: {
+    flex: 1,
+  },
+  announcementModalBodyContent: {
+    padding: 24,
+    paddingTop: 0,
+    paddingBottom: 32,
   },
   inputLabel: {
     fontSize: 14,
