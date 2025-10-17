@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, AlertCircle, X, Check, Upload, Download, Eye, Clock, ChevronRight } from 'lucide-react-native';
+import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, AlertCircle, X, Check, Upload, Clock, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -11,7 +11,6 @@ import * as FileSystem from 'expo-file-system';
 export default function EquipmentManagementScreen() {
   const { 
     user, 
-    company, 
     getCompanyEquipmentCategories,
     getCompanyEquipmentItems,
     getCategoryEquipmentItems,
@@ -49,7 +48,7 @@ export default function EquipmentManagementScreen() {
   const [has30DayReminder, setHas30DayReminder] = useState(false);
   const [has7DayReminder, setHas7DayReminder] = useState(false);
 
-  const [viewCertificatesModalVisible, setViewCertificatesModalVisible] = useState(false);
+
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
@@ -273,7 +272,6 @@ export default function EquipmentManagementScreen() {
 
     try {
       await addEquipmentCertificate(selectedItemId, {
-        equipmentItemId: selectedItemId,
         name: certificateName.trim(),
         fileUri: certificateFile.uri,
         mimeType: certificateFile.mimeType,
@@ -327,10 +325,7 @@ export default function EquipmentManagementScreen() {
     setCertificateModalVisible(true);
   };
 
-  const handleViewCertificates = (itemId: string) => {
-    setSelectedItemId(itemId);
-    setViewCertificatesModalVisible(true);
-  };
+
 
   const getExpiryStatus = (expiryDate?: string) => {
     if (!expiryDate) return null;

@@ -1260,7 +1260,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return equipmentCategories.filter(c => c.companyId === company.id);
   }, [company, equipmentCategories]);
 
-  const addEquipmentItem = useCallback(async (item: Omit<EquipmentItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addEquipmentItem = useCallback(async (item: Omit<EquipmentItem, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>) => {
     if (!company) throw new Error('No company found');
 
     const newItem: EquipmentItem = {
@@ -1301,12 +1301,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return equipmentItems.filter(i => i.categoryId === categoryId);
   }, [equipmentItems]);
 
-  const addEquipmentCertificate = useCallback(async (itemId: string, certificate: Omit<EquipmentCertificate, 'id' | 'uploadedAt'>) => {
+  const addEquipmentCertificate = useCallback(async (itemId: string, certificate: Omit<EquipmentCertificate, 'id' | 'equipmentItemId' | 'uploadedBy' | 'uploadedAt'>) => {
     if (!user) throw new Error('No user found');
 
     const newCertificate: EquipmentCertificate = {
       ...certificate,
       id: Date.now().toString(),
+      equipmentItemId: itemId,
       uploadedBy: user.name,
       uploadedAt: new Date().toISOString(),
     };
