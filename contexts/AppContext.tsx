@@ -930,7 +930,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setCompanies(updatedCompanies);
   }, [company, companies]);
 
-  const saveDraft = useCallback(async (type: DraftType, data: any, draftId?: string) => {
+  const saveDraft = useCallback(async (type: DraftType, data: any, draftId?: string, isWeeklyReport?: boolean) => {
     if (!user || !company) throw new Error('No user or company found');
 
     const existingDraft = draftId ? drafts.find(d => d.id === draftId) : null;
@@ -942,6 +942,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       employeeId: user.id,
       employeeName: user.name,
       data,
+      isWeeklyReport: isWeeklyReport !== undefined ? isWeeklyReport : existingDraft?.isWeeklyReport || false,
       createdAt: existingDraft?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

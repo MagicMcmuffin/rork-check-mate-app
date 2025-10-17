@@ -243,13 +243,35 @@ export interface Announcement {
 
 export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention';
 
+export interface DayData {
+  day: DayOfWeek;
+  date: string;
+  completed: boolean;
+  checks: any[];
+  additionalData?: any;
+}
+
+export interface WeeklyDraftData {
+  equipmentId?: string;
+  plantNumber?: string;
+  vehicleRegistration?: string;
+  vehicleType?: string;
+  excavatorDetails?: string;
+  quickHitchModel?: string;
+  bucketType?: string;
+  projectId?: string;
+  days: DayData[];
+  weekStartDate: string;
+}
+
 export interface Draft {
   id: string;
   type: DraftType;
   companyId: string;
   employeeId: string;
   employeeName: string;
-  data: Partial<PlantInspection | QuickHitchInspection | VehicleInspection | BucketChangeInspection | PositiveIntervention>;
+  data: Partial<PlantInspection | QuickHitchInspection | VehicleInspection | BucketChangeInspection | PositiveIntervention> | WeeklyDraftData;
+  isWeeklyReport?: boolean;
   createdAt: string;
   updatedAt: string;
 }

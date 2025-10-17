@@ -1,10 +1,10 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { VEHICLE_INSPECTION_ITEMS, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
-import { VehicleInspectionCheck, CheckStatus } from '@/types';
-import { useRouter, Stack } from 'expo-router';
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, ArrowLeft } from 'lucide-react-native';
-import { useState } from 'react';
+import { VehicleInspectionCheck, CheckStatus, DayOfWeek, WeeklyDraftData } from '@/types';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, ArrowLeft, Save, Send, Calendar } from 'lucide-react-native';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,21 +18,78 @@ import {
   Platform,
 } from 'react-native';
 
+const DAYS_OF_WEEK: { day: DayOfWeek; label: string }[] = [
+  { day: 'M', label: 'Mon' },
+  { day: 'T', label: 'Tue' },
+  { day: 'W', label: 'Wed' },
+  { day: 'Th', label: 'Thu' },
+  { day: 'F', label: 'Fri' },
+  { day: 'S', label: 'Sat' },
+  { day: 'Su', label: 'Sun' },
+];
+
 export default function VehicleInspectionScreen() {
-  const { user, company, submitVehicleInspection } = useApp();
+  const { user, company, submitVehicleInspection, saveDraft, getDrafts } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const draftId = params.draftId as string | undefined;
+
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
   const [vehicleType, setVehicleType] = useState('');
   const [mileage, setMileage] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
   const [customVehicle, setCustomVehicle] = useState('');
+  const [weeklyData, setWeeklyData] = useState<WeeklyDraftData>({
+    vehicleRegistration: '',
+    vehicleType: '',
+    days: DAYS_OF_WEEK.map(d => ({
+      day: d.day,
+      date: '',
+      completed: false,
+      checks: [],
+      additionalData: { mileage: '' },
+    })),
+    weekStartDate: new Date().toISOString().split('T')[0],
+  });
   const [checks, setChecks] = useState<VehicleInspectionCheck[]>([]);
   const [additionalComments, setAdditionalComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [currentDraftId, setCurrentDraftId] = useState<string | undefined>(draftId);
 
-  const vehicleEquipment = company?.equipment?.filter(e => e.type === 'vehicle') || [];
+  const vehicleEquipment = company?.equipment?.filter(e => e.type === 'vehicles') || [];
+
+  useEffect(() => {
+    if (draftId && user) {
+      const drafts = getDrafts(user.id);
+      const draft = drafts.find(d => d.id === draftId);
+      if (draft && draft.type === 'vehicle' && draft.isWeeklyReport) {
+        const data = draft.data as WeeklyDraftData;
+        setWeeklyData(data);
+        setSelectedEquipment(data.equipmentId || '');
+        setVehicleType(data.vehicleType || '');
+        setCustomVehicle(data.vehicleRegistration || '');
+        
+        const currentDayData = data.days.find(d => d.day === selectedDay);
+        if (currentDayData) {
+          setChecks(currentDayData.checks as VehicleInspectionCheck[]);
+          setMileage(currentDayData.additionalData?.mileage || '');
+          setAdditionalComments(currentDayData.additionalData?.comments || '');
+        }
+      }
+    }
+  }, [draftId, user, getDrafts, selectedDay]);
+
+  useEffect(() => {
+    const currentDayData = weeklyData.days.find(d => d.day === selectedDay);
+    if (currentDayData) {
+      setChecks(currentDayData.checks as VehicleInspectionCheck[]);
+      setMileage(currentDayData.additionalData?.mileage || '');
+      setAdditionalComments(currentDayData.additionalData?.comments || '');
+    }
+  }, [selectedDay, weeklyData.days]);
 
   const groupedItems = VEHICLE_INSPECTION_ITEMS.reduce((acc, item) => {
     const category = item.category || 'Other';
@@ -99,7 +156,7 @@ export default function VehicleInspectionScreen() {
     return expandedItems.has(itemId);
   };
 
-  const handleSubmit = async () => {
+  const handleSaveDay = async () => {
     const finalVehicleReg = selectedEquipment === 'other'
       ? customVehicle.trim()
       : selectedEquipment
@@ -110,40 +167,101 @@ export default function VehicleInspectionScreen() {
       ? vehicleEquipment.find(e => e.id === selectedEquipment)?.name || vehicleType.trim()
       : vehicleType.trim();
 
-    if (!finalVehicleReg || !finalVehicleType || !mileage.trim()) {
-      Alert.alert('Error', 'Please fill in Vehicle Registration, Type, and Mileage fields');
+    if (!finalVehicleReg || !finalVehicleType) {
+      Alert.alert('Error', 'Please fill in Vehicle Registration and Type');
       return;
     }
 
-    if (checks.length === 0) {
-      Alert.alert('Error', 'Please complete at least one check');
-      return;
-    }
+    const updatedDays = weeklyData.days.map(d => {
+      if (d.day === selectedDay) {
+        return {
+          ...d,
+          checks,
+          completed: checks.length > 0,
+          date: new Date().toISOString().split('T')[0],
+          additionalData: {
+            mileage: mileage.trim(),
+            comments: additionalComments.trim(),
+          },
+        };
+      }
+      return d;
+    });
 
-    setIsSubmitting(true);
+    const updatedWeeklyData: WeeklyDraftData = {
+      ...weeklyData,
+      equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
+      vehicleRegistration: finalVehicleReg,
+      vehicleType: finalVehicleType,
+      days: updatedDays,
+    };
+
+    setWeeklyData(updatedWeeklyData);
+
+    setIsSavingDraft(true);
     try {
-      await submitVehicleInspection({
-        companyId: company!.id,
-        employeeId: user!.id,
-        employeeName: user!.name || 'Unknown',
-        equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
-        vehicleRegistration: finalVehicleReg,
-        vehicleType: finalVehicleType,
-        mileage: mileage.trim(),
-        date: new Date().toISOString().split('T')[0],
-        checks,
-        additionalComments: additionalComments.trim(),
-      });
-
-      Alert.alert('Success', 'Vehicle inspection submitted successfully', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      const savedDraft = await saveDraft('vehicle', updatedWeeklyData, currentDraftId, true);
+      setCurrentDraftId(savedDraft.id);
+      Alert.alert('Success', `${DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label} saved successfully!`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit inspection. Please try again.');
-      console.error('Submit error:', error);
+      console.error('Error saving draft:', error);
+      Alert.alert('Error', 'Failed to save. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsSavingDraft(false);
     }
+  };
+
+  const handleSubmitWeek = async () => {
+    const completedDays = weeklyData.days.filter(d => d.completed);
+    
+    if (completedDays.length === 0) {
+      Alert.alert('Error', 'Please complete at least one day before submitting');
+      return;
+    }
+
+    Alert.alert(
+      'Submit Weekly Report',
+      `Submit inspection for ${completedDays.length} day(s)?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              for (const dayData of completedDays) {
+                await submitVehicleInspection({
+                  companyId: company!.id,
+                  employeeId: user!.id,
+                  employeeName: user!.name || 'Unknown',
+                  equipmentId: weeklyData.equipmentId,
+                  vehicleRegistration: weeklyData.vehicleRegistration || '',
+                  vehicleType: weeklyData.vehicleType || '',
+                  mileage: dayData.additionalData?.mileage || '',
+                  date: dayData.date,
+                  checks: dayData.checks as VehicleInspectionCheck[],
+                  additionalComments: dayData.additionalData?.comments || '',
+                });
+              }
+
+              Alert.alert('Success', 'Weekly inspection submitted successfully', [
+                { text: 'OK', onPress: () => router.back() },
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to submit inspection. Please try again.');
+              console.error('Submit error:', error);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getDayCompletionStatus = (day: DayOfWeek): boolean => {
+    const dayData = weeklyData.days.find(d => d.day === day);
+    return dayData?.completed || false;
   };
 
   return (
@@ -182,7 +300,47 @@ export default function VehicleInspectionScreen() {
         >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Vehicle Daily Check</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete all required checks</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete checks for each day</Text>
+        </View>
+
+        <View style={[styles.daySelector, { backgroundColor: colors.card }]}>
+          <View style={styles.daySelectorHeader}>
+            <Calendar size={18} color={colors.primary} />
+            <Text style={[styles.daySelectorTitle, { color: colors.text }]}>Select Day</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
+            {DAYS_OF_WEEK.map(({ day, label }) => {
+              const isCompleted = getDayCompletionStatus(day);
+              const isSelected = selectedDay === day;
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    isSelected && [styles.dayButtonActive, { backgroundColor: colors.primary }],
+                    isCompleted && !isSelected && [styles.dayButtonCompleted, { backgroundColor: '#10b981', borderColor: '#10b981' }],
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayButtonText,
+                      { color: colors.text },
+                      (isSelected || isCompleted) && styles.dayButtonTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                  {isCompleted && !isSelected && (
+                    <View style={styles.completedBadge}>
+                      <CheckCircle2 size={14} color="#ffffff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={[styles.formSection, { backgroundColor: colors.card }]}>
@@ -243,7 +401,7 @@ export default function VehicleInspectionScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Current Mileage</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Current Mileage for {DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               placeholder="Enter mileage"
@@ -369,7 +527,7 @@ export default function VehicleInspectionScreen() {
         ))}
 
         <View style={[styles.notesSection, { backgroundColor: colors.card }]}>
-          <Text style={[styles.label, { color: colors.text }]}>Additional Comments</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Additional Comments for {DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label}</Text>
           <TextInput
             style={[styles.notesInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
             placeholder="Enter any additional comments or observations..."
@@ -382,20 +540,37 @@ export default function VehicleInspectionScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <CheckCircle2 size={20} color="#ffffff" />
-              <Text style={styles.submitButtonText}>Submit Inspection</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: colors.card, borderColor: colors.primary }, isSavingDraft && styles.buttonDisabled]}
+            onPress={handleSaveDay}
+            disabled={isSavingDraft}
+          >
+            {isSavingDraft ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <>
+                <Save size={20} color={colors.primary} />
+                <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save {DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.buttonDisabled]}
+            onPress={handleSubmitWeek}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Send size={20} color="#ffffff" />
+                <Text style={styles.submitButtonText}>Submit Week</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
         </ScrollView>
       </KeyboardAvoidingView>
       </View>
@@ -424,6 +599,57 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#64748b',
+  },
+  daySelector: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  daySelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  daySelectorTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  dayButtons: {
+    gap: 8,
+  },
+  dayButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    minWidth: 60,
+    alignItems: 'center',
+    position: 'relative' as const,
+  },
+  dayButtonActive: {
+    backgroundColor: '#1e40af',
+    borderColor: '#1e40af',
+  },
+  dayButtonCompleted: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
+  dayButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  dayButtonTextActive: {
+    color: '#ffffff',
+  },
+  completedBadge: {
+    position: 'absolute' as const,
+    top: -6,
+    right: -6,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 2,
   },
   formSection: {
     backgroundColor: '#ffffff',
@@ -546,6 +772,23 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     minHeight: 100,
   },
+  actionButtons: {
+    gap: 12,
+  },
+  saveButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
   submitButton: {
     backgroundColor: '#1e40af',
     borderRadius: 12,
@@ -555,7 +798,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  submitButtonDisabled: {
+  buttonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
