@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,7 +17,7 @@ export default function ReportsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
-  const [mainTab, setMainTab] = useState<'reports' | 'mychecks'>('reports');
+  const [mainTab, setMainTab] = useState<'reports' | 'mychecks' | 'drafts'>('reports');
   const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes'>('inspections');
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
@@ -48,7 +48,10 @@ export default function ReportsScreen() {
     getCompanyPositiveInterventions, 
     getFixLogs, 
     getEmployeeInspections, 
-    getEmployeePositiveInterventions, 
+    getEmployeePositiveInterventions,
+    getDrafts,
+    deleteDraft,
+    submitDraft,
   } = appContext;
   
   if (!deleteInspection || !markInspectionFixed) {
@@ -357,6 +360,13 @@ export default function ReportsScreen() {
           >
             <History size={18} color={mainTab === 'mychecks' ? '#1e40af' : colors.textSecondary} />
             <Text style={[styles.mainTabText, { color: colors.textSecondary }, mainTab === 'mychecks' && styles.mainTabTextActive]}>My Checks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.mainTab, mainTab === 'drafts' && styles.mainTabActive]}
+            onPress={() => setMainTab('drafts')}
+          >
+            <FilePlus size={18} color={mainTab === 'drafts' ? '#1e40af' : colors.textSecondary} />
+            <Text style={[styles.mainTabText, { color: colors.textSecondary }, mainTab === 'drafts' && styles.mainTabTextActive]}>Drafts</Text>
           </TouchableOpacity>
         </View>
 

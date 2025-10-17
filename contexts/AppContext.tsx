@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType } from '@/types';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   FIX_LOGS: '@checkmate_fix_logs',
   APPRENTICESHIP_ENTRIES: '@checkmate_apprenticeship_entries',
   ANNOUNCEMENTS: '@checkmate_announcements',
+  DRAFTS: '@checkmate_drafts',
 } as const;
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -33,6 +34,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [fixLogs, setFixLogs] = useState<FixLog[]>([]);
   const [apprenticeshipEntries, setApprenticeshipEntries] = useState<ApprenticeshipEntry[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData] = await Promise.all([
+      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANY),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANIES),
@@ -55,6 +57,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.FIX_LOGS),
         AsyncStorage.getItem(STORAGE_KEYS.APPRENTICESHIP_ENTRIES),
         AsyncStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS),
+        AsyncStorage.getItem(STORAGE_KEYS.DRAFTS),
       ]);
 
       const safeJSONParse = (data: string | null, storageKey: string) => {
@@ -118,6 +121,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const parsedAnnouncements = safeJSONParse(announcementsData, STORAGE_KEYS.ANNOUNCEMENTS);
       if (parsedAnnouncements) setAnnouncements(parsedAnnouncements);
+
+      const parsedDrafts = safeJSONParse(draftsData, STORAGE_KEYS.DRAFTS);
+      if (parsedDrafts) setDrafts(parsedDrafts);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -924,6 +930,76 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setCompanies(updatedCompanies);
   }, [company, companies]);
 
+  const saveDraft = useCallback(async (type: DraftType, data: any, draftId?: string) => {
+    if (!user || !company) throw new Error('No user or company found');
+
+    const existingDraft = draftId ? drafts.find(d => d.id === draftId) : null;
+    
+    const draft: Draft = {
+      id: existingDraft?.id || Date.now().toString(),
+      type,
+      companyId: company.id,
+      employeeId: user.id,
+      employeeName: user.name,
+      data,
+      createdAt: existingDraft?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = existingDraft 
+      ? drafts.map(d => d.id === draftId ? draft : d)
+      : [...drafts, draft];
+
+    await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
+    setDrafts(updated);
+
+    return draft;
+  }, [user, company, drafts]);
+
+  const getDrafts = useCallback((employeeId?: string) => {
+    if (employeeId) {
+      return drafts.filter(d => d.employeeId === employeeId);
+    }
+    if (!company) return [];
+    return drafts.filter(d => d.companyId === company.id);
+  }, [drafts, company]);
+
+  const deleteDraft = useCallback(async (draftId: string) => {
+    const updated = drafts.filter(d => d.id !== draftId);
+    await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
+    setDrafts(updated);
+  }, [drafts]);
+
+  const submitDraft = useCallback(async (draftId: string) => {
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) throw new Error('Draft not found');
+
+    let result;
+
+    switch (draft.type) {
+      case 'plant':
+        result = await submitPlantInspection(draft.data as any);
+        break;
+      case 'quickhitch':
+        result = await submitQuickHitchInspection(draft.data as any);
+        break;
+      case 'vehicle':
+        result = await submitVehicleInspection(draft.data as any);
+        break;
+      case 'bucketchange':
+        result = await submitBucketChangeInspection(draft.data as any);
+        break;
+      case 'intervention':
+        result = await submitPositiveIntervention(draft.data as any);
+        break;
+      default:
+        throw new Error('Invalid draft type');
+    }
+
+    await deleteDraft(draftId);
+    return result;
+  }, [drafts, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, deleteDraft]);
+
   return useMemo(() => ({
     user,
     company,
@@ -937,6 +1013,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     fixLogs,
     apprenticeshipEntries,
     announcements,
+    drafts,
     isLoading,
     registerCompany,
     joinCompany,
@@ -976,5 +1053,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     getCompanyAnnouncements,
     deleteAnnouncement,
     updateCompanyLogo,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo]);
+    saveDraft,
+    getDrafts,
+    deleteDraft,
+    submitDraft,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft]);
 });

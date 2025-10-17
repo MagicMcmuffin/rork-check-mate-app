@@ -240,3 +240,16 @@ export interface Announcement {
   priority: 'low' | 'normal' | 'high';
   createdAt: string;
 }
+
+export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention';
+
+export interface Draft {
+  id: string;
+  type: DraftType;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  data: Partial<PlantInspection | QuickHitchInspection | VehicleInspection | BucketChangeInspection | PositiveIntervention>;
+  createdAt: string;
+  updatedAt: string;
+}

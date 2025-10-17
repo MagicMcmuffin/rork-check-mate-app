@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, DAYS_OF_WEEK, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
 import { PlantInspectionCheck, DayOfWeek, CheckStatus } from '@/types';
 import { useRouter, Stack } from 'expo-router';
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X } from 'lucide-react-native';
+import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X, Save } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -19,7 +19,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PlantInspectionScreen() {
-  const { user, company, submitPlantInspection } = useApp();
+  const { user, company, submitPlantInspection, saveDraft } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const [plantNumber, setPlantNumber] = useState('');
@@ -30,6 +30,7 @@ export default function PlantInspectionScreen() {
   const [checks, setChecks] = useState<PlantInspectionCheck[]>([]);
   const [notesOnDefects, setNotesOnDefects] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
 
@@ -140,6 +141,38 @@ export default function PlantInspectionScreen() {
 
   const isExpanded = (itemId: string): boolean => {
     return expandedItems.has(`${itemId}-${selectedDay}`);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!plantNumber.trim() && checks.length === 0) {
+      Alert.alert('Error', 'Please add some data before saving as draft');
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      await saveDraft('plant', {
+        companyId: company!.id,
+        projectId: selectedProject || undefined,
+        employeeId: user!.id,
+        employeeName: user!.name || 'Unknown',
+        plantNumber: plantNumber.trim(),
+        equipmentId: selectedEquipmentId || undefined,
+        carriedOutBy: carriedOutBy.trim(),
+        date: new Date().toISOString().split('T')[0],
+        checks,
+        notesOnDefects: notesOnDefects.trim(),
+      });
+
+      Alert.alert('Success', 'Draft saved successfully. You can continue this inspection later from the Reports tab.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save draft. Please try again.');
+      console.error('Save draft error:', error);
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -444,20 +477,37 @@ export default function PlantInspectionScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <CheckCircle2 size={20} color="#ffffff" />
-              <Text style={styles.submitButtonText}>Submit Inspection</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.draftButton, isSavingDraft && styles.draftButtonDisabled]}
+            onPress={handleSaveDraft}
+            disabled={isSavingDraft || isSubmitting}
+          >
+            {isSavingDraft ? (
+              <ActivityIndicator color="#1e40af" />
+            ) : (
+              <>
+                <Save size={20} color="#1e40af" />
+                <Text style={styles.draftButtonText}>Save Draft</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting || isSavingDraft}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <CheckCircle2 size={20} color="#ffffff" />
+                <Text style={styles.submitButtonText}>Submit</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -601,7 +651,33 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     minHeight: 100,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  draftButton: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#1e40af',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  draftButtonDisabled: {
+    opacity: 0.6,
+  },
+  draftButtonText: {
+    color: '#1e40af',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
   submitButton: {
+    flex: 1,
     backgroundColor: '#1e40af',
     borderRadius: 12,
     padding: 16,
