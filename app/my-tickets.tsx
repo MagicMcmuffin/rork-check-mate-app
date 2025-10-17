@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Platform, Image } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, FileText, Calendar, Download, Trash2 } from 'lucide-react-native';
+import { Plus, FileText, Calendar, Download, Trash2, ImageIcon, CalendarDays } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
 import * as DocumentPicker from 'expo-document-picker';
-
+import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import { Ticket } from '@/types';
 
@@ -261,8 +261,9 @@ function AddTicketModal({ visible, onClose, onAdd, user, company }: AddTicketMod
   const [notes, setNotes] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<{ uri: string; name: string; mimeType: string; isImage: boolean } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handlePickDocument = async () => {
     try {
@@ -273,16 +274,97 @@ function AddTicketModal({ visible, onClose, onAdd, user, company }: AddTicketMod
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
+        const isImage = file.mimeType?.startsWith('image/') || false;
         setSelectedFile({
           uri: file.uri,
           name: file.name,
           mimeType: file.mimeType || 'application/octet-stream',
+          isImage,
         });
       }
     } catch (error) {
       console.error('Error picking document:', error);
       Alert.alert('Error', 'Failed to pick document');
     }
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera roll is required');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const image = result.assets[0];
+        const fileName = image.uri.split('/').pop() || 'photo.jpg';
+        setSelectedFile({
+          uri: image.uri,
+          name: fileName,
+          mimeType: 'image/jpeg',
+          isImage: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error picking photo:', error);
+      Alert.alert('Error', 'Failed to pick photo');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Permission to access camera is required');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const image = result.assets[0];
+        const fileName = `photo_${Date.now()}.jpg`;
+        setSelectedFile({
+          uri: image.uri,
+          name: fileName,
+          mimeType: 'image/jpeg',
+          isImage: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+  };
+
+  const showAttachmentOptions = () => {
+    Alert.alert(
+      'Add Attachment',
+      'Choose an option',
+      [
+        { text: 'Take Photo', onPress: handleTakePhoto },
+        { text: 'Choose Photo', onPress: handlePickPhoto },
+        { text: 'Choose File', onPress: handlePickDocument },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleSubmit = async () => {
@@ -357,13 +439,27 @@ function AddTicketModal({ visible, onClose, onAdd, user, company }: AddTicketMod
           </View>
 
           <Text style={styles.label}>Expiry Date (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#64748b"
-            value={expiryDate}
-            onChangeText={setExpiryDate}
-          />
+          <TouchableOpacity 
+            style={styles.datePickerButton}
+            onPress={() => setShowDatePicker(!showDatePicker)}
+          >
+            <CalendarDays size={20} color="#3b82f6" />
+            <Text style={styles.datePickerButtonText}>
+              {expiryDate ? new Date(expiryDate).toLocaleDateString() : 'Select Date'}
+            </Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <View style={styles.calendarContainer}>
+              <CalendarPicker
+                selectedDate={expiryDate}
+                onSelectDate={(date) => {
+                  setExpiryDate(date);
+                  setShowDatePicker(false);
+                }}
+              />
+            </View>
+          )}
 
           <Text style={styles.label}>Notes (Optional)</Text>
           <TextInput
@@ -376,12 +472,29 @@ function AddTicketModal({ visible, onClose, onAdd, user, company }: AddTicketMod
             numberOfLines={3}
           />
 
-          <TouchableOpacity style={styles.fileButton} onPress={handlePickDocument}>
-            <FileText size={20} color="#3b82f6" />
-            <Text style={styles.fileButtonText}>
-              {selectedFile ? selectedFile.name : 'Attach File (Optional)'}
-            </Text>
-          </TouchableOpacity>
+          {selectedFile ? (
+            <View style={styles.attachmentPreview}>
+              {selectedFile.isImage ? (
+                <Image source={{ uri: selectedFile.uri }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.previewFileIcon}>
+                  <FileText size={40} color="#64748b" />
+                </View>
+              )}
+              <View style={styles.attachmentInfo}>
+                <Text style={styles.attachmentName} numberOfLines={2}>{selectedFile.name}</Text>
+                <TouchableOpacity style={styles.removeButton} onPress={handleRemoveFile}>
+                  <Trash2 size={16} color="#ef4444" />
+                  <Text style={styles.removeButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.fileButton} onPress={showAttachmentOptions}>
+              <ImageIcon size={20} color="#3b82f6" />
+              <Text style={styles.fileButtonText}>Add Photo or File</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.reminderToggle}
@@ -744,5 +857,229 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#0f172a',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginBottom: 16,
+  },
+  datePickerButtonText: {
+    color: '#94a3b8',
+    fontSize: 16,
+    flex: 1,
+  },
+  calendarContainer: {
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginBottom: 16,
+  },
+  attachmentPreview: {
+    flexDirection: 'row',
+    backgroundColor: '#0f172a',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginBottom: 16,
+    gap: 12,
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  previewFileIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  attachmentInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 8,
+  },
+  attachmentName: {
+    color: '#94a3b8',
+    fontSize: 14,
+  },
+  removeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  removeButtonText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+});
+
+interface CalendarPickerProps {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+}
+
+function CalendarPicker({ selectedDate, onSelectDate }: CalendarPickerProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    return { daysInMonth, firstDayOfMonth };
+  };
+
+  const { daysInMonth, firstDayOfMonth } = getDaysInMonth(currentMonth);
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(year, month + 1, 1));
+  };
+
+  const handleDateSelect = (day: number) => {
+    const selected = new Date(year, month, day);
+    onSelectDate(selected.toISOString().split('T')[0]);
+  };
+
+  const isSelected = (day: number) => {
+    if (!selectedDate) return false;
+    const selected = new Date(selectedDate);
+    return selected.getDate() === day && 
+           selected.getMonth() === month && 
+           selected.getFullYear() === year;
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  const renderDays = () => {
+    const days = [];
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(<View key={`empty-${i}`} style={calendarStyles.dayCell} />);
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const selected = isSelected(day);
+      days.push(
+        <TouchableOpacity
+          key={day}
+          style={[calendarStyles.dayCell, selected && calendarStyles.selectedDay]}
+          onPress={() => handleDateSelect(day)}
+        >
+          <Text style={[calendarStyles.dayText, selected && calendarStyles.selectedDayText]}>
+            {day}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    return days;
+  };
+
+  return (
+    <View style={calendarStyles.container}>
+      <View style={calendarStyles.header}>
+        <TouchableOpacity onPress={handlePrevMonth} style={calendarStyles.navButton}>
+          <Text style={calendarStyles.navButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={calendarStyles.monthText}>
+          {monthNames[month]} {year}
+        </Text>
+        <TouchableOpacity onPress={handleNextMonth} style={calendarStyles.navButton}>
+          <Text style={calendarStyles.navButtonText}>→</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={calendarStyles.weekDays}>
+        {dayNames.map((day, i) => (
+          <View key={i} style={calendarStyles.weekDayCell}>
+            <Text style={calendarStyles.weekDayText}>{day}</Text>
+          </View>
+        ))}
+      </View>
+      
+      <View style={calendarStyles.daysGrid}>
+        {renderDays()}
+      </View>
+    </View>
+  );
+}
+
+const calendarStyles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  navButton: {
+    padding: 8,
+  },
+  navButtonText: {
+    color: '#3b82f6',
+    fontSize: 24,
+    fontWeight: 'bold' as const,
+  },
+  monthText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  weekDays: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  weekDayCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  weekDayText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
+  },
+  selectedDay: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+  },
+  dayText: {
+    color: '#94a3b8',
+    fontSize: 16,
+  },
+  selectedDayText: {
+    color: '#fff',
+    fontWeight: 'bold' as const,
   },
 });
