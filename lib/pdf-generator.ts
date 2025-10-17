@@ -162,46 +162,56 @@ const generateHTMLStyles = () => `
       color: #64748b;
       font-size: 12px;
     }
-    .days-columns {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-      overflow-x: auto;
-    }
-    .day-column {
-      flex: 1;
-      min-width: 200px;
+    .inspection-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: 8px;
+      overflow: hidden;
     }
-    .day-header {
+    .inspection-table th {
+      background: #1e40af;
+      color: white;
+      padding: 12px 8px;
       text-align: center;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #1e3a8a;
     }
-    .day-name {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1e40af;
-      margin-bottom: 4px;
+    .inspection-table th:first-child {
+      text-align: left;
+      min-width: 200px;
     }
-    .day-date {
+    .inspection-table td {
+      padding: 10px 8px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
       font-size: 12px;
-      color: #64748b;
     }
-    .day-checks {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .day-check-item {
-      font-size: 11px;
-      padding: 6px 8px;
-      border-radius: 4px;
+    .inspection-table td:first-child {
+      text-align: left;
+      font-weight: 600;
       background: #f8fafc;
+      color: #1e293b;
+    }
+    .inspection-table tbody tr:nth-child(even) td:first-child {
+      background: #f1f5f9;
+    }
+    .table-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .table-notes {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+      font-style: italic;
     }
     @media print {
       body {
@@ -210,7 +220,7 @@ const generateHTMLStyles = () => `
       .check-row {
         page-break-inside: avoid;
       }
-      .days-columns {
+      .inspection-table {
         page-break-inside: avoid;
       }
     }
@@ -883,30 +893,62 @@ export const generateWeeklyInspectionPDF = async (
 
     const completedDays = weeklyData.days.filter((d: any) => d.completed);
 
-    const dayColumnsHTML = completedDays.map((day: any) => {
-      const checksHTML = day.checks.map((check: any) => {
+    const allCheckItems: Set<string> = new Set();
+    completedDays.forEach((day: any) => {
+      day.checks.forEach((check: any) => {
+        allCheckItems.add(check.itemId);
+      });
+    });
+
+    const checkItemsArray = Array.from(allCheckItems);
+
+    const tableHeaderHTML = `
+      <tr>
+        <th>Inspection Item</th>
+        ${completedDays.map((day: any) => `
+          <th>
+            <div>${getDayName(day.day)}</div>
+            <div style="font-size: 11px; font-weight: 400; opacity: 0.9; margin-top: 2px;">${day.date}</div>
+          </th>
+        `).join('')}
+      </tr>
+    `;
+
+    const tableRowsHTML = checkItemsArray.map(itemId => {
+      const rowCells = completedDays.map((day: any) => {
+        const check = day.checks.find((c: any) => c.itemId === itemId);
+        if (!check) {
+          return '<td style="background: #fafafa;">-</td>';
+        }
         const statusColor = getStatusColor(check.status);
         return `
-          <div class="day-check-item" style="border-left: 3px solid ${statusColor};">
-            <div style="font-weight: 600; margin-bottom: 2px;">${getItemName(check.itemId)}</div>
-            <div style="color: ${statusColor};">${getStatusText(check.status)}</div>
-            ${check.notes ? `<div style="color: #64748b; font-size: 10px; margin-top: 4px;">${check.notes}</div>` : ''}
-          </div>
+          <td>
+            <div class="table-status" style="background: ${statusColor}22; color: ${statusColor};">
+              ${getStatusText(check.status)}
+            </div>
+            ${check.notes ? `<div class="table-notes">${check.notes}</div>` : ''}
+          </td>
         `;
       }).join('');
 
       return `
-        <div class="day-column">
-          <div class="day-header">
-            <div class="day-name">${getDayName(day.day)}</div>
-            <div class="day-date">${day.date}</div>
-          </div>
-          <div class="day-checks">
-            ${checksHTML || '<div style="text-align: center; color: #94a3b8; font-size: 12px;">No checks recorded</div>'}
-          </div>
-        </div>
+        <tr>
+          <td>${getItemName(itemId)}</td>
+          ${rowCells}
+        </tr>
       `;
     }).join('');
+
+    const inspectionTableHTML = `
+      <table class="inspection-table">
+        <thead>
+          ${tableHeaderHTML}
+        </thead>
+        <tbody>
+          ${tableRowsHTML}
+        </tbody>
+      </table>
+    `;
 
     const html = `
       <!DOCTYPE html>
@@ -950,9 +992,7 @@ export const generateWeeklyInspectionPDF = async (
 
           <div class="section">
             <div class="section-title">Daily Inspections</div>
-            <div class="days-columns">
-              ${dayColumnsHTML}
-            </div>
+            ${inspectionTableHTML}
           </div>
 
           <div class="footer">
