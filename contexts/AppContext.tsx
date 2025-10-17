@@ -1058,6 +1058,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return newInspection;
   }, [greasingInspections]);
 
+  const getCompanyGreasingInspections = useCallback(() => {
+    if (!company) return [];
+    return greasingInspections.filter(i => i.companyId === company.id);
+  }, [company, greasingInspections]);
+
+  const deleteGreasingInspection = useCallback(async (inspectionId: string) => {
+    const updated = greasingInspections.filter(i => i.id !== inspectionId);
+    await AsyncStorage.setItem(STORAGE_KEYS.GREASING_INSPECTIONS, JSON.stringify(updated));
+    setGreasingInspections(updated);
+  }, [greasingInspections]);
+
   const deleteDraft = useCallback(async (draftId: string) => {
     const updated = drafts.filter(d => d.id !== draftId);
     await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
@@ -1096,17 +1107,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     await deleteDraft(draftId);
     return result;
   }, [drafts, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, submitGreasingInspection, deleteDraft]);
-
-  const getCompanyGreasingInspections = useCallback(() => {
-    if (!company) return [];
-    return greasingInspections.filter(i => i.companyId === company.id);
-  }, [company, greasingInspections]);
-
-  const deleteGreasingInspection = useCallback(async (inspectionId: string) => {
-    const updated = greasingInspections.filter(i => i.id !== inspectionId);
-    await AsyncStorage.setItem(STORAGE_KEYS.GREASING_INSPECTIONS, JSON.stringify(updated));
-    setGreasingInspections(updated);
-  }, [greasingInspections]);
 
   const addTicket = useCallback(async (ticket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTicket: Ticket = {
