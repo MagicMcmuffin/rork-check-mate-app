@@ -26,6 +26,8 @@ export default function CompanyScreen() {
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
   const [showExaminationDatePicker, setShowExaminationDatePicker] = useState(false);
+  const [has30DayReminder, setHas30DayReminder] = useState(false);
+  const [has7DayReminder, setHas7DayReminder] = useState(false);
   const [notes, setNotes] = useState('');
 
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -62,6 +64,10 @@ export default function CompanyScreen() {
         hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
         thoroughExaminationDate: thoroughExaminationDate.trim() || undefined,
+        has30DayReminder: type === 'plant' ? has30DayReminder : undefined,
+        has7DayReminder: type === 'plant' ? has7DayReminder : undefined,
+        hasMot30DayReminder: type === 'vehicles' ? has30DayReminder : undefined,
+        hasMot7DayReminder: type === 'vehicles' ? has7DayReminder : undefined,
         notes: notes.trim() || undefined,
       });
 
@@ -74,6 +80,8 @@ export default function CompanyScreen() {
       setHitchSerial('');
       setRegistration('');
       setThoroughExaminationDate('');
+      setHas30DayReminder(false);
+      setHas7DayReminder(false);
       setNotes('');
       setEquipmentModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
@@ -749,6 +757,30 @@ export default function CompanyScreen() {
                     />
                   )}
                 </View>
+
+                {thoroughExaminationDate && (
+                  <View style={{ gap: 12 }}>
+                    <TouchableOpacity
+                      style={styles.reminderCheckbox}
+                      onPress={() => setHas30DayReminder(!has30DayReminder)}
+                    >
+                      <View style={[styles.checkbox, { borderColor: colors.border, backgroundColor: colors.background }, has30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                        {has30DayReminder && <Text style={styles.checkboxText}>✓</Text>}
+                      </View>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>30-day reminder</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.reminderCheckbox}
+                      onPress={() => setHas7DayReminder(!has7DayReminder)}
+                    >
+                      <View style={[styles.checkbox, { borderColor: colors.border, backgroundColor: colors.background }, has7DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                        {has7DayReminder && <Text style={styles.checkboxText}>✓</Text>}
+                      </View>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>7-day reminder</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
 
               <View style={[styles.formSection, { backgroundColor: colors.card }]}>
@@ -1483,5 +1515,27 @@ const styles = StyleSheet.create({
   },
   datePickerPlaceholder: {
     fontSize: 15,
+  },
+  reminderCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    fontWeight: '500' as const,
   },
 });
