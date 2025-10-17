@@ -8,12 +8,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput,
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Equipment } from '@/types';
 
-type Section = 'plant' | 'projects' | 'announcements' | 'equipment';
+type Section = 'plant' | 'projects' | 'announcements' | 'equipment' | 'holidays';
 
 export default function CompanyScreen() {
   const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors } = useTheme();
   const [activeSection, setActiveSection] = useState<Section>('plant');
+  const isCompanyOrManagement = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   
   const [equipmentModalVisible, setEquipmentModalVisible] = useState(false);
   const [equipmentName, setEquipmentName] = useState('');
@@ -564,6 +565,25 @@ export default function CompanyScreen() {
             Announce
           </Text>
         </TouchableOpacity>
+        {isCompanyOrManagement && (
+          <TouchableOpacity
+            style={[
+              styles.segmentButton,
+              activeSection === 'holidays' && { backgroundColor: colors.primary },
+            ]}
+            onPress={() => setActiveSection('holidays')}
+          >
+            <Calendar size={18} color={activeSection === 'holidays' ? '#ffffff' : colors.textSecondary} />
+            <Text
+              style={[
+                styles.segmentText,
+                { color: activeSection === 'holidays' ? '#ffffff' : colors.textSecondary },
+              ]}
+            >
+              Holidays
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -581,7 +601,21 @@ export default function CompanyScreen() {
               <Text style={styles.addButtonText}>Open Equipment Management</Text>
             </TouchableOpacity>
           </View>
-        ) : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
+        ) : activeSection === 'projects' ? renderProjectsSection() : activeSection === 'holidays' ? (
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+            <Calendar size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Holiday Management</Text>
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary, marginBottom: 16 }]}>
+              View and manage employee holiday requests, approve/reject requests, and see the holiday calendar
+            </Text>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 0 }]}
+              onPress={() => router.push('/holiday-management')}
+            >
+              <Text style={styles.addButtonText}>Open Holiday Management</Text>
+            </TouchableOpacity>
+          </View>
+        ) : renderAnnouncementsSection()}
       </ScrollView>
 
       <Modal
