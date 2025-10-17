@@ -262,37 +262,49 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+
     const usersData = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
-    console.log('Raw users data from storage:', usersData?.substring(0, 200));
+    console.log('🔍 Login attempt for email:', trimmedEmail);
     
     const allUsers: User[] = usersData ? JSON.parse(usersData) : [];
-    console.log('Total users in database:', allUsers.length);
-    console.log('Users emails:', allUsers.map(u => ({ email: u.email, name: u.name })));
-    console.log('Trying to login with email:', email);
+    console.log('📊 Total users in database:', allUsers.length);
 
-    const foundUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    const foundUser = allUsers.find((u: User) => 
+      u.email.trim().toLowerCase() === trimmedEmail && 
+      u.password.trim() === trimmedPassword
+    );
     
     if (!foundUser) {
-      const emailMatch = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+      const emailMatch = allUsers.find((u: User) => 
+        u.email.trim().toLowerCase() === trimmedEmail
+      );
+      
       if (emailMatch) {
-        console.error('Email found but password mismatch');
-        console.error('Stored password:', emailMatch.password);
-        console.error('Provided password:', password);
+        console.error('❌ Email found but password mismatch');
+        console.error('Expected password length:', emailMatch.password?.trim().length);
+        console.error('Provided password length:', trimmedPassword.length);
       } else {
-        console.error('Email not found in database');
-        console.error('Available emails:', allUsers.map(u => u.email));
+        console.error('❌ Email not found in database');
+        console.error('Available emails:', allUsers.map(u => u.email.trim().toLowerCase()).join(', '));
       }
       throw new Error('Invalid email or password');
     }
+
+    console.log('✅ User found:', foundUser.email);
 
     const companiesData = await AsyncStorage.getItem(STORAGE_KEYS.COMPANIES);
     const allCompanies: Company[] = companiesData ? JSON.parse(companiesData) : [];
     const foundCompany = allCompanies.find((c: Company) => c.id === foundUser.companyId);
 
     if (!foundCompany) {
-      console.error('Company not found for user:', foundUser.companyId);
+      console.error('❌ Company not found for user:', foundUser.companyId);
+      console.error('Available companies:', allCompanies.map(c => ({ id: c.id, name: c.name })));
       throw new Error('Company not found');
     }
+
+    console.log('✅ Company found:', foundCompany.name);
 
     await Promise.all([
       AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(foundUser)),
@@ -303,7 +315,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setCompany(foundCompany);
     setUsers(allUsers);
 
-    console.log('Login successful for:', foundUser.email);
+    console.log('✅ Login successful for:', foundUser.email);
     return foundUser;
   }, []);
 
