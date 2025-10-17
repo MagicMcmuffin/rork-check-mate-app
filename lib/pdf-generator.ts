@@ -167,50 +167,91 @@ const generateHTMLStyles = () => `
       border-collapse: collapse;
       margin-top: 16px;
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
+      border: 1px solid #334155;
     }
     .inspection-table th {
       background: #1e40af;
       color: white;
-      padding: 12px 8px;
+      padding: 14px 10px;
       text-align: center;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       border: 1px solid #1e3a8a;
+      vertical-align: middle;
     }
     .inspection-table th:first-child {
       text-align: left;
-      min-width: 200px;
+      min-width: 180px;
+      max-width: 180px;
+      position: sticky;
+      left: 0;
+      z-index: 10;
+    }
+    .day-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .day-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .day-date {
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.9;
     }
     .inspection-table td {
-      padding: 10px 8px;
-      border: 1px solid #e2e8f0;
+      padding: 12px 10px;
+      border: 1px solid #cbd5e1;
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
+      vertical-align: top;
+      min-height: 50px;
     }
     .inspection-table td:first-child {
       text-align: left;
       font-weight: 600;
-      background: #f8fafc;
+      background: #f1f5f9;
       color: #1e293b;
+      font-size: 12px;
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      border-right: 2px solid #94a3b8;
     }
     .inspection-table tbody tr:nth-child(even) td:first-child {
-      background: #f1f5f9;
+      background: #e2e8f0;
+    }
+    .inspection-table tbody tr:hover td {
+      background: #fef3c7;
+    }
+    .inspection-table tbody tr:hover td:first-child {
+      background: #fde68a;
     }
     .table-status {
       display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 6px 10px;
+      border-radius: 6px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .table-notes {
-      font-size: 10px;
-      color: #64748b;
-      margin-top: 4px;
+      font-size: 9px;
+      color: #475569;
+      margin-top: 6px;
+      font-style: italic;
+      line-height: 1.3;
+      max-width: 150px;
+      word-wrap: break-word;
+    }
+    .empty-cell {
+      background: #f8fafc;
+      color: #94a3b8;
       font-style: italic;
     }
     @media print {
@@ -220,9 +261,22 @@ const generateHTMLStyles = () => `
       .check-row {
         page-break-inside: avoid;
       }
-      .inspection-table {
+      .section {
         page-break-inside: avoid;
       }
+      .inspection-table {
+        font-size: 10px;
+      }
+      .inspection-table th {
+        padding: 10px 8px;
+      }
+      .inspection-table td {
+        padding: 10px 8px;
+      }
+    }
+    @page {
+      size: A4 landscape;
+      margin: 15mm;
     }
   </style>
 `;
@@ -904,11 +958,13 @@ export const generateWeeklyInspectionPDF = async (
 
     const tableHeaderHTML = `
       <tr>
-        <th>Inspection Item</th>
+        <th style="width: 180px;">Inspection Item</th>
         ${completedDays.map((day: any) => `
-          <th>
-            <div>${getDayName(day.day)}</div>
-            <div style="font-size: 11px; font-weight: 400; opacity: 0.9; margin-top: 2px;">${day.date}</div>
+          <th style="min-width: 130px; max-width: 180px;">
+            <div class="day-header">
+              <div class="day-name">${getDayName(day.day)}</div>
+              <div class="day-date">${day.date}</div>
+            </div>
           </th>
         `).join('')}
       </tr>
@@ -918,15 +974,16 @@ export const generateWeeklyInspectionPDF = async (
       const rowCells = completedDays.map((day: any) => {
         const check = day.checks.find((c: any) => c.itemId === itemId);
         if (!check) {
-          return '<td style="background: #fafafa;">-</td>';
+          return '<td class="empty-cell">—</td>';
         }
         const statusColor = getStatusColor(check.status);
+        const statusBg = statusColor === '#10b981' ? '#d1fae5' : statusColor === '#ef4444' ? '#fee2e2' : '#fef3c7';
         return `
           <td>
-            <div class="table-status" style="background: ${statusColor}22; color: ${statusColor};">
+            <div class="table-status" style="background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor};">
               ${getStatusText(check.status)}
             </div>
-            ${check.notes ? `<div class="table-notes">${check.notes}</div>` : ''}
+            ${check.notes ? `<div class="table-notes">📝 ${check.notes}</div>` : ''}
           </td>
         `;
       }).join('');
@@ -991,8 +1048,10 @@ export const generateWeeklyInspectionPDF = async (
           </div>
 
           <div class="section">
-            <div class="section-title">Daily Inspections</div>
-            ${inspectionTableHTML}
+            <div class="section-title">📊 Daily Inspection Summary</div>
+            <div style="overflow-x: auto; margin-top: 12px;">
+              ${inspectionTableHTML}
+            </div>
           </div>
 
           <div class="footer">
