@@ -496,7 +496,12 @@ export default function CompanyScreen() {
         </Text>
       </View>
 
-      <View style={[styles.segmentedControl, { backgroundColor: colors.card }]}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={[styles.segmentedControlContainer, { backgroundColor: colors.card }]}
+        contentContainerStyle={styles.segmentedControl}
+      >
         <TouchableOpacity
           style={[
             styles.segmentButton,
@@ -528,7 +533,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'equipment' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Equip
+            Equipment
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -562,7 +567,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'announcements' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Announce
+            Announcements
           </Text>
         </TouchableOpacity>
         {isCompanyOrManagement && (
@@ -584,7 +589,7 @@ export default function CompanyScreen() {
             </Text>
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {activeSection === 'plant' ? renderEquipmentSection() : activeSection === 'equipment' ? (
@@ -1107,31 +1112,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
   },
-  segmentedControl: {
-    flexDirection: 'row',
+  segmentedControlContainer: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
-    padding: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
+  segmentedControl: {
+    flexDirection: 'row',
+    padding: 4,
+    gap: 8,
+  },
   segmentButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    gap: 4,
+    gap: 6,
+    minWidth: 90,
   },
   segmentText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600' as const,
     color: '#64748b',
   },
