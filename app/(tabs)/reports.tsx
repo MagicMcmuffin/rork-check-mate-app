@@ -13,7 +13,8 @@ import {
   generateBucketChangeInspectionPDF,
   generatePositiveInterventionPDF,
   generateWeeklyInspectionPDF,
-  generateGreasingRecordsPDF
+  generateGreasingRecordsPDF,
+  generateAirTestingInspectionPDF
 } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
@@ -25,6 +26,7 @@ export default function ReportsScreen() {
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'greasing'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+  const [selectedPipeRun, setSelectedPipeRun] = useState<string>('');
   const [dateSearchVisible, setDateSearchVisible] = useState(false);
   const [searchStartDate, setSearchStartDate] = useState('');
   const [searchEndDate, setSearchEndDate] = useState('');
@@ -987,10 +989,33 @@ export default function ReportsScreen() {
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.reportsList}>
+                  <>
+                    <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
+                      <View style={styles.filterHeader}>
+                        <Filter size={18} color="#06b6d4" />
+                        <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Pipe Run</Text>
+                      </View>
+                      <TextInput
+                        style={[styles.pipeRunInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                        value={selectedPipeRun}
+                        onChangeText={setSelectedPipeRun}
+                        placeholder="Enter pipe run to filter..."
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                    </View>
+                    <View style={styles.reportsList}>
                     {companyAirTestingInspections
+                      .filter(inspection => {
+                        if (selectedPipeRun && !inspection.pipeRun.toLowerCase().includes(selectedPipeRun.toLowerCase())) {
+                          return false;
+                        }
+                        return isDateInRange(inspection.createdAt);
+                      })
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map((inspection) => (
+                      .map((inspection) => {
+                        const projectName = inspection.projectId ? getProjectName(inspection.projectId) : undefined;
+                        
+                        return (
                         <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: '#06b6d4' }]}>
                           <View style={styles.reportCardContent}>
                             <View style={styles.reportHeader}>
@@ -1068,8 +1093,22 @@ export default function ReportsScreen() {
                               </View>
                             )}
                           </View>
-                          {(user?.role === 'company' || user?.role === 'administrator') && deleteAirTestingInspection && (
-                            <View style={styles.reportActions}>
+                          <View style={styles.reportActions}>
+                            <TouchableOpacity
+                              style={[styles.actionButton, styles.downloadButton]}
+                              onPress={async () => {
+                                try {
+                                  await generateAirTestingInspectionPDF(inspection, company!.name, projectName);
+                                } catch (error) {
+                                  console.error('Error downloading air testing PDF:', error);
+                                  Alert.alert('Error', 'Failed to download PDF');
+                                }
+                              }}
+                            >
+                              <Download size={16} color="#1e40af" />
+                              <Text style={styles.downloadButtonText}>PDF</Text>
+                            </TouchableOpacity>
+                            {(user?.role === 'company' || user?.role === 'administrator') && deleteAirTestingInspection && (
                               <TouchableOpacity
                                 style={[styles.actionButton, styles.deleteButton]}
                                 onPress={() => {
@@ -1097,11 +1136,13 @@ export default function ReportsScreen() {
                               >
                                 <Trash2 size={16} color="#dc2626" />
                               </TouchableOpacity>
-                            </View>
-                          )}
+                            )}
+                          </View>
                         </View>
-                      ))}
-                  </View>
+                        );
+                      })}
+                    </View>
+                  </>
                 )
               ) : (
                 fixLogs.length === 0 ? (
@@ -2169,5 +2210,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
     color: '#ffffff',
+  },
+  pipeRunInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+  },
+  downloadButton: {
+    backgroundColor: '#dbeafe',
+    flex: 1,
+  },
+  downloadButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1e40af',
   },
 });

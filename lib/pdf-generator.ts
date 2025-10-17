@@ -1,7 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform, Alert } from 'react-native';
-import type { PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, PositiveIntervention, ApprenticeshipEntry, CheckStatus, GreasingRecord } from '@/types';
+import type { PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, PositiveIntervention, ApprenticeshipEntry, CheckStatus, GreasingRecord, AirTestingInspection } from '@/types';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
 
 const getStatusText = (status: CheckStatus | boolean) => {
@@ -1335,6 +1335,165 @@ export const generateGreasingRecordsPDF = async (
     }
   } catch (error) {
     console.error('Error generating greasing records PDF:', error);
+    Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+  }
+};
+
+export const generateAirTestingInspectionPDF = async (
+  inspection: AirTestingInspection,
+  companyName: string,
+  projectName?: string
+): Promise<void> => {
+  try {
+    const imagesHTML = (() => {
+      const images = [inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean);
+      if (images.length === 0) return '';
+      
+      return `
+        <div class="section">
+          <div class="section-title">Photos (${images.length})</div>
+          <div class="images-grid">
+            ${images.map(img => `
+              <div class="image-container">
+                <img src="${img}" alt="Air testing photo" />
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    })();
+
+    const getResultColor = (result?: 'pass' | 'fail') => {
+      if (!result) return '#94a3b8';
+      return result === 'pass' ? '#10b981' : '#ef4444';
+    };
+
+    const getResultBg = (result?: 'pass' | 'fail') => {
+      if (!result) return '#f1f5f9';
+      return result === 'pass' ? '#dcfce7' : '#fee2e2';
+    };
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Air Testing Report</title>
+          ${generateHTMLStyles()}
+        </head>
+        <body>
+          <div class="header">
+            <div class="header-title">Air Testing Inspection Report</div>
+            <div class="header-meta">
+              <div>📅 ${formatDate(inspection.createdAt)}</div>
+              <div>👤 ${inspection.employeeName}</div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-row">
+              <span class="info-label">Company:</span>
+              <span class="info-value">${companyName}</span>
+            </div>
+            ${projectName ? `
+              <div class="info-row">
+                <span class="info-label">Project:</span>
+                <span class="info-value">${projectName}</span>
+              </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">Date:</span>
+              <span class="info-value">${inspection.date}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Time:</span>
+              <span class="info-value">${inspection.time}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Test Details</div>
+            <div class="info-card">
+              ${inspection.section ? `
+                <div class="info-row">
+                  <span class="info-label">Section:</span>
+                  <span class="info-value">${inspection.section}</span>
+                </div>
+              ` : ''}
+              <div class="info-row">
+                <span class="info-label">Pipe Run:</span>
+                <span class="info-value">${inspection.pipeRun}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Pipe Joint:</span>
+                <span class="info-value">${inspection.pipeJoint}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Pipe Size:</span>
+                <span class="info-value">${inspection.pipeSize}</span>
+              </div>
+              ${inspection.testPressure ? `
+                <div class="info-row">
+                  <span class="info-label">Test Pressure:</span>
+                  <span class="info-value">${inspection.testPressure}</span>
+                </div>
+              ` : ''}
+              ${inspection.testDuration ? `
+                <div class="info-row">
+                  <span class="info-label">Test Duration:</span>
+                  <span class="info-value">${inspection.testDuration}</span>
+                </div>
+              ` : ''}
+              ${inspection.testResult ? `
+                <div class="info-row">
+                  <span class="info-label">Test Result:</span>
+                  <span class="severity-badge" style="background: ${getResultBg(inspection.testResult)}; color: ${getResultColor(inspection.testResult)};">
+                    ${inspection.testResult.toUpperCase()}
+                  </span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          ${inspection.notes ? `
+            <div class="section">
+              <div class="section-title">Notes</div>
+              <div class="notes-text">${inspection.notes}</div>
+            </div>
+          ` : ''}
+
+          ${imagesHTML}
+
+          <div class="footer">
+            Generated by CheckMate Safety • ${new Date().toLocaleDateString()}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const { uri } = await Print.printToFileAsync({ html });
+    const filename = `air-testing-${inspection.pipeRun}-${inspection.date}.pdf`;
+    
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = filename;
+        link.click();
+      }
+    } else {
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          UTI: '.pdf',
+          mimeType: 'application/pdf',
+        });
+      } else {
+        Alert.alert('Success', 'PDF generated successfully');
+      }
+    }
+  } catch (error) {
+    console.error('Error generating air testing PDF:', error);
     Alert.alert('Error', 'Failed to generate PDF. Please try again.');
   }
 };
