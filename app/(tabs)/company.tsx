@@ -43,6 +43,7 @@ export default function CompanyScreen() {
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [announcementType, setAnnouncementType] = useState<'general' | 'well-done' | 'warning' | 'achievement' | 'reminder'>('general');
+  const [autoDeleteDays, setAutoDeleteDays] = useState<string>('');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
@@ -218,13 +219,20 @@ export default function CompanyScreen() {
       return;
     }
 
+    const deleteInDays = autoDeleteDays.trim() ? parseInt(autoDeleteDays.trim(), 10) : undefined;
+    if (deleteInDays !== undefined && (isNaN(deleteInDays) || deleteInDays < 1)) {
+      Alert.alert('Error', 'Auto-delete days must be a positive number');
+      return;
+    }
+
     try {
       const emoji = getAnnouncementEmoji(announcementType);
-      await createAnnouncement(`${emoji} ${announcementTitle.trim()}`, announcementMessage.trim(), announcementPriority);
+      await createAnnouncement(`${emoji} ${announcementTitle.trim()}`, announcementMessage.trim(), announcementPriority, deleteInDays);
       setAnnouncementTitle('');
       setAnnouncementMessage('');
       setAnnouncementPriority('normal');
       setAnnouncementType('general');
+      setAutoDeleteDays('');
       setAnnouncementModalVisible(false);
       Alert.alert('Success', 'Announcement created successfully');
     } catch (error) {
@@ -414,6 +422,8 @@ export default function CompanyScreen() {
 
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
   const [announcementExpandModalVisible, setAnnouncementExpandModalVisible] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<typeof announcements[0] | null>(null);
+  const [announcementViewModalVisible, setAnnouncementViewModalVisible] = useState(false);
 
   const renderAnnouncementsSection = () => {
     if (user?.role !== 'company') {
@@ -1132,6 +1142,16 @@ export default function CompanyScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
+
+                <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>Auto-Delete After (Days)</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={autoDeleteDays}
+                  onChangeText={setAutoDeleteDays}
+                  placeholder="Optional: e.g., 7, 30"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="number-pad"
+                />
               </View>
 
               <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
@@ -1171,37 +1191,127 @@ export default function CompanyScreen() {
               {announcements.map((announcement) => {
                 const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
                 return (
-                  <View key={announcement.id} style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: priorityColor }]}>
+                  <TouchableOpacity 
+                    key={announcement.id} 
+                    style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: priorityColor }]}
+                    onPress={() => {
+                      setSelectedAnnouncement(announcement);
+                      setAnnouncementViewModalVisible(true);
+                    }}
+                  >
                     <View style={styles.announcementHeader}>
                       <View style={[styles.announcementIcon, { backgroundColor: priorityColor + '20' }]}>
                         <Megaphone size={24} color={priorityColor} />
                       </View>
                       <View style={styles.cardInfo}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <Text style={[styles.cardName, { color: colors.text }]}>{announcement.title}</Text>
+                          <Text style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>{announcement.title}</Text>
                           <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
                             <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
                               {announcement.priority.toUpperCase()}
                             </Text>
                           </View>
                         </View>
-                        <Text style={[styles.announcementText, { color: colors.textSecondary }]}>{announcement.message}</Text>
+                        <Text style={[styles.announcementText, { color: colors.textSecondary }]} numberOfLines={2}>{announcement.message}</Text>
                         <Text style={[styles.cardSerial, { color: colors.textSecondary, marginTop: 8 }]}>By {announcement.authorName}</Text>
                         <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>
-                          {new Date(announcement.createdAt).toLocaleDateString()} at {new Date(announcement.createdAt).toLocaleTimeString()}
+                          {new Date(announcement.createdAt).toLocaleDateString()}
                         </Text>
+                        {announcement.autoDeleteDate && (
+                          <Text style={[styles.cardSerial, { color: '#f59e0b', marginTop: 4 }]}>
+                            🕒 Auto-deletes: {new Date(announcement.autoDeleteDate).toLocaleDateString()}
+                          </Text>
+                        )}
                       </View>
                       <TouchableOpacity
                         style={styles.deleteButton}
-                        onPress={() => handleDeleteAnnouncement(announcement.id)}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAnnouncement(announcement.id);
+                        }}
                       >
                         <Trash2 size={18} color="#dc2626" />
                       </TouchableOpacity>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={announcementViewModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setAnnouncementViewModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.announcementViewContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>  
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Announcement Details</Text>
+              <TouchableOpacity onPress={() => setAnnouncementViewModalVisible(false)}>
+                <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {selectedAnnouncement && (
+              <ScrollView style={styles.announcementViewScroll} contentContainerStyle={{ padding: 20 }}>
+                <View style={[styles.announcementViewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <View style={[styles.announcementIcon, { backgroundColor: (selectedAnnouncement.priority === 'high' ? '#ef4444' : selectedAnnouncement.priority === 'normal' ? '#3b82f6' : '#6b7280') + '20' }]}>
+                      <Megaphone size={24} color={selectedAnnouncement.priority === 'high' ? '#ef4444' : selectedAnnouncement.priority === 'normal' ? '#3b82f6' : '#6b7280'} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.announcementViewTitle, { color: colors.text }]}>{selectedAnnouncement.title}</Text>
+                      <View style={[styles.priorityBadge, { backgroundColor: (selectedAnnouncement.priority === 'high' ? '#ef4444' : selectedAnnouncement.priority === 'normal' ? '#3b82f6' : '#6b7280') + '20', marginTop: 4 }]}>
+                        <Text style={[styles.priorityBadgeText, { color: selectedAnnouncement.priority === 'high' ? '#ef4444' : selectedAnnouncement.priority === 'normal' ? '#3b82f6' : '#6b7280' }]}>
+                          {selectedAnnouncement.priority.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={[styles.announcementViewSection, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.announcementViewLabel, { color: colors.textSecondary }]}>Message</Text>
+                    <Text style={[styles.announcementViewMessage, { color: colors.text }]}>{selectedAnnouncement.message}</Text>
+                  </View>
+
+                  <View style={[styles.announcementViewSection, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.announcementViewLabel, { color: colors.textSecondary }]}>Posted By</Text>
+                    <Text style={[styles.announcementViewText, { color: colors.text }]}>{selectedAnnouncement.authorName}</Text>
+                  </View>
+
+                  <View style={[styles.announcementViewSection, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.announcementViewLabel, { color: colors.textSecondary }]}>Date & Time</Text>
+                    <Text style={[styles.announcementViewText, { color: colors.text }]}>
+                      {new Date(selectedAnnouncement.createdAt).toLocaleDateString()} at {new Date(selectedAnnouncement.createdAt).toLocaleTimeString()}
+                    </Text>
+                  </View>
+
+                  {selectedAnnouncement.autoDeleteDate && (
+                    <View style={[styles.announcementViewSection, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.announcementViewLabel, { color: colors.textSecondary }]}>Auto-Delete Date</Text>
+                      <Text style={[styles.announcementViewText, { color: '#f59e0b' }]}>
+                        {new Date(selectedAnnouncement.autoDeleteDate).toLocaleDateString()} at {new Date(selectedAnnouncement.autoDeleteDate).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.deleteFullButton, { backgroundColor: '#fee2e2', borderColor: '#dc2626' }]}
+                  onPress={() => {
+                    handleDeleteAnnouncement(selectedAnnouncement.id);
+                    setAnnouncementViewModalVisible(false);
+                  }}
+                >
+                  <Trash2 size={20} color="#dc2626" />
+                  <Text style={[styles.deleteFullButtonText, { color: '#dc2626' }]}>Delete Announcement</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -1766,5 +1876,57 @@ const styles = StyleSheet.create({
   },
   expandedAnnouncementsScroll: {
     flex: 1,
+  },
+  announcementViewContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    height: '85%',
+  },
+  announcementViewScroll: {
+    flex: 1,
+  },
+  announcementViewCard: {
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  announcementViewTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  announcementViewSection: {
+    paddingTop: 16,
+    marginTop: 16,
+    borderTopWidth: 1,
+  },
+  announcementViewLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  announcementViewMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  announcementViewText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  deleteFullButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  deleteFullButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });

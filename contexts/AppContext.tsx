@@ -972,8 +972,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return apprenticeshipEntries.filter(e => e.apprenticeId === apprenticeId);
   }, [apprenticeshipEntries]);
 
-  const createAnnouncement = useCallback(async (title: string, message: string, priority: 'low' | 'normal' | 'high') => {
+  const createAnnouncement = useCallback(async (title: string, message: string, priority: 'low' | 'normal' | 'high', autoDeleteDays?: number) => {
     if (!user || !company) throw new Error('No user or company found');
+
+    let autoDeleteDate: string | undefined;
+    if (autoDeleteDays && autoDeleteDays > 0) {
+      const deleteDate = new Date();
+      deleteDate.setDate(deleteDate.getDate() + autoDeleteDays);
+      autoDeleteDate = deleteDate.toISOString();
+    }
 
     const newAnnouncement: Announcement = {
       id: Date.now().toString(),
@@ -983,6 +990,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       title,
       message,
       priority,
+      autoDeleteDate,
       createdAt: new Date().toISOString(),
     };
 
@@ -995,8 +1003,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const getCompanyAnnouncements = useCallback(() => {
     if (!company) return [];
+    const now = new Date();
     return announcements
-      .filter(a => a.companyId === company.id)
+      .filter(a => {
+        if (a.companyId !== company.id) return false;
+        if (a.autoDeleteDate && new Date(a.autoDeleteDate) <= now) {
+          deleteAnnouncement(a.id).catch(console.error);
+          return false;
+        }
+        return true;
+      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [company, announcements]);
 

@@ -280,6 +280,7 @@ export interface Announcement {
   title: string;
   message: string;
   priority: 'low' | 'normal' | 'high';
+  autoDeleteDate?: string;
   createdAt: string;
 }
 
