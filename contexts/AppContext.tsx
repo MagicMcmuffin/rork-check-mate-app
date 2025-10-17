@@ -1018,45 +1018,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return drafts.filter(d => d.companyId === company.id);
   }, [drafts, company]);
 
-  const deleteDraft = useCallback(async (draftId: string) => {
-    const updated = drafts.filter(d => d.id !== draftId);
-    await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
-    setDrafts(updated);
-  }, [drafts]);
-
-  const submitDraft = useCallback(async (draftId: string) => {
-    const draft = drafts.find(d => d.id === draftId);
-    if (!draft) throw new Error('Draft not found');
-
-    let result;
-
-    switch (draft.type) {
-      case 'plant':
-        result = await submitPlantInspection(draft.data as any);
-        break;
-      case 'quickhitch':
-        result = await submitQuickHitchInspection(draft.data as any);
-        break;
-      case 'vehicle':
-        result = await submitVehicleInspection(draft.data as any);
-        break;
-      case 'bucketchange':
-        result = await submitBucketChangeInspection(draft.data as any);
-        break;
-      case 'intervention':
-        result = await submitPositiveIntervention(draft.data as any);
-        break;
-      case 'greasing':
-        result = await submitGreasingInspection(draft.data as any);
-        break;
-      default:
-        throw new Error('Invalid draft type');
-    }
-
-    await deleteDraft(draftId);
-    return result;
-  }, [drafts, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, submitGreasingInspection, deleteDraft]);
-
   const addGreasingRecord = useCallback(async (record: Omit<GreasingRecord, 'id' | 'createdAt'>) => {
     const newRecord: GreasingRecord = {
       ...record,
@@ -1096,6 +1057,45 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
     return newInspection;
   }, [greasingInspections]);
+
+  const deleteDraft = useCallback(async (draftId: string) => {
+    const updated = drafts.filter(d => d.id !== draftId);
+    await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
+    setDrafts(updated);
+  }, [drafts]);
+
+  const submitDraft = useCallback(async (draftId: string) => {
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) throw new Error('Draft not found');
+
+    let result;
+
+    switch (draft.type) {
+      case 'plant':
+        result = await submitPlantInspection(draft.data as any);
+        break;
+      case 'quickhitch':
+        result = await submitQuickHitchInspection(draft.data as any);
+        break;
+      case 'vehicle':
+        result = await submitVehicleInspection(draft.data as any);
+        break;
+      case 'bucketchange':
+        result = await submitBucketChangeInspection(draft.data as any);
+        break;
+      case 'intervention':
+        result = await submitPositiveIntervention(draft.data as any);
+        break;
+      case 'greasing':
+        result = await submitGreasingInspection(draft.data as any);
+        break;
+      default:
+        throw new Error('Invalid draft type');
+    }
+
+    await deleteDraft(draftId);
+    return result;
+  }, [drafts, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, submitGreasingInspection, deleteDraft]);
 
   const getCompanyGreasingInspections = useCallback(() => {
     if (!company) return [];
@@ -1276,5 +1276,5 @@ export const [AppProvider, useApp] = createContextHook(() => {
     submitAirTestingInspection,
     getCompanyAirTestingInspections,
     deleteAirTestingInspection,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted]);
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted, submitAirTestingInspection, getCompanyAirTestingInspections, deleteAirTestingInspection]);
 });
