@@ -63,15 +63,26 @@ export const [AppProvider, useApp] = createContextHook(() => {
       const safeJSONParse = (data: string | null, storageKey: string) => {
         if (!data) return null;
         if (typeof data !== 'string') {
-          console.error(`Invalid data type for ${storageKey}:`, typeof data);
+          console.error(`❌ Invalid data type for ${storageKey}:`, typeof data);
+          AsyncStorage.removeItem(storageKey).catch(() => {});
+          return null;
+        }
+        if (data.trim() === '') {
+          console.error(`❌ Empty string for ${storageKey}`);
+          AsyncStorage.removeItem(storageKey).catch(() => {});
+          return null;
+        }
+        if (data === 'undefined' || data === 'null' || data === '[object Object]') {
+          console.error(`❌ Invalid literal string for ${storageKey}:`, data);
+          AsyncStorage.removeItem(storageKey).catch(() => {});
           return null;
         }
         try {
           const parsed = JSON.parse(data);
           return parsed;
         } catch (error) {
-          console.error(`Error parsing ${storageKey}:`, error);
-          console.error(`Invalid data for ${storageKey}:`, data.substring(0, 100));
+          console.error(`❌ JSON Parse error for ${storageKey}:`, error);
+          console.error(`❌ Invalid data (first 200 chars):`, data.substring(0, 200));
           AsyncStorage.removeItem(storageKey).catch(() => {});
           return null;
         }
