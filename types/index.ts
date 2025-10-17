@@ -311,3 +311,31 @@ export interface GreasingInspection {
   additionalNotes: string;
   createdAt: string;
 }
+
+export interface Ticket {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  title: string;
+  type: 'certificate' | 'license' | 'training' | 'card' | 'other';
+  fileUri?: string;
+  fileName?: string;
+  mimeType?: string;
+  expiryDate?: string;
+  notes?: string;
+  reminderDate?: string;
+  reminderEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketReminder {
+  id: string;
+  ticketId: string;
+  ticketTitle: string;
+  employeeId: string;
+  reminderDate: string;
+  isCompleted: boolean;
+  createdAt: string;
+}

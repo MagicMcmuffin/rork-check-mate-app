@@ -1,6 +1,6 @@
 // template
 import { Tabs } from "expo-router";
-import { ClipboardList, FileText, Users, Building2 } from "lucide-react-native";
+import { ClipboardList, FileText, Users, Building2, User } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -73,6 +73,13 @@ export default function TabLayout() {
         options={{
           title: "Team",
           tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="portal"
+        options={{
+          title: "My Portal",
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}
       />
     </Tabs>
