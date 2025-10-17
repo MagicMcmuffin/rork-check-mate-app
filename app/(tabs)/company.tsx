@@ -264,6 +264,36 @@ export default function CompanyScreen() {
     );
   };
 
+  const handleDeleteAllAnnouncements = () => {
+    if (announcements.length === 0) {
+      Alert.alert('No Announcements', 'There are no announcements to delete');
+      return;
+    }
+
+    Alert.alert(
+      'Delete All Announcements',
+      `Are you sure you want to delete all ${announcements.length} announcements? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              for (const announcement of announcements) {
+                await deleteAnnouncement(announcement.id);
+              }
+              Alert.alert('Success', 'All announcements deleted successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete all announcements');
+              console.error('Delete all announcements error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const groupedEquipment = equipment.reduce((acc, item) => {
     if (!acc[item.type]) {
       acc[item.type] = [];
@@ -442,13 +472,35 @@ export default function CompanyScreen() {
 
     return (
       <>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={() => setAnnouncementModalVisible(true)}
-        >
-          <Plus size={20} color="#ffffff" />
-          <Text style={styles.addButtonText}>Create Announcement</Text>
-        </TouchableOpacity>
+        <View style={{ gap: 12 }}>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={() => setAnnouncementModalVisible(true)}
+          >
+            <Plus size={20} color="#ffffff" />
+            <Text style={styles.addButtonText}>Create Announcement</Text>
+          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
+              onPress={() => setAnnouncementExpandModalVisible(true)}
+            >
+              <Megaphone size={18} color={colors.primary} />
+              <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>View All ({announcements.length})</Text>
+            </TouchableOpacity>
+
+            {announcements.length > 0 && (
+              <TouchableOpacity
+                style={[styles.secondaryButton, { backgroundColor: '#fee2e2', borderColor: '#dc2626', flex: 1 }]}
+                onPress={handleDeleteAllAnnouncements}
+              >
+                <Trash2 size={18} color="#dc2626" />
+                <Text style={[styles.secondaryButtonText, { color: '#dc2626' }]}>Delete All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         {announcements.length === 0 ? (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
@@ -493,7 +545,7 @@ export default function CompanyScreen() {
               </View>
             );
           })}
-          {announcements.length > 3 && (
+          {announcements.length > 3 && !showAllAnnouncements && (
             <TouchableOpacity
               style={[styles.showMoreButton, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => setAnnouncementExpandModalVisible(true)}
@@ -1182,7 +1234,7 @@ export default function CompanyScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.expandedAnnouncementsContainer, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>  
-              <Text style={[styles.modalTitle, { color: colors.text }]}>All Announcements</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>All Announcements ({announcements.length})</Text>
               <TouchableOpacity onPress={() => setAnnouncementExpandModalVisible(false)}>
                 <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
               </TouchableOpacity>
@@ -1927,6 +1979,19 @@ const styles = StyleSheet.create({
   },
   deleteFullButtonText: {
     fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+  },
+  secondaryButtonText: {
+    fontSize: 15,
     fontWeight: '600' as const,
   },
 });
