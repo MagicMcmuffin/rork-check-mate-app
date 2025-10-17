@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Calendar, User, FileText, CheckCircle2, XCircle, AlertCircle, Image as ImageIcon, CheckCheck, Download } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CheckStatus } from '@/types';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
@@ -17,6 +17,8 @@ export default function InspectionDetailScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [fixedChecks, setFixedChecks] = useState<Set<string>>(new Set());
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
+  const [showFilenameModal, setShowFilenameModal] = useState<boolean>(false);
+  const [customFilename, setCustomFilename] = useState<string>('');
 
   let inspection: any = null;
   let isWeeklyReport = false;
@@ -112,23 +114,44 @@ export default function InspectionDetailScreen() {
     return fixedChecks.has(`${id}-${checkIndex}`);
   };
 
+  const getDefaultFilename = () => {
+    if (type === 'plant') {
+      return `plant-inspection-${inspection.plantNumber}-${inspection.date}`;
+    } else if (type === 'quickhitch') {
+      return `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}`;
+    } else if (type === 'vehicle') {
+      return `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}`;
+    } else if (type === 'bucketchange') {
+      return `bucket-change-${inspection.bucketType}-${inspection.date}`;
+    }
+    return `inspection-${inspection.date}`;
+  };
+
+  const handleDownloadButtonPress = () => {
+    setCustomFilename(getDefaultFilename());
+    setShowFilenameModal(true);
+  };
+
   const handleDownloadPDF = async () => {
     if (!inspection || !company) return;
 
+    setShowFilenameModal(false);
     setIsGeneratingPDF(true);
     try {
       const projectName = inspection.projectId 
         ? company.projects.find(p => p.id === inspection.projectId)?.name 
         : undefined;
 
+      const filename = customFilename.trim() || getDefaultFilename();
+
       if (type === 'plant') {
-        await generatePlantInspectionPDF(inspection, company.name, projectName);
+        await generatePlantInspectionPDF(inspection, company.name, projectName, filename);
       } else if (type === 'quickhitch') {
-        await generateQuickHitchInspectionPDF(inspection, company.name, projectName);
+        await generateQuickHitchInspectionPDF(inspection, company.name, projectName, filename);
       } else if (type === 'vehicle') {
-        await generateVehicleInspectionPDF(inspection, company.name, projectName);
+        await generateVehicleInspectionPDF(inspection, company.name, projectName, filename);
       } else if (type === 'bucketchange') {
-        await generateBucketChangeInspectionPDF(inspection, company.name, projectName);
+        await generateBucketChangeInspectionPDF(inspection, company.name, projectName, filename);
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -605,7 +628,7 @@ export default function InspectionDetailScreen() {
           ),
           headerRight: () => (
             <TouchableOpacity 
-              onPress={handleDownloadPDF} 
+              onPress={handleDownloadButtonPress} 
               style={styles.downloadButton}
               disabled={isGeneratingPDF}
             >
@@ -696,6 +719,49 @@ export default function InspectionDetailScreen() {
                 )}
               </View>
             </TouchableOpacity>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={showFilenameModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowFilenameModal(false)}
+        >
+          <View style={styles.filenameModalContainer}>
+            <TouchableOpacity
+              style={styles.filenameModalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowFilenameModal(false)}
+            />
+            <View style={[styles.filenameModalContent, { backgroundColor: colors.card }]}>
+              <Text style={[styles.filenameModalTitle, { color: colors.text }]}>Download PDF</Text>
+              <Text style={[styles.filenameModalLabel, { color: colors.textSecondary }]}>Filename:</Text>
+              <TextInput
+                style={[styles.filenameInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={customFilename}
+                onChangeText={setCustomFilename}
+                placeholder="Enter filename"
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+              />
+              <Text style={[styles.filenameModalNote, { color: colors.textSecondary }]}>.pdf will be added automatically</Text>
+              <View style={styles.filenameModalActions}>
+                <TouchableOpacity
+                  onPress={() => setShowFilenameModal(false)}
+                  style={[styles.filenameModalButton, styles.cancelButton, { borderColor: colors.border }]}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDownloadPDF}
+                  style={[styles.filenameModalButton, styles.downloadModalButton, { backgroundColor: colors.primary }]}
+                >
+                  <Download size={16} color="#fff" />
+                  <Text style={styles.downloadModalButtonText}>Download</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </Modal>
       </SafeAreaView>
@@ -1005,5 +1071,84 @@ const styles = StyleSheet.create({
   emptyCell: {
     fontSize: 14,
     fontStyle: 'italic' as const,
+  },
+  filenameModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  filenameModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  filenameModalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  filenameModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1e293b',
+    marginBottom: 20,
+  },
+  filenameModalLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  filenameInput: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+  },
+  filenameModalNote: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 8,
+    fontStyle: 'italic' as const,
+  },
+  filenameModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  filenameModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#64748b',
+  },
+  downloadModalButton: {
+    backgroundColor: '#1e40af',
+  },
+  downloadModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#ffffff',
   },
 });

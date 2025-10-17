@@ -288,7 +288,8 @@ const generateHTMLStyles = () => `
 export const generatePlantInspectionPDF = async (
   inspection: PlantInspection,
   companyName: string,
-  projectName?: string
+  projectName?: string,
+  customFilename?: string
 ): Promise<void> => {
   try {
     const getItemName = (itemId: string) => {
@@ -384,12 +385,13 @@ export const generatePlantInspectionPDF = async (
     `;
 
     const { uri } = await Print.printToFileAsync({ html });
+    const filename = customFilename || `plant-inspection-${inspection.plantNumber}-${inspection.date}`;
     
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.document) {
         const link = window.document.createElement('a');
         link.href = uri;
-        link.download = `plant-inspection-${inspection.plantNumber}-${inspection.date}.pdf`;
+        link.download = `${filename}.pdf`;
         link.click();
       }
     } else {
@@ -411,7 +413,8 @@ export const generatePlantInspectionPDF = async (
 export const generateQuickHitchInspectionPDF = async (
   inspection: QuickHitchInspection,
   companyName: string,
-  projectName?: string
+  projectName?: string,
+  customFilename?: string
 ): Promise<void> => {
   try {
     const getItemName = (itemId: string) => {
@@ -498,12 +501,13 @@ export const generateQuickHitchInspectionPDF = async (
     `;
 
     const { uri } = await Print.printToFileAsync({ html });
+    const filename = customFilename || `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}`;
     
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.document) {
         const link = window.document.createElement('a');
         link.href = uri;
-        link.download = `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}.pdf`;
+        link.download = `${filename}.pdf`;
         link.click();
       }
     } else {
@@ -525,7 +529,8 @@ export const generateQuickHitchInspectionPDF = async (
 export const generateVehicleInspectionPDF = async (
   inspection: VehicleInspection,
   companyName: string,
-  projectName?: string
+  projectName?: string,
+  customFilename?: string
 ): Promise<void> => {
   try {
     const getItemName = (itemId: string) => {
@@ -624,12 +629,13 @@ export const generateVehicleInspectionPDF = async (
     `;
 
     const { uri } = await Print.printToFileAsync({ html });
+    const filename = customFilename || `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}`;
     
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.document) {
         const link = window.document.createElement('a');
         link.href = uri;
-        link.download = `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}.pdf`;
+        link.download = `${filename}.pdf`;
         link.click();
       }
     } else {
@@ -651,7 +657,8 @@ export const generateVehicleInspectionPDF = async (
 export const generateBucketChangeInspectionPDF = async (
   inspection: BucketChangeInspection,
   companyName: string,
-  projectName?: string
+  projectName?: string,
+  customFilename?: string
 ): Promise<void> => {
   try {
     const getItemName = (itemId: string) => {
@@ -734,12 +741,13 @@ export const generateBucketChangeInspectionPDF = async (
     `;
 
     const { uri } = await Print.printToFileAsync({ html });
+    const filename = customFilename || `bucket-change-${inspection.bucketType}-${inspection.date}`;
     
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.document) {
         const link = window.document.createElement('a');
         link.href = uri;
-        link.download = `bucket-change-${inspection.bucketType}-${inspection.date}.pdf`;
+        link.download = `${filename}.pdf`;
         link.click();
       }
     } else {
