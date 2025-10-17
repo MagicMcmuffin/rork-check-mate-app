@@ -608,22 +608,46 @@ export default function CompanyScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              if (isCompanyOrManagement) {
-                setAnnouncementModalVisible(true);
-              }
-            }}
-          >
-            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
-              <Megaphone size={24} color={colors.primary} />
-            </View>
-            <View style={styles.sectionCardContent}>
-              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
-              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={{ gap: 12 }}>
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => {
+                if (isCompanyOrManagement) {
+                  setAnnouncementModalVisible(true);
+                }
+              }}
+            >
+              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+                <Megaphone size={24} color={colors.primary} />
+              </View>
+              <View style={styles.sectionCardContent}>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
+              </View>
+            </TouchableOpacity>
+
+            {isCompanyOrManagement && (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
+                  onPress={() => setAnnouncementExpandModalVisible(true)}
+                >
+                  <Megaphone size={18} color={colors.primary} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>View All ({announcements.length})</Text>
+                </TouchableOpacity>
+
+                {announcements.length > 0 && (
+                  <TouchableOpacity
+                    style={[styles.secondaryButton, { backgroundColor: '#fee2e2', borderColor: '#dc2626', flex: 1 }]}
+                    onPress={handleDeleteAllAnnouncements}
+                  >
+                    <Trash2 size={18} color="#dc2626" />
+                    <Text style={[styles.secondaryButtonText, { color: '#dc2626' }]}>Delete All</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
 
           <View style={styles.gridContainer}>
             <TouchableOpacity
