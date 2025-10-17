@@ -197,6 +197,17 @@ export default function CompanyScreen() {
     setEmailInput('');
   };
 
+  const getAnnouncementEmoji = (type: 'general' | 'well-done' | 'warning' | 'achievement' | 'reminder') => {
+    switch (type) {
+      case 'general': return '📢';
+      case 'well-done': return '👏';
+      case 'warning': return '⚠️';
+      case 'achievement': return '🏆';
+      case 'reminder': return '🔔';
+      default: return '📢';
+    }
+  };
+
   const handleCreateAnnouncement = async () => {
     if (!announcementTitle.trim()) {
       Alert.alert('Error', 'Please enter an announcement title');
@@ -208,7 +219,8 @@ export default function CompanyScreen() {
     }
 
     try {
-      await createAnnouncement(announcementTitle.trim(), announcementMessage.trim(), announcementPriority);
+      const emoji = getAnnouncementEmoji(announcementType);
+      await createAnnouncement(`${emoji} ${announcementTitle.trim()}`, announcementMessage.trim(), announcementPriority);
       setAnnouncementTitle('');
       setAnnouncementMessage('');
       setAnnouncementPriority('normal');

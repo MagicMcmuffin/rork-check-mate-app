@@ -706,13 +706,413 @@ export default function PlantCategoryDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Modals continue in next part due to length... */}
+      <Modal
+        visible={subcategoryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={resetSubcategoryModal}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {editingSubcategoryId ? 'Edit Subcategory' : 'Create Subcategory'}
+              </Text>
+              <TouchableOpacity onPress={resetSubcategoryModal}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.label, { color: colors.text }]}>Subcategory Name *</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="e.g., Excavators, Dumpers, Rollers"
+                placeholderTextColor={colors.textSecondary}
+                value={subcategoryName}
+                onChangeText={setSubcategoryName}
+              />
+            </View>
+
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background }]}
+                onPress={resetSubcategoryModal}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveSubcategory}
+              >
+                <Text style={styles.saveButtonText}>{editingSubcategoryId ? 'Update' : 'Create'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={itemModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={resetItemModal}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContainer, { maxHeight: '90%', backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {editingItemId ? 'Edit Item' : 'Add Item'}
+              </Text>
+              <TouchableOpacity onPress={resetItemModal}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScrollView} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalContent}>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Item Name *</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., Caterpillar 320D Excavator"
+                    placeholderTextColor={colors.textSecondary}
+                    value={itemName}
+                    onChangeText={setItemName}
+                  />
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Serial Number</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="S/N"
+                      placeholderTextColor={colors.textSecondary}
+                      value={serialNumber}
+                      onChangeText={setSerialNumber}
+                    />
+                  </View>
+                  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Plant Number</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Plant #"
+                      placeholderTextColor={colors.textSecondary}
+                      value={plantNumber}
+                      onChangeText={setPlantNumber}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Make</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Manufacturer"
+                      placeholderTextColor={colors.textSecondary}
+                      value={make}
+                      onChangeText={setMake}
+                    />
+                  </View>
+                  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={[styles.label, { color: colors.text }]}>Model</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Model"
+                      placeholderTextColor={colors.textSecondary}
+                      value={model}
+                      onChangeText={setModel}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="Additional notes..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={notes}
+                    onChangeText={setNotes}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background }]}
+                onPress={resetItemModal}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveItem}
+              >
+                <Text style={styles.saveButtonText}>{editingItemId ? 'Update' : 'Add'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={certificateModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={resetCertificateModal}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContainer, { maxHeight: '85%', backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Upload Certificate</Text>
+              <TouchableOpacity onPress={resetCertificateModal}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScrollView} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalContent}>
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Certificate Name *</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., LOLER Certificate 2024"
+                    placeholderTextColor={colors.textSecondary}
+                    value={certificateName}
+                    onChangeText={setCertificateName}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>File Type</Text>
+                  <View style={styles.fileTypeRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'pdf' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('pdf')}
+                    >
+                      <File size={16} color={fileType === 'pdf' ? '#ffffff' : colors.textSecondary} />
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'pdf' ? '#ffffff' : colors.textSecondary }
+                      ]}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'image' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('image')}
+                    >
+                      <ImageIcon size={16} color={fileType === 'image' ? '#ffffff' : colors.textSecondary} />
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'image' ? '#ffffff' : colors.textSecondary }
+                      ]}>Image</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'all' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('all')}
+                    >
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'all' ? '#ffffff' : colors.textSecondary }
+                      ]}>All</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Certificate File *</Text>
+                  {certificateFile ? (
+                    <View
+                      style={[
+                        styles.uploadButton,
+                        { backgroundColor: colors.background, borderColor: colors.primary }
+                      ]}
+                    >
+                      <Check size={20} color={colors.primary} />
+                      <Text style={[styles.uploadButtonText, { color: colors.primary, flex: 1 }]}>
+                        {certificateFile.name}
+                      </Text>
+                      <TouchableOpacity onPress={() => setCertificateFile(null)}>
+                        <X size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadOptionsContainer}>
+                      {fileType !== 'pdf' && (
+                        <TouchableOpacity
+                          style={[
+                            styles.uploadOptionButton,
+                            { backgroundColor: colors.primary }
+                          ]}
+                          onPress={handlePickFromCameraRoll}
+                        >
+                          <ImageIcon size={20} color="#ffffff" />
+                          <Text style={styles.uploadOptionButtonText}>Camera Roll</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.uploadOptionButton,
+                          { backgroundColor: colors.primary },
+                          fileType !== 'pdf' && { flex: 1 }
+                        ]}
+                        onPress={handlePickCertificate}
+                      >
+                        <Upload size={20} color="#ffffff" />
+                        <Text style={styles.uploadOptionButtonText}>
+                          {fileType === 'pdf' ? 'Select PDF' : 'Browse Files'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Expiry Date (Optional)</Text>
+                  <TouchableOpacity
+                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => setShowExpiryDatePicker(true)}
+                  >
+                    <Calendar size={18} color={colors.textSecondary} />
+                    <Text style={[expiryDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: expiryDate ? colors.text : colors.textSecondary }]}>
+                      {expiryDate ? new Date(expiryDate).toLocaleDateString('en-GB') : 'Select date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showExpiryDatePicker && (
+                    <DateTimePicker
+                      value={expiryDate ? new Date(expiryDate) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selectedDate) => {
+                        setShowExpiryDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                          setExpiryDate(selectedDate.toISOString().split('T')[0]);
+                        }
+                      }}
+                    />
+                  )}
+                </View>
+
+                {expiryDate && (
+                  <View style={styles.reminderSection}>
+                    <TouchableOpacity
+                      style={styles.checkboxRow}
+                      onPress={() => setHas30DayReminder(!has30DayReminder)}
+                    >
+                      <View style={[
+                        styles.checkbox,
+                        { borderColor: colors.border },
+                        has30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}>
+                        {has30DayReminder && <Check size={14} color="#ffffff" />}
+                      </View>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>30-day reminder</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.checkboxRow}
+                      onPress={() => setHas7DayReminder(!has7DayReminder)}
+                    >
+                      <View style={[
+                        styles.checkbox,
+                        { borderColor: colors.border },
+                        has7DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}>
+                        {has7DayReminder && <Check size={14} color="#ffffff" />}
+                      </View>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>7-day reminder</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background }]}
+                onPress={resetCertificateModal}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSaveCertificate}
+              >
+                <Text style={styles.saveButtonText}>Upload</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={viewCertificateModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setViewCertificateModal(false)}
+      >
+        <View style={styles.viewCertificateOverlay}>
+          <View style={[styles.viewCertificateContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {viewingCertificate?.name || 'Certificate'}
+              </Text>
+              <TouchableOpacity onPress={() => setViewCertificateModal(false)}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.viewCertificateContent}>
+              <Text style={[styles.viewCertificateNote, { color: colors.textSecondary }]}>
+                Certificate viewing on mobile requires downloading. Use the download button to save and view.
+              </Text>
+              <TouchableOpacity
+                style={[styles.downloadButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  if (viewingCertificate) {
+                    handleDownloadCertificate(viewingCertificate.uri, viewingCertificate.name, viewingCertificate.mimeType);
+                    setViewCertificateModal(false);
+                  }
+                }}
+              >
+                <Download size={20} color="#ffffff" />
+                <Text style={styles.downloadButtonText}>Download Certificate</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Same styles as equipment-category-detail.tsx
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 32 },
@@ -761,4 +1161,42 @@ const styles = StyleSheet.create({
   emptyState: { borderRadius: 16, padding: 48, alignItems: 'center' },
   emptyStateTitle: { fontSize: 18, fontWeight: '700' as const, marginTop: 16, marginBottom: 8 },
   emptyStateText: { fontSize: 14, textAlign: 'center' as const, lineHeight: 20 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
+  modalContainer: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1 },
+  modalTitle: { fontSize: 20, fontWeight: '700' as const },
+  modalScrollView: { maxHeight: '70%' },
+  modalContent: { padding: 20, gap: 16 },
+  inputGroup: { gap: 8 },
+  inputRow: { flexDirection: 'row' },
+  label: { fontSize: 14, fontWeight: '600' as const },
+  input: { borderRadius: 10, padding: 14, fontSize: 15, borderWidth: 1 },
+  textArea: { minHeight: 100, paddingTop: 14 },
+  fileTypeRow: { flexDirection: 'row', gap: 10 },
+  fileTypeButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderRadius: 8, borderWidth: 1 },
+  fileTypeText: { fontSize: 13, fontWeight: '600' as const },
+  modalFooter: { flexDirection: 'row', gap: 12, padding: 20, borderTopWidth: 1 },
+  modalButton: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  cancelButton: { flex: 0.8 },
+  saveButton: { flex: 1.2 },
+  cancelButtonText: { fontSize: 15, fontWeight: '600' as const },
+  saveButtonText: { fontSize: 15, fontWeight: '700' as const, color: '#ffffff' },
+  uploadButton: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, padding: 14, borderWidth: 2, borderStyle: 'dashed' as const },
+  uploadButtonText: { fontSize: 14, fontWeight: '500' as const },
+  uploadOptionsContainer: { flexDirection: 'row', gap: 10 },
+  uploadOptionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 10, padding: 14 },
+  uploadOptionButtonText: { fontSize: 14, fontWeight: '600' as const, color: '#ffffff' },
+  datePickerButton: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 10, padding: 14, borderWidth: 1 },
+  datePickerText: { fontSize: 15, fontWeight: '500' as const },
+  datePickerPlaceholder: { fontSize: 15 },
+  reminderSection: { gap: 12 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  checkboxLabel: { fontSize: 14 },
+  viewCertificateOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  viewCertificateContainer: { width: '100%', maxWidth: 500, borderRadius: 16, overflow: 'hidden' },
+  viewCertificateContent: { padding: 24, alignItems: 'center' },
+  viewCertificateNote: { fontSize: 14, textAlign: 'center' as const, lineHeight: 20, marginBottom: 24 },
+  downloadButton: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 24 },
+  downloadButtonText: { fontSize: 16, fontWeight: '600' as const, color: '#ffffff' },
 });
