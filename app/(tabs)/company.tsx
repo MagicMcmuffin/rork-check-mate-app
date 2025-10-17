@@ -42,6 +42,7 @@ export default function CompanyScreen() {
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementPriority, setAnnouncementPriority] = useState<'low' | 'normal' | 'high'>('normal');
+  const [announcementType, setAnnouncementType] = useState<'general' | 'well-done' | 'warning' | 'achievement' | 'reminder'>('general');
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
@@ -211,6 +212,7 @@ export default function CompanyScreen() {
       setAnnouncementTitle('');
       setAnnouncementMessage('');
       setAnnouncementPriority('normal');
+      setAnnouncementType('general');
       setAnnouncementModalVisible(false);
       Alert.alert('Success', 'Announcement created successfully');
     } catch (error) {
@@ -939,6 +941,92 @@ export default function CompanyScreen() {
               </View>
 
               <View style={styles.announcementModalBody}>
+                <Text style={[styles.label, { color: colors.text }]}>Type</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
+                  <View style={styles.typeButtonsScroll}>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeChip,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        announcementType === 'general' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setAnnouncementType('general')}
+                    >
+                      <Text style={[
+                        styles.typeChipText,
+                        { color: colors.textSecondary },
+                        announcementType === 'general' && { color: '#ffffff' }
+                      ]}>
+                        📢 General
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeChip,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        announcementType === 'well-done' && { backgroundColor: '#10b981', borderColor: '#10b981' }
+                      ]}
+                      onPress={() => setAnnouncementType('well-done')}
+                    >
+                      <Text style={[
+                        styles.typeChipText,
+                        { color: colors.textSecondary },
+                        announcementType === 'well-done' && { color: '#ffffff' }
+                      ]}>
+                        👏 Well Done
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeChip,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        announcementType === 'warning' && { backgroundColor: '#f59e0b', borderColor: '#f59e0b' }
+                      ]}
+                      onPress={() => setAnnouncementType('warning')}
+                    >
+                      <Text style={[
+                        styles.typeChipText,
+                        { color: colors.textSecondary },
+                        announcementType === 'warning' && { color: '#ffffff' }
+                      ]}>
+                        ⚠️ Warning
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeChip,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        announcementType === 'achievement' && { backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' }
+                      ]}
+                      onPress={() => setAnnouncementType('achievement')}
+                    >
+                      <Text style={[
+                        styles.typeChipText,
+                        { color: colors.textSecondary },
+                        announcementType === 'achievement' && { color: '#ffffff' }
+                      ]}>
+                        🏆 Achievement
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeChip,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        announcementType === 'reminder' && { backgroundColor: '#3b82f6', borderColor: '#3b82f6' }
+                      ]}
+                      onPress={() => setAnnouncementType('reminder')}
+                    >
+                      <Text style={[
+                        styles.typeChipText,
+                        { color: colors.textSecondary },
+                        announcementType === 'reminder' && { color: '#ffffff' }
+                      ]}>
+                        🔔 Reminder
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+
                 <Text style={[styles.label, { color: colors.text }]}>Title</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
@@ -1516,6 +1604,24 @@ const styles = StyleSheet.create({
   },
   priorityButtonText: {
     fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  typeScroll: {
+    marginBottom: 16,
+  },
+  typeButtonsScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 16,
+  },
+  typeChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  typeChipText: {
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   datePickerButton: {
