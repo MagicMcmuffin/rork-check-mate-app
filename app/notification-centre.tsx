@@ -1,14 +1,16 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Bell, Calendar, AlertCircle, Package, Wrench } from 'lucide-react-native';
+import { Bell, Calendar, AlertCircle, Package, Wrench, Trash2, X } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 
 export default function NotificationCentreScreen() {
-  const { user, company, getCompanyEquipmentItems } = useApp();
+  const { user, company, getCompanyEquipmentItems, updateEquipment } = useApp();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'plant' | 'equipment'>('plant');
+
+  const canDeleteNotifications = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
 
   const canSeeEquipmentReminders = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic';
 
@@ -119,6 +121,42 @@ export default function NotificationCentreScreen() {
 
   const totalReminders = plantReminders.length + (canSeeEquipmentReminders ? equipmentReminders.length : 0);
 
+  const handleRemovePlantReminder = (equipmentId: string, type: 'thorough-examination' | 'mot') => {
+    Alert.alert(
+      'Remove Notification',
+      'Are you sure you want to remove this notification?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const equipment = company?.equipment?.find(e => e.id === equipmentId);
+              if (!equipment) return;
+
+              if (type === 'thorough-examination') {
+                await updateEquipment(equipmentId, {
+                  has7DayReminder: false,
+                  has30DayReminder: false,
+                });
+              } else {
+                await updateEquipment(equipmentId, {
+                  hasMot7DayReminder: false,
+                  hasMot30DayReminder: false,
+                });
+              }
+              Alert.alert('Success', 'Notification removed successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to remove notification');
+              console.error('Remove notification error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
@@ -223,6 +261,14 @@ export default function NotificationCentreScreen() {
                     )}
                   </View>
                 </View>
+                {canDeleteNotifications && (
+                  <TouchableOpacity
+                    style={[styles.deleteButton, { backgroundColor: '#fee2e2' }]}
+                    onPress={() => handleRemovePlantReminder(reminder.id, reminder.type)}
+                  >
+                    <Trash2 size={18} color="#dc2626" />
+                  </TouchableOpacity>
+                )}
               </View>
             ))
           )
@@ -365,6 +411,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     marginBottom: 12,
+    position: 'relative' as const,
   },
   reminderStatus: {
     width: 36,
@@ -418,5 +465,12 @@ const styles = StyleSheet.create({
   reminderBadgeText: {
     fontSize: 11,
     fontWeight: '600' as const,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -413,6 +413,7 @@ export default function CompanyScreen() {
   };
 
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
+  const [announcementExpandModalVisible, setAnnouncementExpandModalVisible] = useState(false);
 
   const renderAnnouncementsSection = () => {
     if (user?.role !== 'company') {
@@ -485,10 +486,10 @@ export default function CompanyScreen() {
           {announcements.length > 3 && (
             <TouchableOpacity
               style={[styles.showMoreButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => setShowAllAnnouncements(!showAllAnnouncements)}
+              onPress={() => setAnnouncementExpandModalVisible(true)}
             >
               <Text style={[styles.showMoreText, { color: colors.primary }]}>
-                {showAllAnnouncements ? 'Show Less' : `Show All (${announcements.length})`}
+                Show All ({announcements.length})
               </Text>
             </TouchableOpacity>
           )}
@@ -571,8 +572,8 @@ export default function CompanyScreen() {
                 <Wrench size={24} color={colors.primary} />
               </View>
               <View style={styles.sectionCardContent}>
-                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant</Text>
-                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage plant items</Text>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant & Vehicles</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage plant & vehicle items</Text>
               </View>
             </TouchableOpacity>
 
@@ -1151,6 +1152,59 @@ export default function CompanyScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        visible={announcementExpandModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setAnnouncementExpandModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.expandedAnnouncementsContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>  
+              <Text style={[styles.modalTitle, { color: colors.text }]}>All Announcements</Text>
+              <TouchableOpacity onPress={() => setAnnouncementExpandModalVisible(false)}>
+                <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.expandedAnnouncementsScroll} contentContainerStyle={{ padding: 20 }}>
+              {announcements.map((announcement) => {
+                const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
+                return (
+                  <View key={announcement.id} style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: priorityColor }]}>
+                    <View style={styles.announcementHeader}>
+                      <View style={[styles.announcementIcon, { backgroundColor: priorityColor + '20' }]}>
+                        <Megaphone size={24} color={priorityColor} />
+                      </View>
+                      <View style={styles.cardInfo}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <Text style={[styles.cardName, { color: colors.text }]}>{announcement.title}</Text>
+                          <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
+                            <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
+                              {announcement.priority.toUpperCase()}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.announcementText, { color: colors.textSecondary }]}>{announcement.message}</Text>
+                        <Text style={[styles.cardSerial, { color: colors.textSecondary, marginTop: 8 }]}>By {announcement.authorName}</Text>
+                        <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>
+                          {new Date(announcement.createdAt).toLocaleDateString()} at {new Date(announcement.createdAt).toLocaleTimeString()}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteAnnouncement(announcement.id)}
+                      >
+                        <Trash2 size={18} color="#dc2626" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1703,5 +1757,14 @@ const styles = StyleSheet.create({
   showMoreText: {
     fontSize: 15,
     fontWeight: '600' as const,
+  },
+  expandedAnnouncementsContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    height: '90%',
+  },
+  expandedAnnouncementsScroll: {
+    flex: 1,
   },
 });
