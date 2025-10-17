@@ -448,7 +448,7 @@ export default function PlantManagementScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Plant Management',
+          title: 'Plant & Vehicles',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,

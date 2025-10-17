@@ -412,6 +412,8 @@ export default function CompanyScreen() {
     );
   };
 
+  const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
+
   const renderAnnouncementsSection = () => {
     if (user?.role !== 'company') {
       return (
@@ -424,6 +426,8 @@ export default function CompanyScreen() {
         </View>
       );
     }
+
+    const displayedAnnouncements = showAllAnnouncements ? announcements : announcements.slice(0, 3);
 
     return (
       <>
@@ -444,7 +448,8 @@ export default function CompanyScreen() {
             </Text>
           </View>
         ) : (
-          announcements.map((announcement) => {
+          <>
+            {displayedAnnouncements.map((announcement) => {
             const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
             return (
               <View key={announcement.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: priorityColor }]}>
@@ -476,7 +481,18 @@ export default function CompanyScreen() {
                 </View>
               </View>
             );
-          })
+          })}
+          {announcements.length > 3 && (
+            <TouchableOpacity
+              style={[styles.showMoreButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setShowAllAnnouncements(!showAllAnnouncements)}
+            >
+              <Text style={[styles.showMoreText, { color: colors.primary }]}>
+                {showAllAnnouncements ? 'Show Less' : `Show All (${announcements.length})`}
+              </Text>
+            </TouchableOpacity>
+          )}
+          </>
         )}
       </>
     );
@@ -531,7 +547,11 @@ export default function CompanyScreen() {
 
           <TouchableOpacity
             style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setAnnouncementModalVisible(true)}
+            onPress={() => {
+              if (isCompanyOrManagement) {
+                setAnnouncementModalVisible(true);
+              }
+            }}
           >
             <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
               <Megaphone size={24} color={colors.primary} />
@@ -1672,5 +1692,16 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 15,
     fontWeight: '500' as const,
+  },
+  showMoreButton: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  showMoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });
