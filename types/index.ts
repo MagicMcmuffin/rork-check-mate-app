@@ -37,6 +37,7 @@ export interface Equipment {
 export interface EquipmentCategory {
   id: string;
   name: string;
+  parentCategoryId?: string;
   companyId: string;
   createdAt: string;
 }

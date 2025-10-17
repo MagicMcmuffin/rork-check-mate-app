@@ -1219,12 +1219,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setAirTestingInspections(updated);
   }, [airTestingInspections]);
 
-  const addEquipmentCategory = useCallback(async (name: string) => {
+  const addEquipmentCategory = useCallback(async (name: string, parentCategoryId?: string) => {
     if (!company) throw new Error('No company found');
 
     const newCategory: EquipmentCategory = {
       id: Date.now().toString(),
       name: name.trim(),
+      parentCategoryId,
       companyId: company.id,
       createdAt: new Date().toISOString(),
     };

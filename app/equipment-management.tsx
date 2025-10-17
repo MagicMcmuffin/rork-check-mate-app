@@ -1,12 +1,14 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, AlertCircle, X, Check, Upload, Clock, ChevronRight } from 'lucide-react-native';
+import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, AlertCircle, X, Check, Upload, Clock, ChevronRight, ChevronDown, File, Image as ImageIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+
+type FileType = 'pdf' | 'image' | 'all';
 
 export default function EquipmentManagementScreen() {
   const { 
@@ -27,6 +29,7 @@ export default function EquipmentManagementScreen() {
 
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [parentCategoryId, setParentCategoryId] = useState<string | undefined>(undefined);
   const [categoryName, setCategoryName] = useState('');
 
   const [itemModalVisible, setItemModalVisible] = useState(false);
@@ -47,14 +50,16 @@ export default function EquipmentManagementScreen() {
   const [showExpiryDatePicker, setShowExpiryDatePicker] = useState(false);
   const [has30DayReminder, setHas30DayReminder] = useState(false);
   const [has7DayReminder, setHas7DayReminder] = useState(false);
-
-
+  const [fileType, setFileType] = useState<FileType>('all');
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const categories = getCompanyEquipmentCategories();
   const allItems = getCompanyEquipmentItems();
+
+  const rootCategories = categories.filter(c => !c.parentCategoryId);
+  const getSubcategories = (parentId: string) => categories.filter(c => c.parentCategoryId === parentId);
 
   const toggleCategory = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -77,8 +82,8 @@ export default function EquipmentManagementScreen() {
         await updateEquipmentCategory(editingCategoryId, categoryName);
         Alert.alert('Success', 'Category updated successfully');
       } else {
-        await addEquipmentCategory(categoryName);
-        Alert.alert('Success', 'Category created successfully');
+        await addEquipmentCategory(categoryName, parentCategoryId);
+        Alert.alert('Success', parentCategoryId ? 'Subcategory created successfully' : 'Category created successfully');
       }
       resetCategoryModal();
     } catch (error: any) {
@@ -96,7 +101,7 @@ export default function EquipmentManagementScreen() {
   const handleDeleteCategory = (categoryId: string, categoryName: string) => {
     Alert.alert(
       'Delete Category',
-      `Are you sure you want to delete "${categoryName}"? All items must be deleted first.`,
+      `Are you sure you want to delete "${categoryName}"? All items and subcategories must be deleted first.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -119,6 +124,7 @@ export default function EquipmentManagementScreen() {
   const resetCategoryModal = () => {
     setCategoryModalVisible(false);
     setEditingCategoryId(null);
+    setParentCategoryId(undefined);
     setCategoryName('');
   };
 
@@ -218,8 +224,14 @@ export default function EquipmentManagementScreen() {
 
   const handlePickCertificate = async () => {
     try {
+      const types = fileType === 'pdf' 
+        ? ['application/pdf'] 
+        : fileType === 'image' 
+        ? ['image/*'] 
+        : ['application/pdf', 'image/*'];
+
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
+        type: types,
         copyToCacheDirectory: true,
       });
 
@@ -318,6 +330,7 @@ export default function EquipmentManagementScreen() {
     setExpiryDate('');
     setHas30DayReminder(false);
     setHas7DayReminder(false);
+    setFileType('all');
   };
 
   const handleOpenCertificateModal = (itemId: string) => {
@@ -325,7 +338,10 @@ export default function EquipmentManagementScreen() {
     setCertificateModalVisible(true);
   };
 
-
+  const handleAddSubcategory = (parentId: string) => {
+    setParentCategoryId(parentId);
+    setCategoryModalVisible(true);
+  };
 
   const getExpiryStatus = (expiryDate?: string) => {
     if (!expiryDate) return null;
@@ -335,12 +351,217 @@ export default function EquipmentManagementScreen() {
     const daysUntilExpiry = Math.floor((expiry.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
     
     if (daysUntilExpiry < 0) {
-      return { status: 'expired', days: Math.abs(daysUntilExpiry), color: '#dc2626' };
+      return { status: 'expired' as const, days: Math.abs(daysUntilExpiry), color: '#dc2626' };
     } else if (daysUntilExpiry <= 30) {
-      return { status: 'expiring-soon', days: daysUntilExpiry, color: '#f59e0b' };
+      return { status: 'expiring-soon' as const, days: daysUntilExpiry, color: '#f59e0b' };
     } else {
-      return { status: 'valid', days: daysUntilExpiry, color: '#10b981' };
+      return { status: 'valid' as const, days: daysUntilExpiry, color: '#10b981' };
     }
+  };
+
+  const renderCategory = (category: any, level: number = 0) => {
+    const subcategories = getSubcategories(category.id);
+    const items = getCategoryEquipmentItems(category.id);
+    const isExpanded = expandedCategories.has(category.id);
+    const hasContent = subcategories.length > 0 || items.length > 0;
+
+    return (
+      <View key={category.id} style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border, marginLeft: level * 16 }]}>
+        <TouchableOpacity
+          style={styles.categoryHeader}
+          onPress={() => hasContent && toggleCategory(category.id)}
+          disabled={!hasContent}
+        >
+          <View style={styles.categoryHeaderLeft}>
+            {hasContent && (
+              isExpanded ? 
+                <ChevronDown size={20} color={colors.textSecondary} style={styles.expandIcon} /> :
+                <ChevronRight size={20} color={colors.textSecondary} style={styles.expandIcon} />
+            )}
+            <View style={[styles.categoryIcon, { backgroundColor: colors.primary + '15' }]}>
+              <Package size={18} color={colors.primary} />
+            </View>
+            <View style={styles.categoryInfo}>
+              <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
+              <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>
+                {subcategories.length > 0 && `${subcategories.length} subcategories • `}
+                {items.length} {items.length === 1 ? 'item' : 'items'}
+              </Text>
+            </View>
+          </View>
+          {isAdmin && (
+            <View style={styles.categoryHeaderRight}>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.background }]}
+                onPress={() => handleAddSubcategory(category.id)}
+              >
+                <FolderPlus size={14} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.background }]}
+                onPress={() => handleOpenItemModal(category.id)}
+              >
+                <Plus size={14} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: colors.background }]}
+                onPress={() => handleEditCategory(category.id, category.name)}
+              >
+                <Edit2 size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                onPress={() => handleDeleteCategory(category.id, category.name)}
+              >
+                <Trash2 size={14} color="#dc2626" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={styles.categoryContent}>
+            {subcategories.map(sub => renderCategory(sub, level + 1))}
+            
+            {items.length > 0 && (
+              <View style={styles.itemsList}>
+                {items.map((item) => (
+                  <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={styles.itemRow}>
+                      <View style={styles.itemMainInfo}>
+                        <View style={styles.itemHeader}>
+                          <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+                          {isAdmin && (
+                            <View style={styles.itemActions}>
+                              <TouchableOpacity
+                                style={[styles.itemActionButton, { backgroundColor: colors.primary + '15' }]}
+                                onPress={() => handleOpenCertificateModal(item.id)}
+                              >
+                                <Upload size={14} color={colors.primary} />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.itemActionButton, { backgroundColor: colors.card }]}
+                                onPress={() => handleEditItem(item)}
+                              >
+                                <Edit2 size={14} color={colors.textSecondary} />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.itemActionButton, { backgroundColor: '#fee2e2' }]}
+                                onPress={() => handleDeleteItem(item.id, item.name)}
+                              >
+                                <Trash2 size={14} color="#dc2626" />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.itemDetails}>
+                          {item.serialNumber && (
+                            <View style={styles.detailBadge}>
+                              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>S/N:</Text>
+                              <Text style={[styles.detailValue, { color: colors.text }]}>{item.serialNumber}</Text>
+                            </View>
+                          )}
+                          {item.plantNumber && (
+                            <View style={styles.detailBadge}>
+                              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Plant #:</Text>
+                              <Text style={[styles.detailValue, { color: colors.text }]}>{item.plantNumber}</Text>
+                            </View>
+                          )}
+                          {item.make && (
+                            <View style={styles.detailBadge}>
+                              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Make:</Text>
+                              <Text style={[styles.detailValue, { color: colors.text }]}>{item.make}</Text>
+                            </View>
+                          )}
+                          {item.model && (
+                            <View style={styles.detailBadge}>
+                              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Model:</Text>
+                              <Text style={[styles.detailValue, { color: colors.text }]}>{item.model}</Text>
+                            </View>
+                          )}
+                        </View>
+                        {item.notes && (
+                          <Text style={[styles.itemNotes, { color: colors.textSecondary }]}>{item.notes}</Text>
+                        )}
+                      </View>
+                    </View>
+                    
+                    {item.certificates.length > 0 && (
+                      <View style={[styles.certificatesSection, { borderTopColor: colors.border }]}>
+                        <View style={styles.certificatesHeader}>
+                          <FileText size={14} color={colors.primary} />
+                          <Text style={[styles.certificatesTitle, { color: colors.text }]}>
+                            Certificates ({item.certificates.length})
+                          </Text>
+                        </View>
+                        <View style={styles.certificatesList}>
+                          {item.certificates.map((cert) => {
+                            const expiryStatus = getExpiryStatus(cert.expiryDate);
+                            const isPdf = cert.mimeType.includes('pdf');
+                            return (
+                              <View key={cert.id} style={[styles.certificateItem, { backgroundColor: colors.card }]}>
+                                <View style={styles.certificateIcon}>
+                                  {isPdf ? (
+                                    <File size={16} color={colors.primary} />
+                                  ) : (
+                                    <ImageIcon size={16} color={colors.primary} />
+                                  )}
+                                </View>
+                                <View style={styles.certificateInfo}>
+                                  <Text style={[styles.certificateName, { color: colors.text }]}>{cert.name}</Text>
+                                  <View style={styles.certificateMeta}>
+                                    {cert.expiryDate && (
+                                      <View style={styles.certificateExpiry}>
+                                        <Calendar size={11} color={expiryStatus?.color || colors.textSecondary} />
+                                        <Text style={[styles.certificateExpiryText, { color: colors.textSecondary }]}>
+                                          {new Date(cert.expiryDate).toLocaleDateString('en-GB')}
+                                        </Text>
+                                      </View>
+                                    )}
+                                    {expiryStatus && (
+                                      <View style={[styles.expiryBadge, { backgroundColor: expiryStatus.color + '20' }]}>
+                                        <Text style={[styles.expiryBadgeText, { color: expiryStatus.color }]}>
+                                          {expiryStatus.status === 'expired' 
+                                            ? `${expiryStatus.days}d overdue`
+                                            : expiryStatus.status === 'expiring-soon'
+                                            ? `${expiryStatus.days}d left`
+                                            : `${expiryStatus.days}d valid`
+                                          }
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </View>
+                                  {(cert.has30DayReminder || cert.has7DayReminder) && (
+                                    <View style={styles.reminderBadge}>
+                                      <Clock size={10} color={colors.primary} />
+                                      <Text style={[styles.reminderBadgeText, { color: colors.primary }]}>
+                                        {[cert.has30DayReminder && '30d', cert.has7DayReminder && '7d'].filter(Boolean).join(', ')}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                {isAdmin && (
+                                  <TouchableOpacity
+                                    style={styles.certificateDeleteButton}
+                                    onPress={() => handleDeleteCertificate(item.id, cert.id, cert.name)}
+                                  >
+                                    <Trash2 size={14} color="#dc2626" />
+                                  </TouchableOpacity>
+                                )}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
@@ -367,7 +588,7 @@ export default function EquipmentManagementScreen() {
           </View>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Equipment Management</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            {categories.length} {categories.length === 1 ? 'category' : 'categories'}, {allItems.length} {allItems.length === 1 ? 'item' : 'items'}
+            {rootCategories.length} {rootCategories.length === 1 ? 'category' : 'categories'}, {allItems.length} {allItems.length === 1 ? 'item' : 'items'}
           </Text>
         </View>
 
@@ -381,7 +602,7 @@ export default function EquipmentManagementScreen() {
           </TouchableOpacity>
         )}
 
-        {categories.length === 0 ? (
+        {rootCategories.length === 0 ? (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
             <Package size={48} color={colors.textSecondary} />
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Categories Yet</Text>
@@ -392,179 +613,7 @@ export default function EquipmentManagementScreen() {
             </Text>
           </View>
         ) : (
-          categories.map((category) => {
-            const items = getCategoryEquipmentItems(category.id);
-            const isExpanded = expandedCategories.has(category.id);
-            
-            return (
-              <View key={category.id} style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.categoryHeader}
-                  onPress={() => toggleCategory(category.id)}
-                >
-                  <View style={styles.categoryHeaderLeft}>
-                    <View style={[styles.categoryIcon, { backgroundColor: colors.primary + '15' }]}>
-                      <Package size={20} color={colors.primary} />
-                    </View>
-                    <View style={styles.categoryInfo}>
-                      <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
-                      <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>
-                        {items.length} {items.length === 1 ? 'item' : 'items'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.categoryHeaderRight}>
-                    {isAdmin && (
-                      <>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.background }]}
-                          onPress={() => handleOpenItemModal(category.id)}
-                        >
-                          <Plus size={16} color={colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: colors.background }]}
-                          onPress={() => handleEditCategory(category.id, category.name)}
-                        >
-                          <Edit2 size={16} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                          onPress={() => handleDeleteCategory(category.id, category.name)}
-                        >
-                          <Trash2 size={16} color="#dc2626" />
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    <ChevronRight 
-                      size={20} 
-                      color={colors.textSecondary}
-                      style={[
-                        styles.chevron,
-                        isExpanded && { transform: [{ rotate: '90deg' }] }
-                      ]}
-                    />
-                  </View>
-                </TouchableOpacity>
-
-                {isExpanded && (
-                  <View style={styles.itemsList}>
-                    {items.length === 0 ? (
-                      <View style={styles.emptyItems}>
-                        <Text style={[styles.emptyItemsText, { color: colors.textSecondary }]}>
-                          No items in this category
-                        </Text>
-                      </View>
-                    ) : (
-                      items.map((item) => (
-                        <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                          <View style={styles.itemHeader}>
-                            <View style={styles.itemInfo}>
-                              <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
-                              {item.serialNumber && (
-                                <Text style={[styles.itemDetail, { color: colors.textSecondary }]}>S/N: {item.serialNumber}</Text>
-                              )}
-                              {item.plantNumber && (
-                                <Text style={[styles.itemDetail, { color: colors.textSecondary }]}>Plant #: {item.plantNumber}</Text>
-                              )}
-                              {item.make && item.model && (
-                                <Text style={[styles.itemDetail, { color: colors.textSecondary }]}>
-                                  {item.make} {item.model}
-                                </Text>
-                              )}
-                              {item.notes && (
-                                <Text style={[styles.itemNotes, { color: colors.textSecondary }]}>{item.notes}</Text>
-                              )}
-                              
-                              {item.certificates.length > 0 && (
-                                <View style={styles.certificatesSection}>
-                                  <View style={styles.certificatesHeader}>
-                                    <FileText size={14} color={colors.primary} />
-                                    <Text style={[styles.certificatesTitle, { color: colors.text }]}>
-                                      Certificates ({item.certificates.length})
-                                    </Text>
-                                  </View>
-                                  {item.certificates.map((cert) => {
-                                    const expiryStatus = getExpiryStatus(cert.expiryDate);
-                                    return (
-                                      <View key={cert.id} style={[styles.certificateItem, { backgroundColor: colors.card }]}>
-                                        <View style={styles.certificateInfo}>
-                                          <Text style={[styles.certificateName, { color: colors.text }]}>{cert.name}</Text>
-                                          {cert.expiryDate && (
-                                            <View style={styles.certificateExpiry}>
-                                              <Calendar size={12} color={expiryStatus?.color || colors.textSecondary} />
-                                              <Text style={[styles.certificateExpiryText, { color: colors.textSecondary }]}>
-                                                Expires: {new Date(cert.expiryDate).toLocaleDateString('en-GB')}
-                                              </Text>
-                                            </View>
-                                          )}
-                                          {expiryStatus && (
-                                            <View style={[styles.expiryBadge, { backgroundColor: expiryStatus.color + '20' }]}>
-                                              <AlertCircle size={10} color={expiryStatus.color} />
-                                              <Text style={[styles.expiryBadgeText, { color: expiryStatus.color }]}>
-                                                {expiryStatus.status === 'expired' 
-                                                  ? `Expired ${expiryStatus.days}d ago`
-                                                  : expiryStatus.status === 'expiring-soon'
-                                                  ? `Expires in ${expiryStatus.days}d`
-                                                  : `Valid ${expiryStatus.days}d`
-                                                }
-                                              </Text>
-                                            </View>
-                                          )}
-                                          {(cert.has30DayReminder || cert.has7DayReminder) && (
-                                            <View style={styles.reminderBadge}>
-                                              <Clock size={10} color={colors.primary} />
-                                              <Text style={[styles.reminderBadgeText, { color: colors.primary }]}>
-                                                Reminders: {[cert.has30DayReminder && '30d', cert.has7DayReminder && '7d'].filter(Boolean).join(', ')}
-                                              </Text>
-                                            </View>
-                                          )}
-                                        </View>
-                                        {isAdmin && (
-                                          <TouchableOpacity
-                                            style={styles.certificateDeleteButton}
-                                            onPress={() => handleDeleteCertificate(item.id, cert.id, cert.name)}
-                                          >
-                                            <Trash2 size={14} color="#dc2626" />
-                                          </TouchableOpacity>
-                                        )}
-                                      </View>
-                                    );
-                                  })}
-                                </View>
-                              )}
-                            </View>
-                            {isAdmin && (
-                              <View style={styles.itemActions}>
-                                <TouchableOpacity
-                                  style={[styles.actionButton, { backgroundColor: colors.primary + '15' }]}
-                                  onPress={() => handleOpenCertificateModal(item.id)}
-                                >
-                                  <Upload size={16} color={colors.primary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[styles.actionButton, { backgroundColor: colors.background }]}
-                                  onPress={() => handleEditItem(item)}
-                                >
-                                  <Edit2 size={16} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[styles.actionButton, { backgroundColor: '#fee2e2' }]}
-                                  onPress={() => handleDeleteItem(item.id, item.name)}
-                                >
-                                  <Trash2 size={16} color="#dc2626" />
-                                </TouchableOpacity>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-                      ))
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })
+          rootCategories.map(category => renderCategory(category))
         )}
       </ScrollView>
 
@@ -581,7 +630,7 @@ export default function EquipmentManagementScreen() {
           <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingCategoryId ? 'Edit Category' : 'Create Category'}
+                {editingCategoryId ? 'Edit Category' : parentCategoryId ? 'Create Subcategory' : 'Create Category'}
               </Text>
               <TouchableOpacity onPress={resetCategoryModal}>
                 <X size={24} color={colors.textSecondary} />
@@ -589,10 +638,12 @@ export default function EquipmentManagementScreen() {
             </View>
 
             <View style={styles.modalContent}>
-              <Text style={[styles.label, { color: colors.text }]}>Category Name *</Text>
+              <Text style={[styles.label, { color: colors.text }]}>
+                {parentCategoryId ? 'Subcategory' : 'Category'} Name *
+              </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="e.g., Generators, Compressors, Tools"
+                placeholder={parentCategoryId ? "e.g., Chains, Hooks, Slings" : "e.g., Lifting, Tools, Safety"}
                 placeholderTextColor={colors.textSecondary}
                 value={categoryName}
                 onChangeText={setCategoryName}
@@ -643,7 +694,7 @@ export default function EquipmentManagementScreen() {
                   <Text style={[styles.label, { color: colors.text }]}>Item Name *</Text>
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                    placeholder="e.g., Generator 5KVA"
+                    placeholder="e.g., 2-Leg Chain Sling 3m"
                     placeholderTextColor={colors.textSecondary}
                     value={itemName}
                     onChangeText={setItemName}
@@ -762,6 +813,53 @@ export default function EquipmentManagementScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>File Type</Text>
+                  <View style={styles.fileTypeRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'pdf' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('pdf')}
+                    >
+                      <File size={16} color={fileType === 'pdf' ? '#ffffff' : colors.textSecondary} />
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'pdf' ? '#ffffff' : colors.textSecondary }
+                      ]}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'image' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('image')}
+                    >
+                      <ImageIcon size={16} color={fileType === 'image' ? '#ffffff' : colors.textSecondary} />
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'image' ? '#ffffff' : colors.textSecondary }
+                      ]}>Image</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.fileTypeButton,
+                        { borderColor: colors.border },
+                        fileType === 'all' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setFileType('all')}
+                    >
+                      <Text style={[
+                        styles.fileTypeText,
+                        { color: fileType === 'all' ? '#ffffff' : colors.textSecondary }
+                      ]}>All</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Certificate File *</Text>
                   <TouchableOpacity
                     style={[
@@ -782,7 +880,7 @@ export default function EquipmentManagementScreen() {
                       <>
                         <Upload size={20} color={colors.textSecondary} />
                         <Text style={[styles.uploadButtonText, { color: colors.textSecondary }]}>
-                          Select PDF or Image
+                          Select {fileType === 'pdf' ? 'PDF' : fileType === 'image' ? 'Image' : 'PDF or Image'}
                         </Text>
                       </>
                     )}
@@ -925,160 +1023,182 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
   },
   categoryHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  expandIcon: {
+    marginRight: 8,
+  },
   categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  categoryCount: {
-    fontSize: 13,
-  },
-  categoryHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  iconButton: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chevron: {
-    marginLeft: 4,
+  categoryInfo: {
+    marginLeft: 10,
+    flex: 1,
   },
-  itemsList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 8,
+  categoryName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
   },
-  emptyItems: {
-    padding: 24,
+  categoryCount: {
+    fontSize: 12,
+  },
+  categoryHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  iconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyItemsText: {
-    fontSize: 14,
+  categoryContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  itemsList: {
+    gap: 10,
+    marginTop: 8,
   },
   itemCard: {
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
   },
+  itemRow: {
+    flexDirection: 'row',
+  },
+  itemMainInfo: {
+    flex: 1,
+  },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  itemInfo: {
-    flex: 1,
+    alignItems: 'flex-start',
+    marginBottom: 8,
   },
   itemName: {
     fontSize: 15,
     fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  itemDetail: {
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  itemNotes: {
-    fontSize: 13,
-    marginTop: 4,
-    fontStyle: 'italic' as const,
+    flex: 1,
   },
   itemActions: {
     flexDirection: 'row',
     gap: 6,
-    alignItems: 'flex-start',
   },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  itemActionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  itemDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  detailBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  itemNotes: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
   },
   certificatesSection: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
   },
   certificatesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   certificatesTitle: {
     fontSize: 13,
     fontWeight: '600' as const,
   },
+  certificatesList: {
+    gap: 8,
+  },
   certificateItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 8,
+    gap: 10,
+    padding: 10,
+    borderRadius: 8,
+  },
+  certificateIcon: {
+    width: 32,
+    height: 32,
     borderRadius: 6,
-    marginBottom: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
   },
   certificateInfo: {
     flex: 1,
   },
   certificateName: {
     fontSize: 13,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  certificateMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 4,
   },
   certificateExpiry: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 4,
   },
   certificateExpiryText: {
-    fontSize: 12,
+    fontSize: 11,
   },
   expiryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 4,
-    marginBottom: 4,
   },
   expiryBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600' as const,
   },
   reminderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    alignSelf: 'flex-start',
   },
   reminderBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500' as const,
   },
   certificateDeleteButton: {
@@ -1149,6 +1269,24 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     paddingTop: 14,
+  },
+  fileTypeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  fileTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  fileTypeText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   modalFooter: {
     flexDirection: 'row',
