@@ -29,7 +29,7 @@ const DAYS_OF_WEEK_DATA: { day: DayOfWeek; label: string }[] = [
 ];
 
 export default function GreasingInspectionScreen() {
-  const { user, company, saveDraft, getDrafts } = useApp();
+  const { user, company, saveDraft, getDrafts, submitGreasingInspection, deleteDraft } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -215,6 +215,22 @@ export default function GreasingInspectionScreen() {
       return;
     }
 
+    const finalEquipmentName = selectedEquipment === 'other'
+      ? customEquipmentName.trim()
+      : selectedEquipment
+        ? equipment.find(e => e.id === selectedEquipment)?.name || ''
+        : '';
+
+    if (!finalEquipmentName) {
+      Alert.alert('Error', 'Please select or enter equipment name');
+      return;
+    }
+
+    if (!user || !company) {
+      Alert.alert('Error', 'User or company information not found');
+      return;
+    }
+
     Alert.alert(
       'Submit Weekly Greasing Report',
       `Submit greasing inspection for ${completedDays.length} day(s)?`,
@@ -225,6 +241,32 @@ export default function GreasingInspectionScreen() {
           onPress: async () => {
             setIsSubmitting(true);
             try {
+              if (!submitGreasingInspection) {
+                throw new Error('submitGreasingInspection not available');
+              }
+
+              for (const dayData of completedDays) {
+                const inspection = {
+                  companyId: company.id,
+                  projectId: selectedProject || undefined,
+                  employeeId: user.id,
+                  employeeName: user.name,
+                  equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
+                  equipmentName: finalEquipmentName,
+                  equipmentType: equipmentType,
+                  date: dayData.date || new Date().toISOString().split('T')[0],
+                  checks: dayData.checks,
+                  greasingDuration: dayData.additionalData?.greasingDuration || '',
+                  additionalNotes: dayData.additionalData?.additionalNotes || '',
+                };
+
+                await submitGreasingInspection(inspection);
+              }
+
+              if (currentDraftId && deleteDraft) {
+                await deleteDraft(currentDraftId);
+              }
+
               Alert.alert('Success', 'Weekly greasing inspection submitted successfully', [
                 { text: 'OK', onPress: () => router.back() },
               ]);

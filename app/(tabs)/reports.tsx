@@ -57,6 +57,8 @@ export default function ReportsScreen() {
     submitDraft,
     greasingRecords,
     deleteGreasingRecord,
+    getCompanyGreasingInspections,
+    deleteGreasingInspection,
   } = appContext;
   
   if (!deleteInspection || !markInspectionFixed) {
@@ -74,6 +76,7 @@ export default function ReportsScreen() {
   const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
   const fixLogs = getFixLogs ? getFixLogs() : [];
   const companyGreasingRecords = company ? (greasingRecords || []).filter(r => r.companyId === company.id) : [];
+  const companyGreasingInspections = getCompanyGreasingInspections ? getCompanyGreasingInspections() : [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -401,7 +404,7 @@ export default function ReportsScreen() {
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fixes</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{companyGreasingRecords.length}</Text>
+                  <Text style={styles.statValue}>{companyGreasingInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Greasing</Text>
                 </View>
               </View>
@@ -606,7 +609,7 @@ export default function ReportsScreen() {
               )}
 
               {selectedTab === 'inspections' && selectedType === 'greasing' ? (
-                companyGreasingRecords.length === 0 ? (
+                companyGreasingInspections.length === 0 ? (
                   <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                     <Droplet size={48} color={colors.textSecondary} />
                     <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Greasing Records Yet</Text>
@@ -616,102 +619,101 @@ export default function ReportsScreen() {
                   </View>
                 ) : (
                   <View style={styles.reportsList}>
-                    <View style={[styles.greasingDownloadCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <View style={styles.greasingDownloadHeader}>
-                        <Droplet size={24} color={colors.primary} />
-                        <Text style={[styles.greasingDownloadTitle, { color: colors.text }]}>Download All Greasing Records</Text>
-                      </View>
-                      <Text style={[styles.greasingDownloadSubtext, { color: colors.textSecondary }]}>Generate a PDF with all plant greasing records</Text>
-                      <TouchableOpacity
-                        style={[styles.greasingDownloadButton, { backgroundColor: colors.primary }]}
-                        onPress={async () => {
-                          try {
-                            await generateGreasingRecordsPDF(companyGreasingRecords, company?.name || 'Company');
-                          } catch (error) {
-                            console.error('Error generating greasing PDF:', error);
-                            Alert.alert('Error', 'Failed to generate PDF');
-                          }
-                        }}
-                      >
-                        <Download size={18} color="#ffffff" />
-                        <Text style={styles.greasingDownloadButtonText}>Download PDF</Text>
-                      </TouchableOpacity>
-                    </View>
-                    {companyGreasingRecords
+                    {companyGreasingInspections
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map((record) => (
-                      <View key={record.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
-                        <View style={styles.reportCardContent}>
-                          <View style={styles.reportHeader}>
-                            <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
-                              <Droplet size={20} color="#06b6d4" />
-                            </View>
-                            <View style={styles.reportInfo}>
-                              <Text style={[styles.reportTitle, { color: colors.text }]}>{record.equipmentName}</Text>
-                              <View style={styles.reportMeta}>
-                                <User size={14} color={colors.textSecondary} />
-                                <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                  {record.employeeName}
-                                </Text>
+                      .map((inspection) => {
+                        const checks = inspection.checks || [];
+                        const hasRedIssues = checks.some((c: any) => c.status === 'C');
+                        const hasYellowIssues = !hasRedIssues && checks.some((c: any) => c.status === 'B');
+                        const isAllGreen = !hasRedIssues && !hasYellowIssues;
+                        const borderColor = hasRedIssues ? '#ef4444' : hasYellowIssues ? '#f59e0b' : isAllGreen ? '#10b981' : colors.border;
+
+                        return (
+                          <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: borderColor }]}>
+                            <View style={styles.reportCardContent}>
+                              <View style={styles.reportHeader}>
+                                <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
+                                  <Droplet size={20} color="#06b6d4" />
+                                </View>
+                                <View style={styles.reportInfo}>
+                                  <Text style={[styles.reportTitle, { color: colors.text }]}>Greasing Inspection</Text>
+                                  <View style={styles.reportMeta}>
+                                    <User size={14} color={colors.textSecondary} />
+                                    <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
+                                      {inspection.employeeName}
+                                    </Text>
+                                  </View>
+                                </View>
                               </View>
-                            </View>
-                          </View>
 
-                          <View style={styles.reportDetails}>
-                            <View style={styles.reportDetail}>
-                              <Calendar size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {new Date(record.date).toLocaleDateString()}
-                              </Text>
-                            </View>
-                            <View style={styles.reportDetail}>
-                              <Clock size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {record.time}
-                              </Text>
-                            </View>
-                          </View>
+                              <View style={styles.reportDetails}>
+                                <View style={styles.reportDetail}>
+                                  <Calendar size={16} color={colors.textSecondary} />
+                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                    {formatDate(inspection.createdAt)}
+                                  </Text>
+                                </View>
+                                <View style={styles.reportDetail}>
+                                  <Clock size={16} color={colors.textSecondary} />
+                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                    {formatTime(inspection.createdAt)}
+                                  </Text>
+                                </View>
+                              </View>
 
-                          {record.notes && (
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Notes:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{record.notes}</Text>
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.equipmentName}</Text>
+                              </View>
+
+                              {inspection.projectId && (
+                                <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                  <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Project:</Text>
+                                  <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getProjectName(inspection.projectId)}</Text>
+                                </View>
+                              )}
+
+                              {inspection.greasingDuration && (
+                                <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                  <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Duration:</Text>
+                                  <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.greasingDuration} min</Text>
+                                </View>
+                              )}
                             </View>
-                          )}
-                        </View>
-                        {(user?.role === 'company' || user?.role === 'administrator') && deleteGreasingRecord && (
-                          <View style={styles.reportActions}>
-                            <TouchableOpacity
-                              style={[styles.actionButton, styles.deleteButton]}
-                              onPress={() => {
-                                Alert.alert(
-                                  'Delete Record',
-                                  'Are you sure you want to delete this greasing record?',
-                                  [
-                                    { text: 'Cancel', style: 'cancel' },
-                                    {
-                                      text: 'Delete',
-                                      style: 'destructive',
-                                      onPress: async () => {
-                                        try {
-                                          await deleteGreasingRecord(record.id);
-                                          Alert.alert('Success', 'Greasing record deleted');
-                                        } catch (error) {
-                                          console.error('Error deleting greasing record:', error);
-                                          Alert.alert('Error', 'Failed to delete greasing record');
-                                        }
-                                      },
-                                    },
-                                  ]
-                                );
-                              }}
-                            >
-                              <Trash2 size={16} color="#dc2626" />
-                            </TouchableOpacity>
+                            {(user?.role === 'company' || user?.role === 'administrator') && deleteGreasingInspection && (
+                              <View style={styles.reportActions}>
+                                <TouchableOpacity
+                                  style={[styles.actionButton, styles.deleteButton]}
+                                  onPress={() => {
+                                    Alert.alert(
+                                      'Delete Inspection',
+                                      'Are you sure you want to delete this greasing inspection?',
+                                      [
+                                        { text: 'Cancel', style: 'cancel' },
+                                        {
+                                          text: 'Delete',
+                                          style: 'destructive',
+                                          onPress: async () => {
+                                            try {
+                                              await deleteGreasingInspection(inspection.id);
+                                              Alert.alert('Success', 'Greasing inspection deleted');
+                                            } catch (error) {
+                                              console.error('Error deleting greasing inspection:', error);
+                                              Alert.alert('Error', 'Failed to delete greasing inspection');
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }}
+                                >
+                                  <Trash2 size={16} color="#dc2626" />
+                                </TouchableOpacity>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    ))}
+                        );
+                      })}
                   </View>
                 )
               ) : selectedTab === 'inspections' && filteredInspections.length === 0 ? (
@@ -1230,6 +1232,7 @@ export default function ReportsScreen() {
                   case 'vehicle': return 'Vehicle Inspection';
                   case 'bucketchange': return 'Bucket Change Inspection';
                   case 'intervention': return 'Positive Intervention';
+                  case 'greasing': return 'Greasing Inspection';
                   default: return 'Unknown Type';
                 }
               };
@@ -1248,6 +1251,7 @@ export default function ReportsScreen() {
                   case 'vehicle': return data.vehicleRegistration || 'No registration';
                   case 'bucketchange': return data.bucketType || 'No bucket type';
                   case 'intervention': return data.hazardDescription || 'No description';
+                  case 'greasing': return data.plantNumber || data.equipmentName || 'No equipment';
                   default: return '';
                 }
               };
@@ -1259,6 +1263,7 @@ export default function ReportsScreen() {
                   case 'vehicle': return { color: '#f59e0b', bg: '#fef3c7' };
                   case 'bucketchange': return { color: '#ec4899', bg: '#fce7f3' };
                   case 'intervention': return { color: '#10b981', bg: '#dcfce7' };
+                  case 'greasing': return { color: '#06b6d4', bg: '#cffafe' };
                   default: return { color: '#64748b', bg: '#f1f5f9' };
                 }
               };
@@ -1319,6 +1324,12 @@ export default function ReportsScreen() {
                   case 'intervention':
                     router.push({
                       pathname: '/positive-intervention',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                  case 'greasing':
+                    router.push({
+                      pathname: '/greasing-inspection',
                       params: { draftId: draft.id },
                     });
                     break;
