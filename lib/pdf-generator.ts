@@ -41,38 +41,38 @@ const generateHTMLStyles = () => `
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #1e293b;
       background: #ffffff;
-      padding: 40px;
+      padding: 20px;
     }
     .header {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
       color: white;
-      padding: 32px;
-      border-radius: 16px;
-      margin-bottom: 32px;
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
     }
     .header-title {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
     .header-meta {
       display: flex;
-      gap: 24px;
-      margin-top: 12px;
-      font-size: 14px;
+      gap: 20px;
+      margin-top: 8px;
+      font-size: 12px;
       opacity: 0.95;
     }
     .info-card {
       background: #f8fafc;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
       border: 1px solid #e2e8f0;
     }
     .info-row {
       display: flex;
       justify-content: space-between;
-      padding: 12px 0;
+      padding: 8px 0;
       border-bottom: 1px solid #e2e8f0;
     }
     .info-row:last-child {
@@ -80,24 +80,25 @@ const generateHTMLStyles = () => `
     }
     .info-label {
       color: #64748b;
-      font-size: 14px;
+      font-size: 11px;
+      font-weight: 600;
     }
     .info-value {
       color: #1e293b;
-      font-weight: 600;
-      font-size: 14px;
+      font-weight: 700;
+      font-size: 11px;
     }
     .section {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
     .section-title {
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       color: #1e293b;
     }
     .check-row {
@@ -165,24 +166,25 @@ const generateHTMLStyles = () => `
     .inspection-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
+      margin-top: 8px;
       background: #ffffff;
-      border: 1px solid #334155;
+      border: 2px solid #334155;
+      font-size: 10px;
     }
     .inspection-table th {
       background: #1e40af;
       color: white;
-      padding: 14px 10px;
+      padding: 10px 8px;
       text-align: center;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       border: 1px solid #1e3a8a;
       vertical-align: middle;
     }
     .inspection-table th:first-child {
       text-align: left;
-      min-width: 180px;
-      max-width: 180px;
+      min-width: 160px;
+      max-width: 160px;
       position: sticky;
       left: 0;
       z-index: 10;
@@ -191,35 +193,37 @@ const generateHTMLStyles = () => `
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
     .day-name {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
+      text-transform: uppercase;
     }
     .day-date {
-      font-size: 10px;
-      font-weight: 400;
+      font-size: 9px;
+      font-weight: 500;
       opacity: 0.9;
     }
     .inspection-table td {
-      padding: 12px 10px;
+      padding: 8px 6px;
       border: 1px solid #cbd5e1;
       text-align: center;
-      font-size: 11px;
-      vertical-align: top;
-      min-height: 50px;
+      font-size: 9px;
+      vertical-align: middle;
+      min-height: 40px;
     }
     .inspection-table td:first-child {
       text-align: left;
       font-weight: 600;
       background: #f1f5f9;
       color: #1e293b;
-      font-size: 12px;
+      font-size: 10px;
       position: sticky;
       left: 0;
       z-index: 5;
-      border-right: 2px solid #94a3b8;
+      border-right: 2px solid #64748b;
+      padding-left: 10px;
     }
     .inspection-table tbody tr:nth-child(even) td:first-child {
       background: #e2e8f0;
@@ -232,21 +236,21 @@ const generateHTMLStyles = () => `
     }
     .table-status {
       display: inline-block;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 9px;
       font-weight: 700;
       white-space: nowrap;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
     .table-notes {
-      font-size: 9px;
+      font-size: 7px;
       color: #475569;
-      margin-top: 6px;
+      margin-top: 4px;
       font-style: italic;
-      line-height: 1.3;
-      max-width: 150px;
+      line-height: 1.2;
+      max-width: 120px;
       word-wrap: break-word;
     }
     .empty-cell {
@@ -265,18 +269,18 @@ const generateHTMLStyles = () => `
         page-break-inside: avoid;
       }
       .inspection-table {
-        font-size: 10px;
+        font-size: 9px;
       }
       .inspection-table th {
-        padding: 10px 8px;
+        padding: 8px 6px;
       }
       .inspection-table td {
-        padding: 10px 8px;
+        padding: 6px 5px;
       }
     }
     @page {
       size: A4 landscape;
-      margin: 15mm;
+      margin: 10mm;
     }
   </style>
 `;
