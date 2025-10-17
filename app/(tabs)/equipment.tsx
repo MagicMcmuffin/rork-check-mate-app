@@ -22,6 +22,7 @@ export default function EquipmentScreen() {
   const [hitchSerial, setHitchSerial] = useState('');
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
+  const [set30DayReminder, setSet30DayReminder] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [thoroughExaminationCertificate, setThoroughExaminationCertificate] = useState('');
   const [greasingModalVisible, setGreasingModalVisible] = useState(false);
@@ -37,7 +38,7 @@ export default function EquipmentScreen() {
 
   const handleAddEquipment = async () => {
     if (!name.trim() || !make.trim() || !model.trim() || !serialNumber.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -65,6 +66,7 @@ export default function EquipmentScreen() {
       setRegistration('');
       setThoroughExaminationDate('');
       setThoroughExaminationCertificate('');
+      setSet30DayReminder(false);
       setModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
     } catch (error) {
@@ -561,19 +563,19 @@ export default function EquipmentScreen() {
                   <View style={[styles.formSection, { backgroundColor: colors.background }]}>
                     <View style={styles.sectionHeader}>
                       <Calendar size={18} color={colors.primary} />
-                      <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Thorough Examination</Text>
+                      <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Thorough Examination (Optional)</Text>
                     </View>
                     <Text style={[styles.sectionHelper, { color: colors.textSecondary }]}>Certificate valid for 12 months. We'll notify you when it's nearly expired.</Text>
                     
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Examination Date</Text>
+                      <Text style={[styles.label, { color: colors.text }]}>Examination Date (Optional)</Text>
                       <TouchableOpacity
                         style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
                         onPress={() => setShowDatePicker(true)}
                       >
                         <Calendar size={18} color={colors.textSecondary} />
                         <Text style={[thoroughExaminationDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: thoroughExaminationDate ? colors.text : colors.textSecondary }]}>
-                          {thoroughExaminationDate || 'Select date'}
+                          {thoroughExaminationDate ? new Date(thoroughExaminationDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Select date'}
                         </Text>
                       </TouchableOpacity>
                       {showDatePicker && (
@@ -591,9 +593,23 @@ export default function EquipmentScreen() {
                         />
                       )}
                     </View>
+                    
+                    <TouchableOpacity
+                      style={styles.checkboxContainer}
+                      onPress={() => setSet30DayReminder(!set30DayReminder)}
+                    >
+                      <View style={[
+                        styles.checkbox,
+                        { borderColor: colors.border },
+                        set30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}>
+                        {set30DayReminder && <Check size={16} color="#ffffff" />}
+                      </View>
+                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>Set 30-day reminder before expiry</Text>
+                    </TouchableOpacity>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Certificate Document</Text>
+                      <Text style={[styles.label, { color: colors.text }]}>Certificate Document (Optional)</Text>
                       <TouchableOpacity
                         style={[
                           styles.uploadArea,
@@ -1304,5 +1320,22 @@ const styles = StyleSheet.create({
   historyNotes: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
 });
