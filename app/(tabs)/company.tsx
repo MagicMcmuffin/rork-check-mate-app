@@ -529,7 +529,7 @@ export default function CompanyScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={[styles.announcementText, { color: colors.textSecondary }]}>{announcement.message}</Text>
+                    <Text style={[styles.announcementText, { color: colors.textSecondary }]} numberOfLines={2}>{announcement.message}</Text>
                     <Text style={[styles.cardSerial, { color: colors.textSecondary, marginTop: 8 }]}>By {announcement.authorName}</Text>
                     <Text style={[styles.cardSerial, { color: colors.textSecondary }]}>
                       {new Date(announcement.createdAt).toLocaleDateString()} at {new Date(announcement.createdAt).toLocaleTimeString()}
@@ -539,7 +539,7 @@ export default function CompanyScreen() {
                     style={styles.announcementDeleteButton}
                     onPress={() => handleDeleteAnnouncement(announcement.id)}
                   >
-                    <Trash2 size={18} color="#dc2626" />
+                    <Trash2 size={20} color="#dc2626" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1808,11 +1808,15 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   announcementDeleteButton: {
-    padding: 8,
+    padding: 10,
     backgroundColor: '#fee2e2',
     borderRadius: 8,
     alignSelf: 'flex-start',
     marginLeft: 8,
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   announcementIcon: {
     width: 48,
