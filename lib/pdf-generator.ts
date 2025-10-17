@@ -135,18 +135,40 @@ const generateHTMLStyles = () => `
     .images-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
+      gap: 20px;
       margin-top: 16px;
+    }
+    @media print {
+      .images-grid {
+        page-break-inside: avoid;
+      }
+      .image-container {
+        page-break-inside: avoid;
+      }
     }
     .image-container {
       border-radius: 8px;
       overflow: hidden;
-      border: 1px solid #e2e8f0;
+      border: 2px solid #e2e8f0;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     .image-container img {
       width: 100%;
       height: auto;
       display: block;
+      object-fit: contain;
+      max-height: 300px;
+      background: #f8fafc;
+    }
+    .image-label {
+      padding: 8px;
+      background: #f1f5f9;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: center;
     }
     .severity-badge {
       display: inline-block;
@@ -1346,18 +1368,22 @@ export const generateAirTestingInspectionPDF = async (
 ): Promise<void> => {
   try {
     const imagesHTML = (() => {
-      const images = [inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean);
+      const images = [inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean) as string[];
       if (images.length === 0) return '';
       
       return `
         <div class="section">
           <div class="section-title">Photos (${images.length})</div>
           <div class="images-grid">
-            ${images.map(img => `
-              <div class="image-container">
-                <img src="${img}" alt="Air testing photo" />
-              </div>
-            `).join('')}
+            ${images.map((img, index) => {
+              const label = index === 0 ? 'Start Image' : index === 1 && inspection.finishImage ? 'Finish Image' : `Photo ${index + 1}`;
+              return `
+                <div class="image-container">
+                  <div class="image-label" style="padding: 8px; background: #f1f5f9; font-size: 11px; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">${label}</div>
+                  <img src="${img}" alt="${label}" style="width: 100%; height: auto; display: block; object-fit: contain; max-height: 300px;" />
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
