@@ -482,103 +482,109 @@ export default function CompanyScreen() {
         }}
       />
       
-      <View style={styles.header}>
-        {company?.logo ? (
-          <Image source={{ uri: company.logo }} style={styles.headerLogo} />
-        ) : (
-          <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-            <Building2 size={28} color={colors.primary} />
-          </View>
-        )}
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Company Management</Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {equipment.length} equipment, {projects.length} projects, {announcements.length} announcements
-        </Text>
-      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          {company?.logo ? (
+            <Image source={{ uri: company.logo }} style={styles.headerLogo} />
+          ) : (
+            <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Building2 size={28} color={colors.primary} />
+            </View>
+          )}
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Company Management</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            {equipment.length} equipment, {projects.length} projects, {announcements.length} announcements
+          </Text>
+        </View>
 
-      <View style={styles.sectionsContainer}>
-        <TouchableOpacity
-          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push('/notification-centre')}
-        >
-          <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
-            <Bell size={24} color={colors.primary} />
-          </View>
-          <View style={styles.sectionCardContent}>
-            <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Notifications</Text>
-            <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>View all system notifications</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => setAnnouncementModalVisible(true)}
-        >
-          <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
-            <Megaphone size={24} color={colors.primary} />
-          </View>
-          <View style={styles.sectionCardContent}>
-            <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
-            <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.gridContainer}>
+        <View style={styles.sectionsContainer}>
           <TouchableOpacity
             style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/plant-management')}
+            onPress={() => router.push('/notification-centre')}
           >
-            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Wrench size={24} color={colors.primary} />
+            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+              <Bell size={24} color={colors.primary} />
             </View>
             <View style={styles.sectionCardContent}>
-              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant</Text>
-              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage plant items</Text>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Notifications</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>View all system notifications</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/equipment-management')}
+            onPress={() => setAnnouncementModalVisible(true)}
           >
-            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Package size={24} color={colors.primary} />
+            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+              <Megaphone size={24} color={colors.primary} />
             </View>
             <View style={styles.sectionCardContent}>
-              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Equipment</Text>
-              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage equipment</Text>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/project-management')}
-          >
-            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Briefcase size={24} color={colors.primary} />
-            </View>
-            <View style={styles.sectionCardContent}>
-              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Projects</Text>
-              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage projects</Text>
-            </View>
-          </TouchableOpacity>
-
-          {isCompanyOrManagement && (
+          <View style={styles.gridContainer}>
             <TouchableOpacity
               style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push('/holiday-management')}
+              onPress={() => router.push('/plant-management')}
             >
               <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                <Calendar size={24} color={colors.primary} />
+                <Wrench size={24} color={colors.primary} />
               </View>
               <View style={styles.sectionCardContent}>
-                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Holidays</Text>
-                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage holidays</Text>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage plant items</Text>
               </View>
             </TouchableOpacity>
-          )}
+
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/equipment-management')}
+            >
+              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Package size={24} color={colors.primary} />
+              </View>
+              <View style={styles.sectionCardContent}>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Equipment</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage equipment</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/project-management')}
+            >
+              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Briefcase size={24} color={colors.primary} />
+              </View>
+              <View style={styles.sectionCardContent}>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Projects</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage projects</Text>
+              </View>
+            </TouchableOpacity>
+
+            {isCompanyOrManagement && (
+              <TouchableOpacity
+                style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push('/holiday-management')}
+              >
+                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <Calendar size={24} color={colors.primary} />
+                </View>
+                <View style={styles.sectionCardContent}>
+                  <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Holidays</Text>
+                  <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage holidays</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
 
 
@@ -1038,12 +1044,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
     paddingBottom: 32,
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
     paddingHorizontal: 16,
   },
   headerIcon: {
