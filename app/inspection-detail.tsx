@@ -19,6 +19,7 @@ export default function InspectionDetailScreen() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
 
   let inspection: any = null;
+  let isWeeklyReport = false;
 
   if (type === 'plant') {
     inspection = plantInspections.find(i => i.id === id);
@@ -28,6 +29,10 @@ export default function InspectionDetailScreen() {
     inspection = vehicleInspections.find(i => i.id === id);
   } else if (type === 'bucketchange') {
     inspection = bucketChangeInspections.find(i => i.id === id);
+  }
+
+  if (inspection && 'days' in inspection && Array.isArray(inspection.days)) {
+    isWeeklyReport = true;
   }
 
   if (!inspection) {
@@ -322,6 +327,101 @@ export default function InspectionDetailScreen() {
     return item?.name || itemId;
   };
 
+  const getItemName = (itemId: string) => {
+    if (type === 'plant') return getPlantItemName(itemId);
+    if (type === 'quickhitch') return getQuickHitchItemName(itemId);
+    if (type === 'vehicle') return getVehicleItemName(itemId);
+    if (type === 'bucketchange') return getBucketChangeItemName(itemId);
+    return itemId;
+  };
+
+  const getDayName = (day: string) => {
+    const names: Record<string, string> = {
+      'M': 'Mon',
+      'T': 'Tue',
+      'W': 'Wed',
+      'Th': 'Thu',
+      'F': 'Fri',
+      'S': 'Sat',
+      'Su': 'Sun',
+    };
+    return names[day] || day;
+  };
+
+  const renderWeeklyReport = () => {
+    const completedDays = inspection.days.filter((d: any) => d.completed);
+    
+    const allCheckItems: Set<string> = new Set();
+    completedDays.forEach((day: any) => {
+      day.checks.forEach((check: any) => {
+        allCheckItems.add(check.itemId);
+      });
+    });
+
+    const checkItemsArray = Array.from(allCheckItems);
+
+    return (
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Weekly Inspection Summary</Text>
+        <View style={styles.weeklyTableContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <View>
+              <View style={styles.tableHeader}>
+                <View style={[styles.tableHeaderCell, styles.itemNameColumn, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.tableHeaderText}>Inspection Item</Text>
+                </View>
+                {completedDays.map((day: any, index: number) => (
+                  <View key={index} style={[styles.tableHeaderCell, styles.dayColumn, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.tableHeaderText}>{getDayName(day.day)}</Text>
+                    <Text style={styles.tableHeaderDateText}>{day.date}</Text>
+                  </View>
+                ))}
+              </View>
+              {checkItemsArray.map((itemId, rowIndex) => (
+                <View key={rowIndex} style={[styles.tableRow, rowIndex % 2 === 0 && { backgroundColor: colors.background }]}>
+                  <View style={[styles.tableCell, styles.itemNameColumn, { backgroundColor: rowIndex % 2 === 0 ? colors.card : '#f8fafc' }]}>
+                    <Text style={[styles.tableCellText, { color: colors.text }]}>{getItemName(itemId)}</Text>
+                  </View>
+                  {completedDays.map((day: any, dayIndex: number) => {
+                    const check = day.checks.find((c: any) => c.itemId === itemId);
+                    const hasCheck = !!check;
+                    const statusColor = hasCheck ? (
+                      check.status === 'A' || check.status === '✓' || check.status === true ? '#10b981' :
+                      check.status === 'B' ? '#f59e0b' :
+                      check.status === 'C' || check.status === '✗' || check.status === false ? '#ef4444' : '#94a3b8'
+                    ) : '#e2e8f0';
+                    const statusBg = hasCheck ? (
+                      check.status === 'A' || check.status === '✓' || check.status === true ? '#d1fae5' :
+                      check.status === 'B' ? '#fef3c7' :
+                      check.status === 'C' || check.status === '✗' || check.status === false ? '#fee2e2' : '#f1f5f9'
+                    ) : '#f8fafc';
+
+                    return (
+                      <View key={dayIndex} style={[styles.tableCell, styles.dayColumn]}>
+                        {hasCheck ? (
+                          <View style={styles.statusContainer}>
+                            <View style={[styles.statusBadge, { backgroundColor: statusBg, borderColor: statusColor }]}>
+                              <Text style={[styles.statusBadgeText, { color: statusColor }]}>{getStatusText(check.status)}</Text>
+                            </View>
+                            {check.notes && (
+                              <Text style={[styles.checkNotesSmall, { color: colors.textSecondary }]} numberOfLines={2}>📝 {check.notes}</Text>
+                            )}
+                          </View>
+                        ) : (
+                          <Text style={[styles.emptyCell, { color: colors.textSecondary }]}>—</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    );
+  };
+
   const renderBucketChangeInspection = () => {
     return (
       <>
@@ -535,10 +635,36 @@ export default function InspectionDetailScreen() {
             </View>
           </View>
 
-          {type === 'plant' && renderPlantInspection()}
-          {type === 'quickhitch' && renderQuickHitchInspection()}
-          {type === 'vehicle' && renderVehicleInspection()}
-          {type === 'bucketchange' && renderBucketChangeInspection()}
+          {isWeeklyReport ? (
+            <>
+              <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Week Period:</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{inspection.weekStartDate}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Days Completed:</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{inspection.days.filter((d: any) => d.completed).length} / {inspection.days.length}</Text>
+                </View>
+                {inspection.projectId && company && (
+                  <View style={styles.infoRow}>
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Project:</Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                      {company.projects.find(p => p.id === inspection.projectId)?.name || 'Unknown'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {renderWeeklyReport()}
+            </>
+          ) : (
+            <>
+              {type === 'plant' && renderPlantInspection()}
+              {type === 'quickhitch' && renderQuickHitchInspection()}
+              {type === 'vehicle' && renderVehicleInspection()}
+              {type === 'bucketchange' && renderBucketChangeInspection()}
+            </>
+          )}
         </ScrollView>
 
         <Modal
@@ -793,5 +919,84 @@ const styles = StyleSheet.create({
   fullImage: {
     width: '100%',
     height: '100%',
+  },
+  weeklyTableContainer: {
+    marginTop: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+  },
+  tableHeaderCell: {
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  tableHeaderText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#ffffff',
+    textAlign: 'center' as const,
+  },
+  tableHeaderDateText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 2,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  tableCell: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#e2e8f0',
+    minHeight: 50,
+  },
+  itemNameColumn: {
+    width: 180,
+    alignItems: 'flex-start',
+    paddingLeft: 12,
+  },
+  dayColumn: {
+    width: 120,
+  },
+  tableCellText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  statusContainer: {
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+  },
+  checkNotesSmall: {
+    fontSize: 9,
+    fontStyle: 'italic' as const,
+    textAlign: 'center' as const,
+  },
+  emptyCell: {
+    fontSize: 14,
+    fontStyle: 'italic' as const,
   },
 });
