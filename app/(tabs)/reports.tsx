@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3 } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -1133,6 +1133,41 @@ export default function ReportsScreen() {
                 }
               };
 
+              const handleEditDraft = (draft: Draft) => {
+                switch (draft.type) {
+                  case 'plant':
+                    router.push({
+                      pathname: '/plant-inspection',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                  case 'quickhitch':
+                    router.push({
+                      pathname: '/quick-hitch-inspection',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                  case 'vehicle':
+                    router.push({
+                      pathname: '/(tabs)/vehicle-inspection',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                  case 'bucketchange':
+                    router.push({
+                      pathname: '/bucket-change-inspection',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                  case 'intervention':
+                    router.push({
+                      pathname: '/positive-intervention',
+                      params: { draftId: draft.id },
+                    });
+                    break;
+                }
+              };
+
               return (
                 <>
                   <View style={[styles.draftInfoCard, { backgroundColor: colors.card }]}>
@@ -1191,6 +1226,13 @@ export default function ReportsScreen() {
                             </View>
 
                             <View style={styles.draftActions}>
+                              <TouchableOpacity
+                                style={[styles.draftActionButton, styles.editDraftButton]}
+                                onPress={() => handleEditDraft(draft)}
+                              >
+                                <Edit3 size={16} color="#1e40af" />
+                                <Text style={styles.editDraftButtonText}>Edit</Text>
+                              </TouchableOpacity>
                               <TouchableOpacity
                                 style={[styles.draftActionButton, styles.submitDraftButton]}
                                 onPress={() => handleSubmitDraft(draft.id)}
@@ -1727,6 +1769,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+  },
+  editDraftButton: {
+    backgroundColor: '#dbeafe',
+    flex: 1,
+  },
+  editDraftButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1e40af',
   },
   submitDraftButton: {
     backgroundColor: '#1e40af',
