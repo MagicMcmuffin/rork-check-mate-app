@@ -205,7 +205,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const usersData = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     const allUsers = usersData ? JSON.parse(usersData) : [];
 
-    const existingUser = allUsers.find((u: User) => u.email === email);
+    const existingUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
     if (existingUser) {
       if (existingUser.companyIds?.includes(foundCompany.id)) {
         throw new Error('Already joined this company');
@@ -270,10 +270,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     console.log('Users emails:', allUsers.map(u => ({ email: u.email, name: u.name })));
     console.log('Trying to login with email:', email);
 
-    const foundUser = allUsers.find((u: User) => u.email === email && u.password === password);
+    const foundUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     
     if (!foundUser) {
-      const emailMatch = allUsers.find((u: User) => u.email === email);
+      const emailMatch = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
       if (emailMatch) {
         console.error('Email found but password mismatch');
         console.error('Stored password:', emailMatch.password);
