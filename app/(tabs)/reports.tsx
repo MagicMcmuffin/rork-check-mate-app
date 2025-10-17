@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ export default function ReportsScreen() {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks' | 'drafts'>('reports');
-  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes'>('inspections');
+  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'testing'>('inspections');
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'greasing'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
@@ -59,6 +59,8 @@ export default function ReportsScreen() {
     deleteGreasingRecord,
     getCompanyGreasingInspections,
     deleteGreasingInspection,
+    getCompanyAirTestingInspections,
+    deleteAirTestingInspection,
   } = appContext;
   
   if (!deleteInspection || !markInspectionFixed) {
@@ -77,6 +79,7 @@ export default function ReportsScreen() {
   const fixLogs = getFixLogs ? getFixLogs() : [];
   const companyGreasingRecords = company ? (greasingRecords || []).filter(r => r.companyId === company.id) : [];
   const companyGreasingInspections = getCompanyGreasingInspections ? getCompanyGreasingInspections() : [];
+  const companyAirTestingInspections = getCompanyAirTestingInspections ? getCompanyAirTestingInspections() : [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -407,6 +410,10 @@ export default function ReportsScreen() {
                   <Text style={styles.statValue}>{companyGreasingInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Greasing</Text>
                 </View>
+                <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+                  <Text style={styles.statValue}>{companyAirTestingInspections.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Air Testing</Text>
+                </View>
               </View>
 
               <View style={[styles.tabsContainer, { backgroundColor: colors.card }]}>
@@ -430,6 +437,13 @@ export default function ReportsScreen() {
                 >
                   <Wrench size={18} color={selectedTab === 'fixes' ? '#f59e0b' : colors.textSecondary} />
                   <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'fixes' && styles.tabTextActive]}>Fixes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, selectedTab === 'testing' && styles.tabActive]}
+                  onPress={() => setSelectedTab('testing')}
+                >
+                  <Wind size={18} color={selectedTab === 'testing' ? '#06b6d4' : colors.textSecondary} />
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'testing' && styles.tabTextActive]}>Testing</Text>
                 </TouchableOpacity>
               </View>
 
@@ -961,6 +975,132 @@ export default function ReportsScreen() {
                         </View>
                       </TouchableOpacity>
                     ))}
+                  </View>
+                )
+              ) : selectedTab === 'testing' ? (
+                companyAirTestingInspections.length === 0 ? (
+                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                    <Wind size={48} color={colors.textSecondary} />
+                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Air Testing Records Yet</Text>
+                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                      Air testing records will appear here once logged
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.reportsList}>
+                    {companyAirTestingInspections
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .map((inspection) => (
+                        <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: '#06b6d4' }]}>
+                          <View style={styles.reportCardContent}>
+                            <View style={styles.reportHeader}>
+                              <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
+                                <Wind size={20} color="#06b6d4" />
+                              </View>
+                              <View style={styles.reportInfo}>
+                                <Text style={[styles.reportTitle, { color: colors.text }]}>Air Testing</Text>
+                                <View style={styles.reportMeta}>
+                                  <User size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
+                                    {inspection.employeeName}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            <View style={styles.reportDetails}>
+                              <View style={styles.reportDetail}>
+                                <Calendar size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatDate(inspection.createdAt)}
+                                </Text>
+                              </View>
+                              <View style={styles.reportDetail}>
+                                <Clock size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatTime(inspection.createdAt)}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {inspection.projectId && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Project:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getProjectName(inspection.projectId)}</Text>
+                              </View>
+                            )}
+
+                            {inspection.section && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Section:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.section}</Text>
+                              </View>
+                            )}
+
+                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Run:</Text>
+                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeRun}</Text>
+                            </View>
+
+                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Joint:</Text>
+                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeJoint}</Text>
+                            </View>
+
+                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Size:</Text>
+                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeSize}</Text>
+                            </View>
+
+                            {inspection.notes && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Notes:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.notes}</Text>
+                              </View>
+                            )}
+
+                            {((inspection.startImage || inspection.finishImage || (inspection.additionalImages && inspection.additionalImages.length > 0))) && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photos:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>
+                                  {[inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean).length} image{[inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean).length !== 1 ? 's' : ''}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          {(user?.role === 'company' || user?.role === 'administrator') && deleteAirTestingInspection && (
+                            <View style={styles.reportActions}>
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.deleteButton]}
+                                onPress={() => {
+                                  Alert.alert(
+                                    'Delete Air Testing',
+                                    'Are you sure you want to delete this air testing record?',
+                                    [
+                                      { text: 'Cancel', style: 'cancel' },
+                                      {
+                                        text: 'Delete',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                          try {
+                                            await deleteAirTestingInspection(inspection.id);
+                                            Alert.alert('Success', 'Air testing record deleted');
+                                          } catch (error) {
+                                            console.error('Error deleting air testing:', error);
+                                            Alert.alert('Error', 'Failed to delete air testing record');
+                                          }
+                                        },
+                                      },
+                                    ]
+                                  );
+                                }}
+                              >
+                                <Trash2 size={16} color="#dc2626" />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      ))}
                   </View>
                 )
               ) : (
