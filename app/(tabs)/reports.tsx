@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3 } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,8 @@ import {
   generateVehicleInspectionPDF,
   generateBucketChangeInspectionPDF,
   generatePositiveInterventionPDF,
-  generateWeeklyInspectionPDF
+  generateWeeklyInspectionPDF,
+  generateGreasingRecordsPDF
 } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
@@ -20,7 +21,7 @@ export default function ReportsScreen() {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks' | 'drafts'>('reports');
-  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes'>('inspections');
+  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'greasing'>('inspections');
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
@@ -54,6 +55,8 @@ export default function ReportsScreen() {
     getDrafts,
     deleteDraft,
     submitDraft,
+    greasingRecords,
+    deleteGreasingRecord,
   } = appContext;
   
   if (!deleteInspection || !markInspectionFixed) {
@@ -70,6 +73,7 @@ export default function ReportsScreen() {
   const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
   const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
   const fixLogs = getFixLogs ? getFixLogs() : [];
+  const companyGreasingRecords = company ? (greasingRecords || []).filter(r => r.companyId === company.id) : [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -396,6 +400,10 @@ export default function ReportsScreen() {
                   <Text style={styles.statValue}>{fixLogs.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fixes</Text>
                 </View>
+                <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+                  <Text style={styles.statValue}>{companyGreasingRecords.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Greasing</Text>
+                </View>
               </View>
 
               <View style={[styles.tabsContainer, { backgroundColor: colors.card }]}>
@@ -420,7 +428,13 @@ export default function ReportsScreen() {
                   <Wrench size={18} color={selectedTab === 'fixes' ? '#f59e0b' : colors.textSecondary} />
                   <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'fixes' && styles.tabTextActive]}>Fixes</Text>
                 </TouchableOpacity>
-
+                <TouchableOpacity
+                  style={[styles.tab, selectedTab === 'greasing' && styles.tabActive]}
+                  onPress={() => setSelectedTab('greasing')}
+                >
+                  <Droplet size={18} color={selectedTab === 'greasing' ? '#06b6d4' : colors.textSecondary} />
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'greasing' && styles.tabTextActive]}>Greasing</Text>
+                </TouchableOpacity>
               </View>
 
               {company && company.projects.length > 0 && selectedTab === 'inspections' && (
@@ -835,6 +849,115 @@ export default function ReportsScreen() {
                           )}
                         </View>
                       </TouchableOpacity>
+                    ))}
+                  </View>
+                )
+              ) : selectedTab === 'greasing' ? (
+                companyGreasingRecords.length === 0 ? (
+                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                    <Droplet size={48} color={colors.textSecondary} />
+                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Greasing Records Yet</Text>
+                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                      Greasing records will appear here once logged
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.reportsList}>
+                    <View style={[styles.greasingDownloadCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <View style={styles.greasingDownloadHeader}>
+                        <Droplet size={24} color={colors.primary} />
+                        <Text style={[styles.greasingDownloadTitle, { color: colors.text }]}>Download All Greasing Records</Text>
+                      </View>
+                      <Text style={[styles.greasingDownloadSubtext, { color: colors.textSecondary }]}>Generate a PDF with all plant greasing records</Text>
+                      <TouchableOpacity
+                        style={[styles.greasingDownloadButton, { backgroundColor: colors.primary }]}
+                        onPress={async () => {
+                          try {
+                            await generateGreasingRecordsPDF(companyGreasingRecords, company?.name || 'Company');
+                          } catch (error) {
+                            console.error('Error generating greasing PDF:', error);
+                            Alert.alert('Error', 'Failed to generate PDF');
+                          }
+                        }}
+                      >
+                        <Download size={18} color="#ffffff" />
+                        <Text style={styles.greasingDownloadButtonText}>Download PDF</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {companyGreasingRecords
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .map((record) => (
+                      <View key={record.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
+                        <View style={styles.reportCardContent}>
+                          <View style={styles.reportHeader}>
+                            <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
+                              <Droplet size={20} color="#06b6d4" />
+                            </View>
+                            <View style={styles.reportInfo}>
+                              <Text style={[styles.reportTitle, { color: colors.text }]}>{record.equipmentName}</Text>
+                              <View style={styles.reportMeta}>
+                                <User size={14} color={colors.textSecondary} />
+                                <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
+                                  {record.employeeName}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          <View style={styles.reportDetails}>
+                            <View style={styles.reportDetail}>
+                              <Calendar size={16} color={colors.textSecondary} />
+                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                {new Date(record.date).toLocaleDateString()}
+                              </Text>
+                            </View>
+                            <View style={styles.reportDetail}>
+                              <Clock size={16} color={colors.textSecondary} />
+                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                {record.time}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {record.notes && (
+                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Notes:</Text>
+                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{record.notes}</Text>
+                            </View>
+                          )}
+                        </View>
+                        {(user?.role === 'company' || user?.role === 'administrator') && deleteGreasingRecord && (
+                          <View style={styles.reportActions}>
+                            <TouchableOpacity
+                              style={[styles.actionButton, styles.deleteButton]}
+                              onPress={() => {
+                                Alert.alert(
+                                  'Delete Record',
+                                  'Are you sure you want to delete this greasing record?',
+                                  [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    {
+                                      text: 'Delete',
+                                      style: 'destructive',
+                                      onPress: async () => {
+                                        try {
+                                          await deleteGreasingRecord(record.id);
+                                          Alert.alert('Success', 'Greasing record deleted');
+                                        } catch (error) {
+                                          console.error('Error deleting greasing record:', error);
+                                          Alert.alert('Error', 'Failed to delete greasing record');
+                                        }
+                                      },
+                                    },
+                                  ]
+                                );
+                              }}
+                            >
+                              <Trash2 size={16} color="#dc2626" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
                     ))}
                   </View>
                 )
@@ -1859,5 +1982,41 @@ const styles = StyleSheet.create({
   deleteDraftButton: {
     backgroundColor: '#fee2e2',
     paddingHorizontal: 12,
+  },
+  greasingDownloadCard: {
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderStyle: 'dashed' as const,
+    alignItems: 'center',
+  },
+  greasingDownloadHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  greasingDownloadTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  greasingDownloadSubtext: {
+    fontSize: 13,
+    textAlign: 'center' as const,
+    marginBottom: 16,
+  },
+  greasingDownloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  greasingDownloadButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#ffffff',
   },
 });
