@@ -1263,6 +1263,30 @@ export default function CompanyScreen() {
                 <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
               </TouchableOpacity>
             </View>
+            
+            {announcements.length > 0 && (
+              <View style={[styles.announcementModalActions, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
+                  onPress={() => setAnnouncementExpandModalVisible(true)}
+                >
+                  <Megaphone size={18} color={colors.primary} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>View All ({announcements.length})</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: '#fee2e2', borderColor: '#dc2626', flex: 1 }]}
+                  onPress={() => {
+                    setAnnouncementExpandModalVisible(false);
+                    handleDeleteAllAnnouncements();
+                  }}
+                >
+                  <Trash2 size={18} color="#dc2626" />
+                  <Text style={[styles.secondaryButtonText, { color: '#dc2626' }]}>Delete All</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <ScrollView style={styles.expandedAnnouncementsScroll} contentContainerStyle={{ padding: 20 }}>
               {announcements.map((announcement) => {
                 const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
@@ -1967,6 +1991,13 @@ const styles = StyleSheet.create({
   },
   expandedAnnouncementsScroll: {
     flex: 1,
+  },
+  announcementModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   announcementViewContainer: {
     borderTopLeftRadius: 24,
