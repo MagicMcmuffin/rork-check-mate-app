@@ -398,7 +398,7 @@ export default function ReportsScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.statsContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsContainer}>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
                   <Text style={styles.statValue}>{filteredInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Inspections</Text>
@@ -419,7 +419,7 @@ export default function ReportsScreen() {
                   <Text style={styles.statValue}>{companyAirTestingInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Air Testing</Text>
                 </View>
-              </View>
+              </ScrollView>
 
               <View style={[styles.tabsContainer, { backgroundColor: colors.card }]}>
                 <TouchableOpacity
@@ -1653,14 +1653,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
-    gap: 16,
+    marginBottom: 20,
+    gap: 12,
   },
   headerLeft: {
     flex: 1,
@@ -1693,11 +1694,11 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   statCard: {
+    flex: 1,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center' as const,
@@ -1707,23 +1708,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 90,
-    minWidth: 100,
-    flex: 1,
+    minHeight: 80,
   },
   statValue: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: '#1e40af',
-    marginBottom: 6,
-    lineHeight: 36,
+    marginBottom: 4,
+    lineHeight: 32,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
     textAlign: 'center' as const,
     fontWeight: '600' as const,
-    lineHeight: 16,
+    lineHeight: 14,
   },
   emptyContainer: {
     flex: 1,
@@ -1847,9 +1846,9 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   filterSection: {
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 20,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -1869,6 +1868,7 @@ const styles = StyleSheet.create({
   },
   filterButtons: {
     gap: 8,
+    paddingRight: 8,
   },
   filterButton: {
     flexDirection: 'row',
@@ -1938,7 +1938,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -1968,7 +1968,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -2067,7 +2067,7 @@ const styles = StyleSheet.create({
   dateSearchCard: {
     borderRadius: 12,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
