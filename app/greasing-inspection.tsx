@@ -38,6 +38,7 @@ export default function GreasingInspectionScreen() {
 
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
+  const [selectedProject, setSelectedProject] = useState<string>('');
   const [customEquipmentName, setCustomEquipmentName] = useState('');
   const [greasingDuration, setGreasingDuration] = useState('');
   const [weeklyData, setWeeklyData] = useState<WeeklyDraftData>({
@@ -68,6 +69,7 @@ export default function GreasingInspectionScreen() {
         const data = draft.data as WeeklyDraftData;
         setWeeklyData(data);
         setSelectedEquipment(data.equipmentId || '');
+        setSelectedProject(data.projectId || '');
         setCustomEquipmentName(data.plantNumber || '');
         
         const currentDayData = data.days.find(d => d.day === selectedDay);
@@ -186,6 +188,7 @@ export default function GreasingInspectionScreen() {
       ...weeklyData,
       equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
       plantNumber: finalEquipmentName,
+      projectId: selectedProject || undefined,
       days: updatedDays,
     };
 
@@ -325,6 +328,36 @@ export default function GreasingInspectionScreen() {
         </View>
 
         <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.text }]}>Project</Text>
+            <View style={styles.pickerContainer}>
+              <TouchableOpacity
+                style={[styles.picker, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={() => {
+                  const options = [
+                    ...(company?.projects || []).map(proj => ({
+                      text: `${proj.name} - ${proj.projectNumber}`,
+                      onPress: () => setSelectedProject(proj.id),
+                    })),
+                    {
+                      text: 'No Project',
+                      onPress: () => setSelectedProject(''),
+                    },
+                    { text: 'Cancel', style: 'cancel' as const },
+                  ];
+                  Alert.alert('Select Project', 'Choose a project for this inspection', options);
+                }}
+              >
+                <Text style={selectedProject ? [styles.pickerText, { color: colors.text }] : [styles.pickerPlaceholder, { color: colors.textSecondary }]}>
+                  {selectedProject
+                    ? company?.projects?.find(p => p.id === selectedProject)?.name
+                    : 'Select project (optional)'}
+                </Text>
+                <ChevronDown size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colors.text }]}>{equipmentType === 'plant' ? 'Plant' : 'Vehicle'}</Text>
             <View style={styles.pickerContainer}>
