@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText, X, Check, Upload } from 'lucide-react-native';
+import { Wrench, Plus, Trash2, Calendar, AlertCircle, FileText, X, Check, Upload, Droplet, Clock } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -10,7 +10,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 
 export default function EquipmentScreen() {
-  const { user, company, addEquipment, deleteEquipment } = useApp();
+  const { user, company, addEquipment, deleteEquipment, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord } = useApp();
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState('');
@@ -24,6 +24,13 @@ export default function EquipmentScreen() {
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [thoroughExaminationCertificate, setThoroughExaminationCertificate] = useState('');
+  const [greasingModalVisible, setGreasingModalVisible] = useState(false);
+  const [selectedEquipmentForGreasing, setSelectedEquipmentForGreasing] = useState<Equipment | null>(null);
+  const [greasingNotes, setGreasingNotes] = useState('');
+  const [greasingDate, setGreasingDate] = useState('');
+  const [greasingTime, setGreasingTime] = useState('');
+  const [showGreasingDatePicker, setShowGreasingDatePicker] = useState(false);
+  const [viewGreasingHistoryVisible, setViewGreasingHistoryVisible] = useState(false);
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const equipment = company?.equipment || [];
@@ -64,6 +71,70 @@ export default function EquipmentScreen() {
       Alert.alert('Error', 'Failed to add equipment');
       console.error('Add equipment error:', error);
     }
+  };
+
+  const handleOpenGreasingModal = (equipment: Equipment) => {
+    setSelectedEquipmentForGreasing(equipment);
+    setGreasingDate(new Date().toISOString().split('T')[0]);
+    setGreasingTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }));
+    setGreasingNotes('');
+    setGreasingModalVisible(true);
+  };
+
+  const handleAddGreasingRecord = async () => {
+    if (!selectedEquipmentForGreasing || !greasingDate || !greasingTime) {
+      Alert.alert('Error', 'Please fill in date and time');
+      return;
+    }
+
+    try {
+      await addGreasingRecord({
+        companyId: company!.id,
+        equipmentId: selectedEquipmentForGreasing.id,
+        equipmentName: selectedEquipmentForGreasing.name,
+        employeeId: user!.id,
+        employeeName: user!.name,
+        date: greasingDate,
+        time: greasingTime,
+        notes: greasingNotes.trim() || undefined,
+      });
+
+      setGreasingModalVisible(false);
+      setSelectedEquipmentForGreasing(null);
+      setGreasingNotes('');
+      Alert.alert('Success', 'Greasing record added successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add greasing record');
+      console.error('Add greasing record error:', error);
+    }
+  };
+
+  const handleViewGreasingHistory = (equipment: Equipment) => {
+    setSelectedEquipmentForGreasing(equipment);
+    setViewGreasingHistoryVisible(true);
+  };
+
+  const handleDeleteGreasingRecord = (recordId: string) => {
+    Alert.alert(
+      'Delete Record',
+      'Are you sure you want to delete this greasing record?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteGreasingRecord(recordId);
+              Alert.alert('Success', 'Greasing record deleted successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete greasing record');
+              console.error('Delete greasing record error:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteEquipment = (equipmentId: string, equipmentName: string) => {
@@ -192,7 +263,11 @@ export default function EquipmentScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {equipmentType.charAt(0).toUpperCase() + equipmentType.slice(1)}
               </Text>
-              {items.map((item) => (
+              {items.map((item) => {
+                const greasingRecords = getEquipmentGreasingRecords(item.id);
+                const lastGreasing = greasingRecords[0];
+                
+                return (
                 <View key={item.id} style={[styles.equipmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.equipmentInfo}>
                     <Text style={[styles.equipmentName, { color: colors.text }]}>{item.name}</Text>
@@ -238,6 +313,37 @@ export default function EquipmentScreen() {
                         )}
                       </View>
                     )}
+                    {(item.type === 'plant' || item.type === 'vehicles') && (
+                      <View style={styles.greasingSection}>
+                        <View style={styles.greasingSectionHeader}>
+                          <Droplet size={14} color={colors.primary} />
+                          <Text style={[styles.greasingSectionTitle, { color: colors.text }]}>Greasing</Text>
+                        </View>
+                        {lastGreasing ? (
+                          <Text style={[styles.greasingLastRecord, { color: colors.textSecondary }]}>Last: {new Date(lastGreasing.date).toLocaleDateString()} at {lastGreasing.time}</Text>
+                        ) : (
+                          <Text style={[styles.greasingLastRecord, { color: colors.textSecondary }]}>No records yet</Text>
+                        )}
+                        <View style={styles.greasingButtons}>
+                          <TouchableOpacity
+                            style={[styles.greasingButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+                            onPress={() => handleOpenGreasingModal(item)}
+                          >
+                            <Plus size={14} color={colors.primary} />
+                            <Text style={[styles.greasingButtonText, { color: colors.primary }]}>Log Greasing</Text>
+                          </TouchableOpacity>
+                          {greasingRecords.length > 0 && (
+                            <TouchableOpacity
+                              style={[styles.greasingButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                              onPress={() => handleViewGreasingHistory(item)}
+                            >
+                              <Clock size={14} color={colors.textSecondary} />
+                              <Text style={[styles.greasingButtonText, { color: colors.textSecondary }]}>History ({greasingRecords.length})</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    )}
                   </View>
                   {isAdmin && (
                     <TouchableOpacity
@@ -248,7 +354,7 @@ export default function EquipmentScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-              ))}
+              );})}
             </View>
           ))
         )}
@@ -555,6 +661,184 @@ export default function EquipmentScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={greasingModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setGreasingModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContainer, { maxHeight: '70%' }]}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <View style={styles.modalHeaderContent}>
+                <View style={[styles.modalIconContainer, { backgroundColor: colors.primary + '15' }]}>  
+                  <Droplet size={24} color={colors.primary} />
+                </View>
+                <View style={styles.modalHeaderText}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Log Greasing</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{selectedEquipmentForGreasing?.name}</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={[styles.modalCloseButton, { backgroundColor: colors.background }]}
+                onPress={() => setGreasingModalVisible(false)}
+              >
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Date *</Text>
+                    <TouchableOpacity
+                      style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      onPress={() => setShowGreasingDatePicker(true)}
+                    >
+                      <Calendar size={18} color={colors.textSecondary} />
+                      <Text style={[styles.datePickerText, { color: colors.text }]}>
+                        {greasingDate ? new Date(greasingDate).toLocaleDateString() : 'Select date'}
+                      </Text>
+                    </TouchableOpacity>
+                    {showGreasingDatePicker && (
+                      <DateTimePicker
+                        value={greasingDate ? new Date(greasingDate) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                          setShowGreasingDatePicker(Platform.OS === 'ios');
+                          if (selectedDate) {
+                            setGreasingDate(selectedDate.toISOString().split('T')[0]);
+                          }
+                        }}
+                      />
+                    )}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Time *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="HH:MM"
+                      placeholderTextColor={colors.textSecondary}
+                      value={greasingTime}
+                      onChangeText={setGreasingTime}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>Notes (Optional)</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                      placeholder="Add any notes about the greasing"
+                      placeholderTextColor={colors.textSecondary}
+                      value={greasingNotes}
+                      onChangeText={setGreasingNotes}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                    />
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={[styles.modalFooter, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.footerButton, styles.footerButtonCancel, { backgroundColor: colors.background }]}
+                onPress={() => setGreasingModalVisible(false)}
+              >
+                <X size={18} color={colors.textSecondary} />
+                <Text style={[styles.footerButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.footerButton, styles.footerButtonSave, { backgroundColor: colors.primary }]}
+                onPress={handleAddGreasingRecord}
+              >
+                <Check size={18} color="#ffffff" />
+                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={viewGreasingHistoryVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setViewGreasingHistoryVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { maxHeight: '80%' }]}>
+            <View style={[styles.modalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <View style={styles.modalHeaderContent}>
+                <View style={[styles.modalIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <Clock size={24} color={colors.primary} />
+                </View>
+                <View style={styles.modalHeaderText}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Greasing History</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{selectedEquipmentForGreasing?.name}</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={[styles.modalCloseButton, { backgroundColor: colors.background }]}
+                onPress={() => setViewGreasingHistoryVisible(false)}
+              >
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.historyScrollView}>
+              {selectedEquipmentForGreasing && getEquipmentGreasingRecords(selectedEquipmentForGreasing.id).map((record) => (
+                <View key={record.id} style={[styles.historyCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.historyCardHeader}>
+                    <View style={[styles.historyIconContainer, { backgroundColor: colors.primary + '15' }]}>
+                      <Droplet size={16} color={colors.primary} />
+                    </View>
+                    <View style={styles.historyCardInfo}>
+                      <Text style={[styles.historyDate, { color: colors.text }]}>
+                        {new Date(record.date).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.historyTime, { color: colors.textSecondary }]}>
+                        {record.time}
+                      </Text>
+                    </View>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={styles.historyDeleteButton}
+                        onPress={() => handleDeleteGreasingRecord(record.id)}
+                      >
+                        <Trash2 size={16} color="#dc2626" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={[styles.historyEmployee, { color: colors.textSecondary }]}>By {record.employeeName}</Text>
+                  {record.notes && (
+                    <Text style={[styles.historyNotes, { color: colors.text }]}>{record.notes}</Text>
+                  )}
+                </View>
+              ))}
+              {selectedEquipmentForGreasing && getEquipmentGreasingRecords(selectedEquipmentForGreasing.id).length === 0 && (
+                <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                  <Droplet size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Greasing Records</Text>
+                  <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>Start logging greasing records for this equipment</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -932,5 +1216,93 @@ const styles = StyleSheet.create({
   },
   datePickerPlaceholder: {
     fontSize: 15,
+  },
+  greasingSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  greasingSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  greasingSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  greasingLastRecord: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  greasingButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  greasingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  greasingButtonText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 14,
+  },
+  historyScrollView: {
+    flex: 1,
+    padding: 20,
+  },
+  historyCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+  },
+  historyIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyCardInfo: {
+    flex: 1,
+  },
+  historyDate: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  historyTime: {
+    fontSize: 13,
+  },
+  historyDeleteButton: {
+    padding: 6,
+    backgroundColor: '#fee2e2',
+    borderRadius: 6,
+  },
+  historyEmployee: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  historyNotes: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

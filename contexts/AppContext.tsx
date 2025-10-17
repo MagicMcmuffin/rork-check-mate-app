@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord } from '@/types';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
   APPRENTICESHIP_ENTRIES: '@checkmate_apprenticeship_entries',
   ANNOUNCEMENTS: '@checkmate_announcements',
   DRAFTS: '@checkmate_drafts',
+  GREASING_RECORDS: '@checkmate_greasing_records',
 } as const;
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -35,6 +36,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [apprenticeshipEntries, setApprenticeshipEntries] = useState<ApprenticeshipEntry[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [greasingRecords, setGreasingRecords] = useState<GreasingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData] = await Promise.all([
+      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData, greasingData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANY),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANIES),
@@ -58,6 +60,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.APPRENTICESHIP_ENTRIES),
         AsyncStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS),
         AsyncStorage.getItem(STORAGE_KEYS.DRAFTS),
+        AsyncStorage.getItem(STORAGE_KEYS.GREASING_RECORDS),
       ]);
 
       const safeJSONParse = (data: string | null, storageKey: string) => {
@@ -135,6 +138,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const parsedDrafts = safeJSONParse(draftsData, STORAGE_KEYS.DRAFTS);
       if (parsedDrafts) setDrafts(parsedDrafts);
+
+      const parsedGreasingRecords = safeJSONParse(greasingData, STORAGE_KEYS.GREASING_RECORDS);
+      if (parsedGreasingRecords) setGreasingRecords(parsedGreasingRecords);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -1024,6 +1030,32 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return result;
   }, [drafts, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, deleteDraft]);
 
+  const addGreasingRecord = useCallback(async (record: Omit<GreasingRecord, 'id' | 'createdAt'>) => {
+    const newRecord: GreasingRecord = {
+      ...record,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...greasingRecords, newRecord];
+    await AsyncStorage.setItem(STORAGE_KEYS.GREASING_RECORDS, JSON.stringify(updated));
+    setGreasingRecords(updated);
+
+    return newRecord;
+  }, [greasingRecords]);
+
+  const getEquipmentGreasingRecords = useCallback((equipmentId: string) => {
+    return greasingRecords
+      .filter(r => r.equipmentId === equipmentId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [greasingRecords]);
+
+  const deleteGreasingRecord = useCallback(async (recordId: string) => {
+    const updated = greasingRecords.filter(r => r.id !== recordId);
+    await AsyncStorage.setItem(STORAGE_KEYS.GREASING_RECORDS, JSON.stringify(updated));
+    setGreasingRecords(updated);
+  }, [greasingRecords]);
+
   return useMemo(() => ({
     user,
     company,
@@ -1038,6 +1070,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     apprenticeshipEntries,
     announcements,
     drafts,
+    greasingRecords,
     isLoading,
     registerCompany,
     joinCompany,
@@ -1081,5 +1114,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     getDrafts,
     deleteDraft,
     submitDraft,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft]);
+    addGreasingRecord,
+    getEquipmentGreasingRecords,
+    deleteGreasingRecord,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord]);
 });

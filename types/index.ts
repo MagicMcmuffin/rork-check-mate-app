@@ -275,3 +275,17 @@ export interface Draft {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface GreasingRecord {
+  id: string;
+  companyId: string;
+  equipmentId: string;
+  equipmentName: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  time: string;
+  notes?: string;
+  nextDueDate?: string;
+  createdAt: string;
+}
