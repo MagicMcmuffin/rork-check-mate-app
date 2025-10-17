@@ -511,8 +511,8 @@ export default function CompanyScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }, activeSection === 'announcements' && { borderColor: colors.primary, borderWidth: 2 }]}
-          onPress={() => setActiveSection(activeSection === 'announcements' ? 'plant' : 'announcements')}
+          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setAnnouncementModalVisible(true)}
         >
           <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
             <Megaphone size={24} color={colors.primary} />
@@ -551,8 +551,8 @@ export default function CompanyScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }, activeSection === 'projects' && { borderColor: colors.primary, borderWidth: 2 }]}
-            onPress={() => setActiveSection(activeSection === 'projects' ? 'plant' : 'projects')}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push('/project-management')}
           >
             <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
               <Briefcase size={24} color={colors.primary} />
@@ -580,11 +580,7 @@ export default function CompanyScreen() {
         </View>
       </View>
 
-      {(activeSection === 'projects' || activeSection === 'announcements') && (
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
-        </ScrollView>
-      )}
+
 
       <Modal
         visible={equipmentModalVisible}

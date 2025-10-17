@@ -438,8 +438,8 @@ export default function PlantManagementScreen() {
 
   const handleNavigateToCategory = (categoryId: string, categoryName: string) => {
     router.push({
-      pathname: '/equipment-category-detail',
-      params: { categoryId, categoryName, type: 'plant' }
+      pathname: '/plant-category-detail' as any,
+      params: { categoryId, categoryName }
     });
   };
 
