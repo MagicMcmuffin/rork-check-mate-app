@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
-import { Building2, Users, LogIn } from 'lucide-react-native';
+import { Building2, Users, LogIn, Star, Sparkles } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,21 @@ export default function OnboardingScreen() {
           />
           <Text style={styles.title}>Check Mate</Text>
           <Text style={styles.subtitle}>Machine Inspection Checklists</Text>
+        </View>
+
+        <View style={styles.adBanner}>
+          <View style={styles.adIconContainer}>
+            <Sparkles size={24} color="#fbbf24" />
+          </View>
+          <View style={styles.adContent}>
+            <Text style={styles.adTitle}>Limited Time Offer!</Text>
+            <Text style={styles.adDescription}>
+              Get 30% off your first month when you register today
+            </Text>
+          </View>
+          <View style={styles.adBadge}>
+            <Star size={16} color="#fbbf24" fill="#fbbf24" />
+          </View>
         </View>
 
         <View style={styles.cardContainer}>
@@ -216,5 +231,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#8b5cf6',
+  },
+  adBanner: {
+    backgroundColor: '#1e3a8a',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 32,
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 16,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  adIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adContent: {
+    flex: 1,
+  },
+  adTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fbbf24',
+    marginBottom: 4,
+  },
+  adDescription: {
+    fontSize: 14,
+    color: '#93c5fd',
+    lineHeight: 20,
+  },
+  adBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
