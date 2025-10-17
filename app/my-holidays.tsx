@@ -16,13 +16,26 @@ export default function MyHolidaysScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
+  const { submitHolidayRequest, getEmployeeHolidayRequests, getEmployeeHolidayNotifications, markHolidayNotificationRead } = useApp();
+
   const myRequests = useMemo(() => {
-    return [];
-  }, []);
+    if (!user) return [];
+    return getEmployeeHolidayRequests(user.id);
+  }, [user, getEmployeeHolidayRequests]);
+
+  const myNotifications = useMemo(() => {
+    if (!user) return [];
+    return getEmployeeHolidayNotifications(user.id).filter(n => n.type !== 'request');
+  }, [user, getEmployeeHolidayNotifications]);
 
   const handleSubmitRequest = async () => {
     try {
       console.log('Holiday request submitted', { startDate, endDate, reason });
+      await submitHolidayRequest(
+        startDate.toISOString(),
+        endDate.toISOString(),
+        reason || undefined
+      );
       setShowModal(false);
       setReason('');
       setStartDate(new Date());

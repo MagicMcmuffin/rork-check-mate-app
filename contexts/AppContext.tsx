@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification, HolidayStatus } from '@/types';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -61,7 +61,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData, greasingData, greasingInspectionsData, ticketsData, ticketRemindersData, airTestingData, equipmentCategoriesData, equipmentItemsData] = await Promise.all([
+      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData, greasingData, greasingInspectionsData, ticketsData, ticketRemindersData, airTestingData, equipmentCategoriesData, equipmentItemsData, holidayRequestsData, holidayNotificationsData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANY),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANIES),
@@ -83,6 +83,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.AIR_TESTING_INSPECTIONS),
         AsyncStorage.getItem(STORAGE_KEYS.EQUIPMENT_CATEGORIES),
         AsyncStorage.getItem(STORAGE_KEYS.EQUIPMENT_ITEMS),
+        AsyncStorage.getItem(STORAGE_KEYS.HOLIDAY_REQUESTS),
+        AsyncStorage.getItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS),
       ]);
 
       const safeJSONParse = (data: string | null, storageKey: string) => {
@@ -181,6 +183,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const parsedEquipmentItems = safeJSONParse(equipmentItemsData, STORAGE_KEYS.EQUIPMENT_ITEMS);
       if (parsedEquipmentItems) setEquipmentItems(parsedEquipmentItems);
+
+      const parsedHolidayRequests = safeJSONParse(holidayRequestsData, STORAGE_KEYS.HOLIDAY_REQUESTS);
+      if (parsedHolidayRequests) setHolidayRequests(parsedHolidayRequests);
+
+      const parsedHolidayNotifications = safeJSONParse(holidayNotificationsData, STORAGE_KEYS.HOLIDAY_NOTIFICATIONS);
+      if (parsedHolidayNotifications) setHolidayNotifications(parsedHolidayNotifications);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -1340,6 +1348,150 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setEquipmentItems(updated);
   }, [equipmentItems]);
 
+  const submitHolidayRequest = useCallback(async (startDate: string, endDate: string, reason?: string) => {
+    if (!user || !company) throw new Error('No user or company found');
+
+    const newRequest: HolidayRequest = {
+      id: Date.now().toString(),
+      companyId: company.id,
+      employeeId: user.id,
+      employeeName: user.name,
+      startDate,
+      endDate,
+      reason,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...holidayRequests, newRequest];
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_REQUESTS, JSON.stringify(updated));
+    setHolidayRequests(updated);
+
+    const notification: HolidayNotification = {
+      id: Date.now().toString() + '_notif',
+      companyId: company.id,
+      requestId: newRequest.id,
+      employeeId: user.id,
+      employeeName: user.name,
+      message: `${user.name} has requested holiday from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`,
+      type: 'request',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedNotifications = [...holidayNotifications, notification];
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS, JSON.stringify(updatedNotifications));
+    setHolidayNotifications(updatedNotifications);
+
+    return newRequest;
+  }, [user, company, holidayRequests, holidayNotifications]);
+
+  const getEmployeeHolidayRequests = useCallback((employeeId: string) => {
+    return holidayRequests
+      .filter(r => r.employeeId === employeeId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [holidayRequests]);
+
+  const getCompanyHolidayRequests = useCallback(() => {
+    if (!company) return [];
+    return holidayRequests
+      .filter(r => r.companyId === company.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [company, holidayRequests]);
+
+  const approveHolidayRequest = useCallback(async (requestId: string) => {
+    if (!user) throw new Error('No user found');
+
+    const request = holidayRequests.find(r => r.id === requestId);
+    if (!request) throw new Error('Request not found');
+
+    const updated = holidayRequests.map(r => 
+      r.id === requestId 
+        ? { ...r, status: 'approved' as HolidayStatus, reviewedBy: user.name, reviewedAt: new Date().toISOString() }
+        : r
+    );
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_REQUESTS, JSON.stringify(updated));
+    setHolidayRequests(updated);
+
+    const notification: HolidayNotification = {
+      id: Date.now().toString() + '_notif',
+      companyId: request.companyId,
+      requestId: request.id,
+      employeeId: request.employeeId,
+      employeeName: request.employeeName,
+      message: `Your holiday request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been approved by ${user.name}`,
+      type: 'approved',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedNotifications = [...holidayNotifications, notification];
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS, JSON.stringify(updatedNotifications));
+    setHolidayNotifications(updatedNotifications);
+  }, [user, holidayRequests, holidayNotifications]);
+
+  const rejectHolidayRequest = useCallback(async (requestId: string) => {
+    if (!user) throw new Error('No user found');
+
+    const request = holidayRequests.find(r => r.id === requestId);
+    if (!request) throw new Error('Request not found');
+
+    const updated = holidayRequests.map(r => 
+      r.id === requestId 
+        ? { ...r, status: 'rejected' as HolidayStatus, reviewedBy: user.name, reviewedAt: new Date().toISOString() }
+        : r
+    );
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_REQUESTS, JSON.stringify(updated));
+    setHolidayRequests(updated);
+
+    const notification: HolidayNotification = {
+      id: Date.now().toString() + '_notif',
+      companyId: request.companyId,
+      requestId: request.id,
+      employeeId: request.employeeId,
+      employeeName: request.employeeName,
+      message: `Your holiday request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been declined by ${user.name}`,
+      type: 'rejected',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedNotifications = [...holidayNotifications, notification];
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS, JSON.stringify(updatedNotifications));
+    setHolidayNotifications(updatedNotifications);
+  }, [user, holidayRequests, holidayNotifications]);
+
+  const getEmployeeHolidayNotifications = useCallback((employeeId: string) => {
+    return holidayNotifications
+      .filter(n => n.employeeId === employeeId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [holidayNotifications]);
+
+  const getCompanyHolidayNotifications = useCallback(() => {
+    if (!company) return [];
+    return holidayNotifications
+      .filter(n => n.companyId === company.id && n.type === 'request')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [company, holidayNotifications]);
+
+  const markHolidayNotificationRead = useCallback(async (notificationId: string) => {
+    const updated = holidayNotifications.map(n => 
+      n.id === notificationId ? { ...n, isRead: true } : n
+    );
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS, JSON.stringify(updated));
+    setHolidayNotifications(updated);
+  }, [holidayNotifications]);
+
+  const deleteHolidayRequest = useCallback(async (requestId: string) => {
+    const updated = holidayRequests.filter(r => r.id !== requestId);
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_REQUESTS, JSON.stringify(updated));
+    setHolidayRequests(updated);
+
+    const updatedNotifications = holidayNotifications.filter(n => n.requestId !== requestId);
+    await AsyncStorage.setItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS, JSON.stringify(updatedNotifications));
+    setHolidayNotifications(updatedNotifications);
+  }, [holidayRequests, holidayNotifications]);
+
   return useMemo(() => ({
     user,
     company,
@@ -1361,6 +1513,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     airTestingInspections,
     equipmentCategories,
     equipmentItems,
+    holidayRequests,
+    holidayNotifications,
     isLoading,
     registerCompany,
     joinCompany,
@@ -1430,5 +1584,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     getCategoryEquipmentItems,
     addEquipmentCertificate,
     deleteEquipmentCertificate,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, equipmentCategories, equipmentItems, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted, submitAirTestingInspection, getCompanyAirTestingInspections, deleteAirTestingInspection, addEquipmentCategory, updateEquipmentCategory, deleteEquipmentCategory, getCompanyEquipmentCategories, addEquipmentItem, updateEquipmentItem, deleteEquipmentItem, getCompanyEquipmentItems, getCategoryEquipmentItems, addEquipmentCertificate, deleteEquipmentCertificate]);
+    submitHolidayRequest,
+    getEmployeeHolidayRequests,
+    getCompanyHolidayRequests,
+    approveHolidayRequest,
+    rejectHolidayRequest,
+    getEmployeeHolidayNotifications,
+    getCompanyHolidayNotifications,
+    markHolidayNotificationRead,
+    deleteHolidayRequest,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, equipmentCategories, equipmentItems, holidayRequests, holidayNotifications, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted, submitAirTestingInspection, getCompanyAirTestingInspections, deleteAirTestingInspection, addEquipmentCategory, updateEquipmentCategory, deleteEquipmentCategory, getCompanyEquipmentCategories, addEquipmentItem, updateEquipmentItem, deleteEquipmentItem, getCompanyEquipmentItems, getCategoryEquipmentItems, addEquipmentCertificate, deleteEquipmentCertificate, submitHolidayRequest, getEmployeeHolidayRequests, getCompanyHolidayRequests, approveHolidayRequest, rejectHolidayRequest, getEmployeeHolidayNotifications, getCompanyHolidayNotifications, markHolidayNotificationRead, deleteHolidayRequest]);
 });
