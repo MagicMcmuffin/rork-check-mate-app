@@ -608,15 +608,8 @@ export default function CompanyScreen() {
             </View>
           </TouchableOpacity>
 
-          <View style={{ gap: 12 }}>
-            <TouchableOpacity
-              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => {
-                if (isCompanyOrManagement) {
-                  setAnnouncementModalVisible(true);
-                }
-              }}
-            >
+          <View style={[styles.announcementSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.announcementSectionHeader}>
               <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
                 <Megaphone size={24} color={colors.primary} />
               </View>
@@ -624,10 +617,10 @@ export default function CompanyScreen() {
                 <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
                 <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
               </View>
-            </TouchableOpacity>
+            </View>
 
             {isCompanyOrManagement && (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
                 <TouchableOpacity
                   style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
                   onPress={() => setAnnouncementExpandModalVisible(true)}
@@ -2063,5 +2056,20 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
+  },
+  announcementSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  announcementSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
