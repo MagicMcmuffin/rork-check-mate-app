@@ -25,8 +25,11 @@ export interface Equipment {
   thoroughExaminationDate?: string;
   thoroughExaminationCertificate?: string;
   has30DayReminder?: boolean;
-  nextServiceDate?: string;
-  purchaseDate?: string;
+  has7DayReminder?: boolean;
+  motDate?: string;
+  motCertificate?: string;
+  hasMot30DayReminder?: boolean;
+  hasMot7DayReminder?: boolean;
   notes?: string;
   createdAt: string;
 }

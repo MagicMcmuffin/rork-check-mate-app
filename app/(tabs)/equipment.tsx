@@ -23,8 +23,14 @@ export default function EquipmentScreen() {
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
   const [set30DayReminder, setSet30DayReminder] = useState(false);
+  const [set7DayReminder, setSet7DayReminder] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [thoroughExaminationCertificate, setThoroughExaminationCertificate] = useState('');
+  const [motDate, setMotDate] = useState('');
+  const [setMot30DayReminder, setSetMot30DayReminder] = useState(false);
+  const [setMot7DayReminder, setSetMot7DayReminder] = useState(false);
+  const [showMotDatePicker, setShowMotDatePicker] = useState(false);
+  const [motCertificate, setMotCertificate] = useState('');
   const [greasingModalVisible, setGreasingModalVisible] = useState(false);
   const [selectedEquipmentForGreasing, setSelectedEquipmentForGreasing] = useState<Equipment | null>(null);
   const [greasingNotes, setGreasingNotes] = useState('');
@@ -55,6 +61,11 @@ export default function EquipmentScreen() {
         thoroughExaminationDate: type === 'plant' && thoroughExaminationDate ? thoroughExaminationDate : undefined,
         thoroughExaminationCertificate: type === 'plant' && thoroughExaminationCertificate ? thoroughExaminationCertificate : undefined,
         has30DayReminder: type === 'plant' && thoroughExaminationDate ? set30DayReminder : undefined,
+        has7DayReminder: type === 'plant' && thoroughExaminationDate ? set7DayReminder : undefined,
+        motDate: type === 'vehicles' && motDate ? motDate : undefined,
+        motCertificate: type === 'vehicles' && motCertificate ? motCertificate : undefined,
+        hasMot30DayReminder: type === 'vehicles' && motDate ? setMot30DayReminder : undefined,
+        hasMot7DayReminder: type === 'vehicles' && motDate ? setMot7DayReminder : undefined,
       });
 
       setName('');
@@ -68,6 +79,11 @@ export default function EquipmentScreen() {
       setThoroughExaminationDate('');
       setThoroughExaminationCertificate('');
       setSet30DayReminder(false);
+      setSet7DayReminder(false);
+      setMotDate('');
+      setMotCertificate('');
+      setSetMot30DayReminder(false);
+      setSetMot7DayReminder(false);
       setModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
     } catch (error) {
@@ -189,7 +205,7 @@ export default function EquipmentScreen() {
     }
   };
 
-  const handlePickDocument = async () => {
+  const handlePickDocument = async (forMot = false) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
@@ -199,14 +215,23 @@ export default function EquipmentScreen() {
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         if (Platform.OS === 'web') {
-          setThoroughExaminationCertificate(asset.uri);
+          if (forMot) {
+            setMotCertificate(asset.uri);
+          } else {
+            setThoroughExaminationCertificate(asset.uri);
+          }
         } else {
           const fileInfo = await FileSystem.getInfoAsync(asset.uri);
           if (fileInfo.exists && fileInfo.size && fileInfo.size < 10 * 1024 * 1024) {
             const base64 = await FileSystem.readAsStringAsync(asset.uri, {
               encoding: FileSystem.EncodingType.Base64,
             });
-            setThoroughExaminationCertificate(`data:${asset.mimeType || 'application/pdf'};base64,${base64}`);
+            const dataUri = `data:${asset.mimeType || 'application/pdf'};base64,${base64}`;
+            if (forMot) {
+              setMotCertificate(dataUri);
+            } else {
+              setThoroughExaminationCertificate(dataUri);
+            }
           } else {
             Alert.alert('Error', 'File is too large. Maximum size is 10MB.');
           }
@@ -246,7 +271,7 @@ export default function EquipmentScreen() {
             onPress={() => setModalVisible(true)}
           >
             <Plus size={20} color="#ffffff" />
-            <Text style={styles.addButtonText}>+ Add New</Text>
+            <Text style={styles.addButtonText}>Add New Equipment</Text>
           </TouchableOpacity>
         )}
 
@@ -256,7 +281,7 @@ export default function EquipmentScreen() {
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Equipment Yet</Text>
             <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
               {isAdmin
-                ? 'Add your company equipment to make it available for inspections'
+                ? 'Add your company equipment to track inspections and reminders'
                 : 'No equipment has been added yet'}
             </Text>
           </View>
@@ -269,6 +294,8 @@ export default function EquipmentScreen() {
               {items.map((item) => {
                 const greasingRecords = getEquipmentGreasingRecords(item.id);
                 const lastGreasing = greasingRecords[0];
+                const examinationStatus = item.type === 'plant' ? getExpiryStatus(item.thoroughExaminationDate) : null;
+                const motStatus = item.type === 'vehicles' ? getExpiryStatus(item.motDate) : null;
                 
                 return (
                 <View key={item.id} style={[styles.equipmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -287,23 +314,24 @@ export default function EquipmentScreen() {
                     {item.registration && (
                       <Text style={[styles.equipmentSerial, { color: colors.textSecondary }]}>Reg: {item.registration}</Text>
                     )}
+                    
                     {item.type === 'plant' && item.thoroughExaminationDate && (
                       <View style={styles.examinationInfo}>
                         <View style={styles.examinationRow}>
-                          <Calendar size={14} color={getExpiryStatus(item.thoroughExaminationDate)?.color || colors.textSecondary} />
+                          <Calendar size={14} color={examinationStatus?.color || colors.textSecondary} />
                           <Text style={[styles.equipmentSerial, { color: colors.textSecondary, marginLeft: 4 }]}>
-                            Examination: {new Date(item.thoroughExaminationDate).toLocaleDateString()}
+                            Thorough Examination: {new Date(item.thoroughExaminationDate).toLocaleDateString('en-GB')}
                           </Text>
                         </View>
-                        {getExpiryStatus(item.thoroughExaminationDate) && (
-                          <View style={[styles.expiryBadge, { backgroundColor: getExpiryStatus(item.thoroughExaminationDate)!.color + '20' }]}>
-                            <AlertCircle size={12} color={getExpiryStatus(item.thoroughExaminationDate)!.color} />
-                            <Text style={[styles.expiryText, { color: getExpiryStatus(item.thoroughExaminationDate)!.color }]}>
-                              {getExpiryStatus(item.thoroughExaminationDate)!.status === 'expired' 
-                                ? `Expired ${getExpiryStatus(item.thoroughExaminationDate)!.days} days ago`
-                                : getExpiryStatus(item.thoroughExaminationDate)!.status === 'expiring-soon'
-                                ? `Expires in ${getExpiryStatus(item.thoroughExaminationDate)!.days} days`
-                                : `Valid for ${getExpiryStatus(item.thoroughExaminationDate)!.days} days`
+                        {examinationStatus && (
+                          <View style={[styles.expiryBadge, { backgroundColor: examinationStatus.color + '20' }]}>
+                            <AlertCircle size={12} color={examinationStatus.color} />
+                            <Text style={[styles.expiryText, { color: examinationStatus.color }]}>
+                              {examinationStatus.status === 'expired' 
+                                ? `Expired ${examinationStatus.days} days ago`
+                                : examinationStatus.status === 'expiring-soon'
+                                ? `Expires in ${examinationStatus.days} days`
+                                : `Valid for ${examinationStatus.days} days`
                               }
                             </Text>
                           </View>
@@ -314,8 +342,55 @@ export default function EquipmentScreen() {
                             <Text style={[styles.certificateText, { color: colors.primary }]}>Certificate attached</Text>
                           </View>
                         )}
+                        {(item.has30DayReminder || item.has7DayReminder) && (
+                          <View style={styles.reminderInfo}>
+                            <Clock size={12} color={colors.primary} />
+                            <Text style={[styles.reminderText, { color: colors.primary }]}>
+                              Reminders: {[item.has30DayReminder && '30 days', item.has7DayReminder && '7 days'].filter(Boolean).join(', ')}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     )}
+
+                    {item.type === 'vehicles' && item.motDate && (
+                      <View style={styles.examinationInfo}>
+                        <View style={styles.examinationRow}>
+                          <Calendar size={14} color={motStatus?.color || colors.textSecondary} />
+                          <Text style={[styles.equipmentSerial, { color: colors.textSecondary, marginLeft: 4 }]}>
+                            MOT: {new Date(item.motDate).toLocaleDateString('en-GB')}
+                          </Text>
+                        </View>
+                        {motStatus && (
+                          <View style={[styles.expiryBadge, { backgroundColor: motStatus.color + '20' }]}>
+                            <AlertCircle size={12} color={motStatus.color} />
+                            <Text style={[styles.expiryText, { color: motStatus.color }]}>
+                              {motStatus.status === 'expired' 
+                                ? `Expired ${motStatus.days} days ago`
+                                : motStatus.status === 'expiring-soon'
+                                ? `Expires in ${motStatus.days} days`
+                                : `Valid for ${motStatus.days} days`
+                              }
+                            </Text>
+                          </View>
+                        )}
+                        {item.motCertificate && (
+                          <View style={styles.certificateInfo}>
+                            <FileText size={12} color={colors.primary} />
+                            <Text style={[styles.certificateText, { color: colors.primary }]}>Certificate attached</Text>
+                          </View>
+                        )}
+                        {(item.hasMot30DayReminder || item.hasMot7DayReminder) && (
+                          <View style={styles.reminderInfo}>
+                            <Clock size={12} color={colors.primary} />
+                            <Text style={[styles.reminderText, { color: colors.primary }]}>
+                              Reminders: {[item.hasMot30DayReminder && '30 days', item.hasMot7DayReminder && '7 days'].filter(Boolean).join(', ')}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
                     {(item.type === 'plant' || item.type === 'vehicles') && (
                       <View style={styles.greasingSection}>
                         <View style={styles.greasingSectionHeader}>
@@ -520,142 +595,263 @@ export default function EquipmentScreen() {
                 </View>
 
                 {type === 'plant' && (
-                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Plant Details</Text>
-                    
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                        placeholder="e.g., AB12 CDE"
-                        placeholderTextColor={colors.textSecondary}
-                        value={registration}
-                        onChangeText={setRegistration}
-                        autoCapitalize="characters"
-                      />
-                    </View>
-
-                    <View style={styles.inputRow}>
-                      <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                        <Text style={[styles.label, { color: colors.text }]}>Hitch Type</Text>
+                  <>
+                    <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.sectionLabel, { color: colors.text }]}>Plant Details</Text>
+                      
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                          placeholder="e.g., Quick Hitch"
+                          placeholder="e.g., AB12 CDE"
                           placeholderTextColor={colors.textSecondary}
-                          value={hitchType}
-                          onChangeText={setHitchType}
+                          value={registration}
+                          onChangeText={setRegistration}
+                          autoCapitalize="characters"
                         />
                       </View>
-                      <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                        <Text style={[styles.label, { color: colors.text }]}>Hitch Serial</Text>
-                        <TextInput
-                          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                          placeholder="Serial number"
-                          placeholderTextColor={colors.textSecondary}
-                          value={hitchSerial}
-                          onChangeText={setHitchSerial}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                )}
 
-                {type === 'plant' && (
-                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-                    <View style={styles.sectionHeader}>
-                      <Calendar size={18} color={colors.primary} />
-                      <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Thorough Examination (Optional)</Text>
+                      <View style={styles.inputRow}>
+                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                          <Text style={[styles.label, { color: colors.text }]}>Hitch Type</Text>
+                          <TextInput
+                            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                            placeholder="e.g., Quick Hitch"
+                            placeholderTextColor={colors.textSecondary}
+                            value={hitchType}
+                            onChangeText={setHitchType}
+                          />
+                        </View>
+                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                          <Text style={[styles.label, { color: colors.text }]}>Hitch Serial</Text>
+                          <TextInput
+                            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                            placeholder="Serial number"
+                            placeholderTextColor={colors.textSecondary}
+                            value={hitchSerial}
+                            onChangeText={setHitchSerial}
+                          />
+                        </View>
+                      </View>
                     </View>
-                    <Text style={[styles.sectionHelper, { color: colors.textSecondary }]}>Certificate valid for 12 months. We'll notify you when it's nearly expired.</Text>
-                    
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Examination Date (Optional)</Text>
-                      <TouchableOpacity
-                        style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-                        onPress={() => setShowDatePicker(true)}
-                      >
-                        <Calendar size={18} color={colors.textSecondary} />
-                        <Text style={[thoroughExaminationDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: thoroughExaminationDate ? colors.text : colors.textSecondary }]}>
-                          {thoroughExaminationDate ? new Date(thoroughExaminationDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Select date'}
-                        </Text>
-                      </TouchableOpacity>
-                      {showDatePicker && (
-                        <DateTimePicker
-                          value={thoroughExaminationDate ? new Date(thoroughExaminationDate) : new Date()}
-                          mode="date"
-                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                          onChange={(event, selectedDate) => {
-                            setShowDatePicker(Platform.OS === 'ios');
-                            if (selectedDate) {
-                              const formattedDate = selectedDate.toISOString().split('T')[0];
-                              setThoroughExaminationDate(formattedDate);
-                            }
-                          }}
-                        />
+
+                    <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                      <View style={styles.sectionHeader}>
+                        <Calendar size={18} color={colors.primary} />
+                        <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>Thorough Examination (Optional)</Text>
+                      </View>
+                      <Text style={[styles.sectionHelper, { color: colors.textSecondary }]}>Certificate valid for 12 months. Set reminders to stay notified.</Text>
+                      
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>Examination Date</Text>
+                        <TouchableOpacity
+                          style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                          onPress={() => setShowDatePicker(true)}
+                        >
+                          <Calendar size={18} color={colors.textSecondary} />
+                          <Text style={[thoroughExaminationDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: thoroughExaminationDate ? colors.text : colors.textSecondary }]}>
+                            {thoroughExaminationDate ? new Date(thoroughExaminationDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Select date'}
+                          </Text>
+                        </TouchableOpacity>
+                        {showDatePicker && (
+                          <DateTimePicker
+                            value={thoroughExaminationDate ? new Date(thoroughExaminationDate) : new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, selectedDate) => {
+                              setShowDatePicker(Platform.OS === 'ios');
+                              if (selectedDate) {
+                                const formattedDate = selectedDate.toISOString().split('T')[0];
+                                setThoroughExaminationDate(formattedDate);
+                              }
+                            }}
+                          />
+                        )}
+                      </View>
+                      
+                      {thoroughExaminationDate && (
+                        <>
+                          <View style={styles.reminderGroup}>
+                            <TouchableOpacity
+                              style={styles.checkboxContainer}
+                              onPress={() => setSet30DayReminder(!set30DayReminder)}
+                            >
+                              <View style={[
+                                styles.checkbox,
+                                { borderColor: colors.border },
+                                set30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                              ]}>
+                                {set30DayReminder && <Check size={16} color="#ffffff" />}
+                              </View>
+                              <Text style={[styles.checkboxLabel, { color: colors.text }]}>30-day reminder</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                              style={styles.checkboxContainer}
+                              onPress={() => setSet7DayReminder(!set7DayReminder)}
+                            >
+                              <View style={[
+                                styles.checkbox,
+                                { borderColor: colors.border },
+                                set7DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                              ]}>
+                                {set7DayReminder && <Check size={16} color="#ffffff" />}
+                              </View>
+                              <Text style={[styles.checkboxLabel, { color: colors.text }]}>7-day reminder</Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: colors.text }]}>Certificate Document</Text>
+                            <TouchableOpacity
+                              style={[
+                                styles.uploadArea,
+                                { backgroundColor: colors.card, borderColor: colors.border },
+                                thoroughExaminationCertificate && { borderColor: colors.primary }
+                              ]}
+                              onPress={() => handlePickDocument(false)}
+                            >
+                              {thoroughExaminationCertificate ? (
+                                <>
+                                  <View style={[styles.uploadIconSuccess, { backgroundColor: colors.primary + '20' }]}>
+                                    <Check size={24} color={colors.primary} />
+                                  </View>
+                                  <Text style={[styles.uploadText, { color: colors.primary }]}>Certificate Uploaded</Text>
+                                  <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>Tap to change</Text>
+                                </>
+                              ) : (
+                                <>
+                                  <View style={[styles.uploadIcon, { backgroundColor: colors.background }]}>
+                                    <Upload size={24} color={colors.textSecondary} />
+                                  </View>
+                                  <Text style={[styles.uploadText, { color: colors.text }]}>Upload Certificate</Text>
+                                  <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>PDF or Image (Max 10MB)</Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        </>
                       )}
                     </View>
-                    
-                    <TouchableOpacity
-                      style={styles.checkboxContainer}
-                      onPress={() => setSet30DayReminder(!set30DayReminder)}
-                    >
-                      <View style={[
-                        styles.checkbox,
-                        { borderColor: colors.border },
-                        set30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
-                      ]}>
-                        {set30DayReminder && <Check size={16} color="#ffffff" />}
-                      </View>
-                      <Text style={[styles.checkboxLabel, { color: colors.text }]}>Set 30-day reminder before expiry</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Certificate Document (Optional)</Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.uploadArea,
-                          { backgroundColor: colors.card, borderColor: colors.border },
-                          thoroughExaminationCertificate && { borderColor: colors.primary }
-                        ]}
-                        onPress={handlePickDocument}
-                      >
-                        {thoroughExaminationCertificate ? (
-                          <>
-                            <View style={[styles.uploadIconSuccess, { backgroundColor: colors.primary + '20' }]}>
-                              <Check size={24} color={colors.primary} />
-                            </View>
-                            <Text style={[styles.uploadText, { color: colors.primary }]}>Certificate Uploaded</Text>
-                            <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>Tap to change</Text>
-                          </>
-                        ) : (
-                          <>
-                            <View style={[styles.uploadIcon, { backgroundColor: colors.background }]}>
-                              <Upload size={24} color={colors.textSecondary} />
-                            </View>
-                            <Text style={[styles.uploadText, { color: colors.text }]}>Upload Certificate</Text>
-                            <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>PDF or Image (Max 10MB)</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  </>
                 )}
 
                 {type === 'vehicles' && (
-                  <View style={[styles.formSection, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Vehicle Details</Text>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
-                      <TextInput
-                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                        placeholder="e.g., AB12 CDE"
-                        placeholderTextColor={colors.textSecondary}
-                        value={registration}
-                        onChangeText={setRegistration}
-                        autoCapitalize="characters"
-                      />
+                  <>
+                    <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.sectionLabel, { color: colors.text }]}>Vehicle Details</Text>
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>Registration Number</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                          placeholder="e.g., AB12 CDE"
+                          placeholderTextColor={colors.textSecondary}
+                          value={registration}
+                          onChangeText={setRegistration}
+                          autoCapitalize="characters"
+                        />
+                      </View>
                     </View>
-                  </View>
+
+                    <View style={[styles.formSection, { backgroundColor: colors.background }]}>
+                      <View style={styles.sectionHeader}>
+                        <Calendar size={18} color={colors.primary} />
+                        <Text style={[styles.sectionLabel, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>MOT (Optional)</Text>
+                      </View>
+                      <Text style={[styles.sectionHelper, { color: colors.textSecondary }]}>MOT valid for 12 months. Set reminders to stay notified.</Text>
+                      
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>MOT Date</Text>
+                        <TouchableOpacity
+                          style={[styles.datePickerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                          onPress={() => setShowMotDatePicker(true)}
+                        >
+                          <Calendar size={18} color={colors.textSecondary} />
+                          <Text style={[motDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: motDate ? colors.text : colors.textSecondary }]}>
+                            {motDate ? new Date(motDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Select date'}
+                          </Text>
+                        </TouchableOpacity>
+                        {showMotDatePicker && (
+                          <DateTimePicker
+                            value={motDate ? new Date(motDate) : new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, selectedDate) => {
+                              setShowMotDatePicker(Platform.OS === 'ios');
+                              if (selectedDate) {
+                                const formattedDate = selectedDate.toISOString().split('T')[0];
+                                setMotDate(formattedDate);
+                              }
+                            }}
+                          />
+                        )}
+                      </View>
+                      
+                      {motDate && (
+                        <>
+                          <View style={styles.reminderGroup}>
+                            <TouchableOpacity
+                              style={styles.checkboxContainer}
+                              onPress={() => setSetMot30DayReminder(!setMot30DayReminder)}
+                            >
+                              <View style={[
+                                styles.checkbox,
+                                { borderColor: colors.border },
+                                setMot30DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                              ]}>
+                                {setMot30DayReminder && <Check size={16} color="#ffffff" />}
+                              </View>
+                              <Text style={[styles.checkboxLabel, { color: colors.text }]}>30-day reminder</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                              style={styles.checkboxContainer}
+                              onPress={() => setSet7DayReminder(!setMot7DayReminder)}
+                            >
+                              <View style={[
+                                styles.checkbox,
+                                { borderColor: colors.border },
+                                setMot7DayReminder && { backgroundColor: colors.primary, borderColor: colors.primary }
+                              ]}>
+                                {setMot7DayReminder && <Check size={16} color="#ffffff" />}
+                              </View>
+                              <Text style={[styles.checkboxLabel, { color: colors.text }]}>7-day reminder</Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: colors.text }]}>MOT Certificate</Text>
+                            <TouchableOpacity
+                              style={[
+                                styles.uploadArea,
+                                { backgroundColor: colors.card, borderColor: colors.border },
+                                motCertificate && { borderColor: colors.primary }
+                              ]}
+                              onPress={() => handlePickDocument(true)}
+                            >
+                              {motCertificate ? (
+                                <>
+                                  <View style={[styles.uploadIconSuccess, { backgroundColor: colors.primary + '20' }]}>
+                                    <Check size={24} color={colors.primary} />
+                                  </View>
+                                  <Text style={[styles.uploadText, { color: colors.primary }]}>Certificate Uploaded</Text>
+                                  <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>Tap to change</Text>
+                                </>
+                              ) : (
+                                <>
+                                  <View style={[styles.uploadIcon, { backgroundColor: colors.background }]}>
+                                    <Upload size={24} color={colors.textSecondary} />
+                                  </View>
+                                  <Text style={[styles.uploadText, { color: colors.text }]}>Upload Certificate</Text>
+                                  <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>PDF or Image (Max 10MB)</Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  </>
                 )}
               </View>
             </ScrollView>
@@ -673,7 +869,7 @@ export default function EquipmentScreen() {
                 onPress={handleAddEquipment}
               >
                 <Check size={18} color="#ffffff" />
-                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Confirm</Text>
+                <Text style={[styles.footerButtonTextSave, { color: '#ffffff' }]}>Add Equipment</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -933,6 +1129,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    borderWidth: 1,
   },
   equipmentInfo: {
     flex: 1,
@@ -982,31 +1179,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500' as const,
   },
-  helperText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  uploadButton: {
+  reminderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed' as const,
+    gap: 4,
   },
-  uploadButtonText: {
-    fontSize: 14,
+  reminderText: {
+    fontSize: 12,
     fontWeight: '500' as const,
-  },
-  clearButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  clearButtonText: {
-    fontSize: 14,
-    textDecorationLine: 'underline' as const,
   },
   deleteButton: {
     padding: 8,
@@ -1234,6 +1414,26 @@ const styles = StyleSheet.create({
   datePickerPlaceholder: {
     fontSize: 15,
   },
+  reminderGroup: {
+    gap: 12,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
   greasingSection: {
     marginTop: 12,
     paddingTop: 12,
@@ -1321,22 +1521,5 @@ const styles = StyleSheet.create({
   historyNotes: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    fontWeight: '500' as const,
   },
 });
