@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench, FlaskConical } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -16,6 +16,7 @@ export default function InspectionsScreen() {
   const [expandedPlantVehicle, setExpandedPlantVehicle] = useState(false);
   const [expandedApprenticeship, setExpandedApprenticeship] = useState(false);
   const [expandedImprovement, setExpandedImprovement] = useState(false);
+  const [expandedQualityControl, setExpandedQualityControl] = useState(false);
   const userCompanies = getUserCompanies();
   const notifications = getCompanyNotifications();
   const unreadNotifications = notifications.filter(n => !n.isCompleted);
@@ -467,6 +468,50 @@ export default function InspectionsScreen() {
                 <View style={styles.subItemContent}>
                   <Text style={[styles.subItemTitle, { color: colors.text }]}>Positive Intervention</Text>
                   <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Report hazards you identified and fixed</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.categoryCard, { backgroundColor: colors.card }]}
+            onPress={() => setExpandedQualityControl(!expandedQualityControl)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryLeft}>
+                <View style={[styles.categoryIcon, { backgroundColor: '#fce7f3' }]}>
+                  <FlaskConical size={24} color="#ec4899" />
+                </View>
+                <View>
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>Quality Control</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>Testing & compliance</Text>
+                </View>
+              </View>
+              <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
+                {expandedQualityControl ? (
+                  <ChevronUp size={20} color={colors.text} />
+                ) : (
+                  <ChevronDown size={20} color={colors.text} />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {expandedQualityControl && (
+            <View style={styles.subItemsContainer}>
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/air-testing-inspection')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#fce7f3' }]}>
+                  <FlaskConical size={20} color="#ec4899" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Air Testing</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Record pipework air tests with evidence</Text>
                 </View>
                 <ChevronRight size={18} color={colors.textSecondary} />
               </TouchableOpacity>

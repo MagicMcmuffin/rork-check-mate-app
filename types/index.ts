@@ -176,7 +176,7 @@ export interface BucketChangeInspection {
   createdAt: string;
 }
 
-export type InspectionType = 'plant' | 'quickhitch' | 'vehicle' | 'bucket';
+export type InspectionType = 'plant' | 'quickhitch' | 'vehicle' | 'bucket' | 'airtesting';
 
 export interface Notification {
   id: string;
@@ -241,7 +241,7 @@ export interface Announcement {
   createdAt: string;
 }
 
-export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention' | 'greasing';
+export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention' | 'greasing' | 'airtesting';
 
 export interface DayData {
   day: DayOfWeek;
@@ -337,5 +337,27 @@ export interface TicketReminder {
   employeeId: string;
   reminderDate: string;
   isCompleted: boolean;
+  createdAt: string;
+}
+
+export interface AirTestingInspection {
+  id: string;
+  companyId: string;
+  projectId?: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  time: string;
+  section: string;
+  pipeRun: string;
+  pipeJoint: string;
+  pipeSize: string;
+  testPressure?: string;
+  testDuration?: string;
+  testResult?: 'pass' | 'fail';
+  startImage?: string;
+  finishImage?: string;
+  additionalImages?: string[];
+  notes?: string;
   createdAt: string;
 }

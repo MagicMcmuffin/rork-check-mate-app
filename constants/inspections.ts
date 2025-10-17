@@ -148,3 +148,21 @@ export const GREASING_CHECK_ITEMS = [
   { id: 'damaged_seals', name: 'No damaged seals or boots', category: 'Inspection' },
   { id: 'proper_access', name: 'All points accessible for greasing', category: 'Inspection' },
 ];
+
+export const PIPE_SIZE_OPTIONS = [
+  '20mm',
+  '25mm',
+  '32mm',
+  '40mm',
+  '50mm',
+  '63mm',
+  '75mm',
+  '90mm',
+  '110mm',
+  '125mm',
+  '160mm',
+  '200mm',
+  '250mm',
+  '315mm',
+  'Other',
+] as const;
