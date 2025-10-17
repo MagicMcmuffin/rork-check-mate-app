@@ -2,9 +2,9 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, DAYS_OF_WEEK, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
 import { PlantInspectionCheck, DayOfWeek, CheckStatus } from '@/types';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X, Save } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,9 +19,12 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PlantInspectionScreen() {
-  const { user, company, submitPlantInspection, saveDraft } = useApp();
+  const { user, company, submitPlantInspection, saveDraft, getDrafts } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const draftId = params.draftId as string | undefined;
+  
   const [plantNumber, setPlantNumber] = useState('');
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>('');
   const [carriedOutBy, setCarriedOutBy] = useState(user?.name || '');
@@ -31,10 +34,33 @@ export default function PlantInspectionScreen() {
   const [notesOnDefects, setNotesOnDefects] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(!!draftId);
 
   const allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (draftId && user) {
+      const drafts = getDrafts(user.id);
+      const draft = drafts.find(d => d.id === draftId);
+      
+      if (draft && draft.type === 'plant') {
+        const data = draft.data as any;
+        console.log('Loading draft:', draftId);
+        setPlantNumber(data.plantNumber || '');
+        setSelectedEquipmentId(data.equipmentId || '');
+        setCarriedOutBy(data.carriedOutBy || user.name || '');
+        setSelectedProject(data.projectId || '');
+        setChecks(data.checks || []);
+        setNotesOnDefects(data.notesOnDefects || '');
+        setIsLoadingDraft(false);
+      } else {
+        console.error('Draft not found or invalid type');
+        setIsLoadingDraft(false);
+      }
+    }
+  }, [draftId, user, getDrafts]);
 
   const handleCheckChange = (itemId: string, status: CheckStatus) => {
     setChecks(prev => {
@@ -151,6 +177,7 @@ export default function PlantInspectionScreen() {
 
     setIsSavingDraft(true);
     try {
+      console.log('Saving draft with ID:', draftId);
       await saveDraft('plant', {
         companyId: company!.id,
         projectId: selectedProject || undefined,
@@ -162,9 +189,9 @@ export default function PlantInspectionScreen() {
         date: new Date().toISOString().split('T')[0],
         checks,
         notesOnDefects: notesOnDefects.trim(),
-      });
+      }, draftId);
 
-      Alert.alert('Success', 'Draft saved successfully. You can continue this inspection later from the Reports tab.', [
+      Alert.alert('Success', draftId ? 'Draft updated successfully' : 'Draft saved successfully. You can continue this inspection later from the Reports tab.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
@@ -212,12 +239,30 @@ export default function PlantInspectionScreen() {
     }
   };
 
+  if (isLoadingDraft) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Plant Inspection',
+            headerStyle: { backgroundColor: colors.card },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.subtitle, { color: colors.textSecondary, marginTop: 16 }]}>Loading draft...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Plant Inspection',
+          title: draftId ? 'Edit Draft' : 'Plant Inspection',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
