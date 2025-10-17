@@ -836,26 +836,34 @@ export const [AppProvider, useApp] = createContextHook(() => {
       updated = plantInspections.map(i => 
         i.id === inspectionId ? { ...i, ...fixedData } : i
       );
+      console.log('✅ Marking plant inspection as fixed:', inspectionId, fixedData);
       setPlantInspections(updated);
       await AsyncStorage.setItem(STORAGE_KEYS.PLANT_INSPECTIONS, JSON.stringify(updated));
+      console.log('✅ Plant inspection saved to storage');
     } else if (type === 'quickhitch') {
       updated = quickHitchInspections.map(i => 
         i.id === inspectionId ? { ...i, ...fixedData } : i
       );
+      console.log('✅ Marking quickhitch inspection as fixed:', inspectionId, fixedData);
       setQuickHitchInspections(updated);
       await AsyncStorage.setItem(STORAGE_KEYS.QUICK_HITCH_INSPECTIONS, JSON.stringify(updated));
+      console.log('✅ Quickhitch inspection saved to storage');
     } else if (type === 'vehicle') {
       updated = vehicleInspections.map(i => 
         i.id === inspectionId ? { ...i, ...fixedData } : i
       );
+      console.log('✅ Marking vehicle inspection as fixed:', inspectionId, fixedData);
       setVehicleInspections(updated);
       await AsyncStorage.setItem(STORAGE_KEYS.VEHICLE_INSPECTIONS, JSON.stringify(updated));
+      console.log('✅ Vehicle inspection saved to storage');
     } else if (type === 'bucketchange') {
       updated = bucketChangeInspections.map(i => 
         i.id === inspectionId ? { ...i, ...fixedData } : i
       );
+      console.log('✅ Marking bucket change inspection as fixed:', inspectionId, fixedData);
       setBucketChangeInspections(updated);
       await AsyncStorage.setItem(STORAGE_KEYS.BUCKET_CHANGE_INSPECTIONS, JSON.stringify(updated));
+      console.log('✅ Bucket change inspection saved to storage');
     }
 
     const updatedFixLogs = [...fixLogs, fixLog];
@@ -875,7 +883,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setNotifications(updatedNotifications);
     await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(updatedNotifications));
 
-    console.log(`Inspection ${inspectionId} marked as fixed by ${user.name}`);
+    console.log(`✅ Inspection ${inspectionId} of type ${type} marked as fixed by ${user.name}`);
   }, [user, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, fixLogs]);
 
   const submitPositiveIntervention = useCallback(async (intervention: Omit<PositiveIntervention, 'id' | 'createdAt'>) => {

@@ -138,9 +138,19 @@ export default function ReportsScreen() {
 
   if (selectedStatus !== 'all') {
     if (selectedStatus === 'fixed') {
-      filteredInspections = filteredInspections.filter(i => 'isFixed' in i && i.isFixed);
-    } else {
-      filteredInspections = filteredInspections.filter(i => !('isFixed' in i && i.isFixed));
+      filteredInspections = filteredInspections.filter(i => {
+        const fixed = 'isFixed' in i && i.isFixed === true;
+        console.log(`Inspection ${i.id}: isFixed = ${fixed}`, { hasProperty: 'isFixed' in i, value: (i as any).isFixed });
+        return fixed;
+      });
+      console.log(`Found ${filteredInspections.length} fixed inspections`);
+    } else if (selectedStatus === 'pending') {
+      filteredInspections = filteredInspections.filter(i => {
+        const pending = !('isFixed' in i) || i.isFixed !== true;
+        console.log(`Inspection ${i.id}: pending = ${pending}`, { hasProperty: 'isFixed' in i, value: (i as any).isFixed });
+        return pending;
+      });
+      console.log(`Found ${filteredInspections.length} pending inspections`);
     }
   }
 
@@ -275,10 +285,12 @@ export default function ReportsScreen() {
           text: 'Mark Fixed',
           onPress: async () => {
             try {
+              console.log('🔧 Marking inspection as fixed:', inspectionId, type);
               await markInspectionFixed(inspectionId, type);
-              console.log('Inspection marked as fixed');
+              console.log('✅ Inspection marked as fixed successfully');
+              Alert.alert('Success', 'Inspection has been marked as fixed');
             } catch (error) {
-              console.error('Error marking inspection as fixed:', error);
+              console.error('❌ Error marking inspection as fixed:', error);
               Alert.alert('Error', 'Failed to mark inspection as fixed');
             }
           },
