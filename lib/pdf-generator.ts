@@ -162,11 +162,55 @@ const generateHTMLStyles = () => `
       color: #64748b;
       font-size: 12px;
     }
+    .days-columns {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .day-column {
+      flex: 1;
+      min-width: 200px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .day-header {
+      text-align: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .day-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+    .day-date {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .day-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .day-check-item {
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      background: #f8fafc;
+    }
     @media print {
       body {
         padding: 20px;
       }
       .check-row {
+        page-break-inside: avoid;
+      }
+      .days-columns {
         page-break-inside: avoid;
       }
     }
@@ -775,6 +819,172 @@ export const generatePositiveInterventionPDF = async (
   } catch (error) {
     console.error('Error generating PDF:', error);
     Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+  }
+};
+
+export const generateWeeklyInspectionPDF = async (
+  weeklyData: any,
+  inspectionType: 'plant' | 'vehicle' | 'quickhitch' | 'bucketchange',
+  companyName: string,
+  employeeName: string,
+  projectName?: string
+): Promise<void> => {
+  try {
+    const getItemName = (itemId: string) => {
+      let allItems: any[] = [];
+      if (inspectionType === 'plant') {
+        allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
+      } else if (inspectionType === 'quickhitch') {
+        allItems = QUICK_HITCH_ITEMS;
+      } else if (inspectionType === 'vehicle') {
+        allItems = VEHICLE_INSPECTION_ITEMS;
+      } else if (inspectionType === 'bucketchange') {
+        allItems = BUCKET_CHANGE_ITEMS;
+      }
+      const item = allItems.find(i => i.id === itemId);
+      return item?.name || itemId;
+    };
+
+    const getDayName = (day: string) => {
+      const names: Record<string, string> = {
+        'M': 'Monday',
+        'T': 'Tuesday',
+        'W': 'Wednesday',
+        'Th': 'Thursday',
+        'F': 'Friday',
+        'S': 'Saturday',
+        'Su': 'Sunday',
+      };
+      return names[day] || day;
+    };
+
+    const getInspectionTitle = () => {
+      switch (inspectionType) {
+        case 'plant': return 'Plant Weekly Inspection Report';
+        case 'vehicle': return 'Vehicle Weekly Inspection Report';
+        case 'quickhitch': return 'Quick Hitch Weekly Inspection Report';
+        case 'bucketchange': return 'Bucket Change Weekly Report';
+        default: return 'Weekly Inspection Report';
+      }
+    };
+
+    const getEquipmentInfo = () => {
+      if (inspectionType === 'plant' && weeklyData.plantNumber) {
+        return `Plant #${weeklyData.plantNumber}`;
+      } else if (inspectionType === 'vehicle' && weeklyData.vehicleRegistration) {
+        return `${weeklyData.vehicleRegistration} (${weeklyData.vehicleType || 'Vehicle'})`;
+      } else if (inspectionType === 'quickhitch' && weeklyData.quickHitchModel) {
+        return `${weeklyData.quickHitchModel} - ${weeklyData.excavatorDetails || ''}`;
+      } else if (inspectionType === 'bucketchange' && weeklyData.bucketType) {
+        return weeklyData.bucketType;
+      }
+      return 'N/A';
+    };
+
+    const completedDays = weeklyData.days.filter((d: any) => d.completed);
+
+    const dayColumnsHTML = completedDays.map((day: any) => {
+      const checksHTML = day.checks.map((check: any) => {
+        const statusColor = getStatusColor(check.status);
+        return `
+          <div class="day-check-item" style="border-left: 3px solid ${statusColor};">
+            <div style="font-weight: 600; margin-bottom: 2px;">${getItemName(check.itemId)}</div>
+            <div style="color: ${statusColor};">${getStatusText(check.status)}</div>
+            ${check.notes ? `<div style="color: #64748b; font-size: 10px; margin-top: 4px;">${check.notes}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="day-column">
+          <div class="day-header">
+            <div class="day-name">${getDayName(day.day)}</div>
+            <div class="day-date">${day.date}</div>
+          </div>
+          <div class="day-checks">
+            ${checksHTML || '<div style="text-align: center; color: #94a3b8; font-size: 12px;">No checks recorded</div>'}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${getInspectionTitle()}</title>
+          ${generateHTMLStyles()}
+        </head>
+        <body>
+          <div class="header">
+            <div class="header-title">${getInspectionTitle()}</div>
+            <div class="header-meta">
+              <div>📅 Week of ${weeklyData.weekStartDate}</div>
+              <div>👤 ${employeeName}</div>
+              <div>📊 ${completedDays.length} day${completedDays.length !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-row">
+              <span class="info-label">Company:</span>
+              <span class="info-value">${companyName}</span>
+            </div>
+            ${projectName ? `
+              <div class="info-row">
+                <span class="info-label">Project:</span>
+                <span class="info-value">${projectName}</span>
+              </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">Equipment:</span>
+              <span class="info-value">${getEquipmentInfo()}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Week Period:</span>
+              <span class="info-value">${weeklyData.weekStartDate}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Daily Inspections</div>
+            <div class="days-columns">
+              ${dayColumnsHTML}
+            </div>
+          </div>
+
+          <div class="footer">
+            Generated by CheckMate Safety • ${new Date().toLocaleDateString()}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const fileName = `weekly-${inspectionType}-${weeklyData.weekStartDate}.pdf`;
+    const { uri } = await Print.printToFileAsync({ html });
+    
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.document) {
+        const link = window.document.createElement('a');
+        link.href = uri;
+        link.download = fileName;
+        link.click();
+      }
+    } else {
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          UTI: '.pdf',
+          mimeType: 'application/pdf',
+        });
+      } else {
+        Alert.alert('Success', 'Weekly report PDF generated successfully');
+      }
+    }
+  } catch (error) {
+    console.error('Error generating weekly PDF:', error);
+    Alert.alert('Error', 'Failed to generate weekly PDF. Please try again.');
   }
 };
 

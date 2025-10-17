@@ -11,7 +11,8 @@ import {
   generateQuickHitchInspectionPDF,
   generateVehicleInspectionPDF,
   generateBucketChangeInspectionPDF,
-  generatePositiveInterventionPDF
+  generatePositiveInterventionPDF,
+  generateWeeklyInspectionPDF
 } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
@@ -1112,6 +1113,12 @@ export default function ReportsScreen() {
 
               const getDraftDetails = (draft: Draft) => {
                 const data = draft.data as any;
+                
+                if (draft.isWeeklyReport && data.days) {
+                  const completedDays = data.days.filter((d: any) => d.completed).length;
+                  return `Weekly Report - ${completedDays} day${completedDays !== 1 ? 's' : ''} completed`;
+                }
+                
                 switch (draft.type) {
                   case 'plant': return data.plantNumber || 'No plant number';
                   case 'quickhitch': return data.excavatorDetails || 'No machine details';
@@ -1130,6 +1137,33 @@ export default function ReportsScreen() {
                   case 'bucketchange': return { color: '#ec4899', bg: '#fce7f3' };
                   case 'intervention': return { color: '#10b981', bg: '#dcfce7' };
                   default: return { color: '#64748b', bg: '#f1f5f9' };
+                }
+              };
+
+              const handleDownloadWeeklyPDF = async (draft: Draft) => {
+                if (!company || !user || !draft.isWeeklyReport) return;
+                
+                try {
+                  const data = draft.data as any;
+                  const projectName = data.projectId ? company.projects.find(p => p.id === data.projectId)?.name : undefined;
+                  
+                  let inspectionType: 'plant' | 'vehicle' | 'quickhitch' | 'bucketchange';
+                  if (draft.type === 'plant') inspectionType = 'plant';
+                  else if (draft.type === 'vehicle') inspectionType = 'vehicle';
+                  else if (draft.type === 'quickhitch') inspectionType = 'quickhitch';
+                  else if (draft.type === 'bucketchange') inspectionType = 'bucketchange';
+                  else return;
+                  
+                  await generateWeeklyInspectionPDF(
+                    data,
+                    inspectionType,
+                    company.name,
+                    user.name,
+                    projectName
+                  );
+                } catch (error) {
+                  console.error('Error generating weekly PDF:', error);
+                  Alert.alert('Error', 'Failed to generate weekly PDF');
                 }
               };
 
@@ -1226,26 +1260,60 @@ export default function ReportsScreen() {
                             </View>
 
                             <View style={styles.draftActions}>
-                              <TouchableOpacity
-                                style={[styles.draftActionButton, styles.editDraftButton]}
-                                onPress={() => handleEditDraft(draft)}
-                              >
-                                <Edit3 size={16} color="#1e40af" />
-                                <Text style={styles.editDraftButtonText}>Edit</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.draftActionButton, styles.submitDraftButton]}
-                                onPress={() => handleSubmitDraft(draft.id)}
-                              >
-                                <Send size={16} color="#ffffff" />
-                                <Text style={styles.submitDraftButtonText}>Submit</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.draftActionButton, styles.deleteDraftButton]}
-                                onPress={() => handleDeleteDraft(draft.id)}
-                              >
-                                <Trash2 size={16} color="#dc2626" />
-                              </TouchableOpacity>
+                              {draft.isWeeklyReport ? (
+                                <>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.editDraftButton]}
+                                    onPress={() => handleEditDraft(draft)}
+                                  >
+                                    <Edit3 size={16} color="#1e40af" />
+                                    <Text style={styles.editDraftButtonText}>Edit</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, { backgroundColor: '#f59e0b' }]}
+                                    onPress={() => handleDownloadWeeklyPDF(draft)}
+                                  >
+                                    <Download size={16} color="#ffffff" />
+                                    <Text style={[styles.submitDraftButtonText, { color: '#ffffff' }]}>PDF</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.submitDraftButton]}
+                                    onPress={() => handleSubmitDraft(draft.id)}
+                                  >
+                                    <Send size={16} color="#ffffff" />
+                                    <Text style={styles.submitDraftButtonText}>Submit</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.deleteDraftButton]}
+                                    onPress={() => handleDeleteDraft(draft.id)}
+                                  >
+                                    <Trash2 size={16} color="#dc2626" />
+                                  </TouchableOpacity>
+                                </>
+                              ) : (
+                                <>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.editDraftButton]}
+                                    onPress={() => handleEditDraft(draft)}
+                                  >
+                                    <Edit3 size={16} color="#1e40af" />
+                                    <Text style={styles.editDraftButtonText}>Edit</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.submitDraftButton]}
+                                    onPress={() => handleSubmitDraft(draft.id)}
+                                  >
+                                    <Send size={16} color="#ffffff" />
+                                    <Text style={styles.submitDraftButtonText}>Submit</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.draftActionButton, styles.deleteDraftButton]}
+                                    onPress={() => handleDeleteDraft(draft.id)}
+                                  >
+                                    <Trash2 size={16} color="#dc2626" />
+                                  </TouchableOpacity>
+                                </>
+                              )}
                             </View>
                           </View>
                         );
