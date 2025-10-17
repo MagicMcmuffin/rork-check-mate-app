@@ -1,8 +1,8 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Stack, router } from 'expo-router';
-import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, AlertCircle, X, Check, Upload, Clock, ChevronRight, ChevronDown, File, Image as ImageIcon, Search, Bell, Download, Eye } from 'lucide-react-native';
-import { useState, useMemo } from 'react';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Package, Plus, Trash2, Edit2, FolderPlus, FileText, Calendar, X, Check, Upload, Download, Eye, File, Image as ImageIcon } from 'lucide-react-native';
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -11,11 +11,11 @@ import * as Sharing from 'expo-sharing';
 
 type FileType = 'pdf' | 'image' | 'all';
 
-export default function EquipmentManagementScreen() {
+export default function EquipmentCategoryDetailScreen() {
+  const { categoryId, categoryName } = useLocalSearchParams<{ categoryId: string; categoryName: string }>();
   const { 
-    user, 
+    user,
     getCompanyEquipmentCategories,
-    getCompanyEquipmentItems,
     getCategoryEquipmentItems,
     addEquipmentCategory,
     updateEquipmentCategory,
@@ -28,13 +28,12 @@ export default function EquipmentManagementScreen() {
   } = useApp();
   const { colors } = useTheme();
 
-  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [parentCategoryId, setParentCategoryId] = useState<string | undefined>(undefined);
-  const [categoryName, setCategoryName] = useState('');
+  const [subcategoryModalVisible, setSubcategoryModalVisible] = useState(false);
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState<string | null>(null);
+  const [subcategoryName, setSubcategoryName] = useState('');
 
   const [itemModalVisible, setItemModalVisible] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [itemName, setItemName] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
@@ -44,25 +43,21 @@ export default function EquipmentManagementScreen() {
   const [notes, setNotes] = useState('');
 
   const [certificateModalVisible, setCertificateModalVisible] = useState(false);
+  const [viewCertificateModal, setViewCertificateModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [certificateName, setCertificateName] = useState('');
   const [certificateFile, setCertificateFile] = useState<{ uri: string; mimeType: string; name: string } | null>(null);
+  const [viewingCertificate, setViewingCertificate] = useState<{ uri: string; mimeType: string; name: string } | null>(null);
   const [expiryDate, setExpiryDate] = useState('');
   const [showExpiryDatePicker, setShowExpiryDatePicker] = useState(false);
   const [has30DayReminder, setHas30DayReminder] = useState(false);
   const [has7DayReminder, setHas7DayReminder] = useState(false);
   const [fileType, setFileType] = useState<FileType>('all');
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showReminders, setShowReminders] = useState(false);
-  const [viewCertificateUri, setViewCertificateUri] = useState<string | null>(null);
-
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
   const categories = getCompanyEquipmentCategories();
-  const allItems = getCompanyEquipmentItems();
-
-  const rootCategories = categories.filter(c => !c.parentCategoryId);
-  const getSubcategories = (parentId: string) => categories.filter(c => c.parentCategoryId === parentId);
+  const subcategories = categories.filter(c => c.parentCategoryId === categoryId);
+  const directItems = getCategoryEquipmentItems(categoryId);
 
   const getExpiryStatus = (expiryDate?: string) => {
     if (!expiryDate) return null;
@@ -80,86 +75,37 @@ export default function EquipmentManagementScreen() {
     }
   };
 
-  const allReminders = useMemo(() => {
-    const reminders: Array<{
-      id: string;
-      itemName: string;
-      certificateName: string;
-      expiryDate: string;
-      daysUntilExpiry: number;
-      status: 'expired' | 'expiring-soon';
-      has7DayReminder: boolean;
-      has30DayReminder: boolean;
-      itemId: string;
-    }> = [];
-
-    allItems.forEach(item => {
-      item.certificates.forEach(cert => {
-        if (cert.expiryDate && (cert.has7DayReminder || cert.has30DayReminder)) {
-          const expiryStatus = getExpiryStatus(cert.expiryDate);
-          if (expiryStatus && (expiryStatus.status === 'expired' || expiryStatus.status === 'expiring-soon')) {
-            reminders.push({
-              id: cert.id,
-              itemName: item.name,
-              certificateName: cert.name,
-              expiryDate: cert.expiryDate,
-              daysUntilExpiry: expiryStatus.days,
-              status: expiryStatus.status,
-              has7DayReminder: cert.has7DayReminder || false,
-              has30DayReminder: cert.has30DayReminder || false,
-              itemId: item.id,
-            });
-          }
-        }
-      });
-    });
-
-    return reminders.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-  }, [allItems]);
-
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return allItems;
-    const query = searchQuery.toLowerCase();
-    return allItems.filter(item => 
-      item.name.toLowerCase().includes(query) ||
-      item.serialNumber?.toLowerCase().includes(query) ||
-      item.plantNumber?.toLowerCase().includes(query) ||
-      item.make?.toLowerCase().includes(query) ||
-      item.model?.toLowerCase().includes(query)
-    );
-  }, [allItems, searchQuery]);
-
-  const handleSaveCategory = async () => {
-    if (!categoryName.trim()) {
-      Alert.alert('Error', 'Please enter a category name');
+  const handleSaveSubcategory = async () => {
+    if (!subcategoryName.trim()) {
+      Alert.alert('Error', 'Please enter a subcategory name');
       return;
     }
 
     try {
-      if (editingCategoryId) {
-        await updateEquipmentCategory(editingCategoryId, categoryName);
-        Alert.alert('Success', 'Category updated successfully');
+      if (editingSubcategoryId) {
+        await updateEquipmentCategory(editingSubcategoryId, subcategoryName);
+        Alert.alert('Success', 'Subcategory updated successfully');
       } else {
-        await addEquipmentCategory(categoryName, parentCategoryId);
-        Alert.alert('Success', parentCategoryId ? 'Subcategory created successfully' : 'Category created successfully');
+        await addEquipmentCategory(subcategoryName, categoryId);
+        Alert.alert('Success', 'Subcategory created successfully');
       }
-      resetCategoryModal();
+      resetSubcategoryModal();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save category');
-      console.error('Save category error:', error);
+      Alert.alert('Error', error.message || 'Failed to save subcategory');
+      console.error('Save subcategory error:', error);
     }
   };
 
-  const handleEditCategory = (categoryId: string, name: string) => {
-    setEditingCategoryId(categoryId);
-    setCategoryName(name);
-    setCategoryModalVisible(true);
+  const handleEditSubcategory = (subcategoryId: string, name: string) => {
+    setEditingSubcategoryId(subcategoryId);
+    setSubcategoryName(name);
+    setSubcategoryModalVisible(true);
   };
 
-  const handleDeleteCategory = (categoryId: string, categoryName: string) => {
+  const handleDeleteSubcategory = (subcategoryId: string, subcategoryName: string) => {
     Alert.alert(
-      'Delete Category',
-      `Are you sure you want to delete "${categoryName}"? All items and subcategories must be deleted first.`,
+      'Delete Subcategory',
+      `Are you sure you want to delete "${subcategoryName}"? All items must be deleted first.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -167,11 +113,11 @@ export default function EquipmentManagementScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteEquipmentCategory(categoryId);
-              Alert.alert('Success', 'Category deleted successfully');
+              await deleteEquipmentCategory(subcategoryId);
+              Alert.alert('Success', 'Subcategory deleted successfully');
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete category');
-              console.error('Delete category error:', error);
+              Alert.alert('Error', error.message || 'Failed to delete subcategory');
+              console.error('Delete subcategory error:', error);
             }
           },
         },
@@ -179,21 +125,20 @@ export default function EquipmentManagementScreen() {
     );
   };
 
-  const resetCategoryModal = () => {
-    setCategoryModalVisible(false);
-    setEditingCategoryId(null);
-    setParentCategoryId(undefined);
-    setCategoryName('');
+  const resetSubcategoryModal = () => {
+    setSubcategoryModalVisible(false);
+    setEditingSubcategoryId(null);
+    setSubcategoryName('');
   };
 
-  const handleOpenItemModal = (categoryId: string) => {
-    setSelectedCategoryId(categoryId);
+  const handleOpenItemModal = (subcategoryId?: string) => {
+    setSelectedSubcategoryId(subcategoryId || categoryId);
     setItemModalVisible(true);
   };
 
   const handleEditItem = (item: any) => {
     setEditingItemId(item.id);
-    setSelectedCategoryId(item.categoryId);
+    setSelectedSubcategoryId(item.categoryId);
     setItemName(item.name);
     setSerialNumber(item.serialNumber || '');
     setPlantNumber(item.plantNumber || '');
@@ -209,7 +154,7 @@ export default function EquipmentManagementScreen() {
       return;
     }
 
-    if (!selectedCategoryId) {
+    if (!selectedSubcategoryId) {
       Alert.alert('Error', 'No category selected');
       return;
     }
@@ -227,7 +172,7 @@ export default function EquipmentManagementScreen() {
         Alert.alert('Success', 'Item updated successfully');
       } else {
         await addEquipmentItem({
-          categoryId: selectedCategoryId,
+          categoryId: selectedSubcategoryId,
           name: itemName.trim(),
           serialNumber: serialNumber.trim() || undefined,
           plantNumber: plantNumber.trim() || undefined,
@@ -271,7 +216,7 @@ export default function EquipmentManagementScreen() {
   const resetItemModal = () => {
     setItemModalVisible(false);
     setEditingItemId(null);
-    setSelectedCategoryId(null);
+    setSelectedSubcategoryId(null);
     setItemName('');
     setSerialNumber('');
     setPlantNumber('');
@@ -396,12 +341,7 @@ export default function EquipmentManagementScreen() {
     setCertificateModalVisible(true);
   };
 
-  const handleAddSubcategory = (parentId: string) => {
-    setParentCategoryId(parentId);
-    setCategoryModalVisible(true);
-  };
-
-  const handleViewCertificate = (uri: string, mimeType: string) => {
+  const handleViewCertificate = (uri: string, mimeType: string, name: string) => {
     if (Platform.OS === 'web') {
       if (uri.startsWith('data:')) {
         const newWindow = window.open();
@@ -416,7 +356,8 @@ export default function EquipmentManagementScreen() {
         window.open(uri, '_blank');
       }
     } else {
-      setViewCertificateUri(uri);
+      setViewingCertificate({ uri, mimeType, name });
+      setViewCertificateModal(true);
     }
   };
 
@@ -457,11 +398,156 @@ export default function EquipmentManagementScreen() {
     }
   };
 
-  const handleNavigateToCategory = (categoryId: string, categoryName: string) => {
-    router.push({
-      pathname: '/equipment-category-detail',
-      params: { categoryId, categoryName }
+  const renderItem = (item: any) => {
+    const expiringCerts = item.certificates.filter((cert: any) => {
+      const status = getExpiryStatus(cert.expiryDate);
+      return status && (status.status === 'expired' || status.status === 'expiring-soon');
     });
+
+    return (
+      <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={styles.itemHeader}>
+          <View style={styles.itemHeaderLeft}>
+            <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+            {expiringCerts.length > 0 && (
+              <View style={styles.itemWarningBadge}>
+                <Text style={styles.itemWarningText}>⚠️ {expiringCerts.length}</Text>
+              </View>
+            )}
+          </View>
+          {isAdmin && (
+            <View style={styles.itemActions}>
+              <TouchableOpacity
+                style={[styles.itemActionButton, { backgroundColor: colors.primary + '15' }]}
+                onPress={() => handleOpenCertificateModal(item.id)}
+              >
+                <Upload size={14} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.itemActionButton, { backgroundColor: colors.card }]}
+                onPress={() => handleEditItem(item)}
+              >
+                <Edit2 size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.itemActionButton, { backgroundColor: '#fee2e2' }]}
+                onPress={() => handleDeleteItem(item.id, item.name)}
+              >
+                <Trash2 size={14} color="#dc2626" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {(item.serialNumber || item.plantNumber || item.make || item.model) && (
+          <View style={styles.itemDetails}>
+            {item.serialNumber && (
+              <View style={styles.detailBadge}>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>S/N:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{item.serialNumber}</Text>
+              </View>
+            )}
+            {item.plantNumber && (
+              <View style={styles.detailBadge}>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Plant #:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{item.plantNumber}</Text>
+              </View>
+            )}
+            {item.make && (
+              <View style={styles.detailBadge}>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Make:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{item.make}</Text>
+              </View>
+            )}
+            {item.model && (
+              <View style={styles.detailBadge}>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Model:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{item.model}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {item.notes && (
+          <Text style={[styles.itemNotes, { color: colors.textSecondary }]}>{item.notes}</Text>
+        )}
+
+        {item.certificates.length > 0 && (
+          <View style={[styles.certificatesSection, { borderTopColor: colors.border }]}>
+            <View style={styles.certificatesHeader}>
+              <FileText size={14} color={colors.primary} />
+              <Text style={[styles.certificatesTitle, { color: colors.text }]}>
+                Certificates ({item.certificates.length})
+              </Text>
+            </View>
+            <View style={styles.certificatesList}>
+              {item.certificates.map((cert: any) => {
+                const expiryStatus = getExpiryStatus(cert.expiryDate);
+                const isPdf = cert.mimeType.includes('pdf');
+                return (
+                  <View key={cert.id} style={[styles.certificateItem, { backgroundColor: colors.card }]}>
+                    <View style={styles.certificateIcon}>
+                      {isPdf ? (
+                        <File size={16} color={colors.primary} />
+                      ) : (
+                        <ImageIcon size={16} color={colors.primary} />
+                      )}
+                    </View>
+                    <View style={styles.certificateInfo}>
+                      <Text style={[styles.certificateName, { color: colors.text }]}>{cert.name}</Text>
+                      <View style={styles.certificateMeta}>
+                        {cert.expiryDate && (
+                          <View style={styles.certificateExpiry}>
+                            <Calendar size={11} color={expiryStatus?.color || colors.textSecondary} />
+                            <Text style={[styles.certificateExpiryText, { color: colors.textSecondary }]}>
+                              {new Date(cert.expiryDate).toLocaleDateString('en-GB')}
+                            </Text>
+                          </View>
+                        )}
+                        {expiryStatus && (
+                          <View style={[styles.expiryBadge, { backgroundColor: expiryStatus.color + '20' }]}>
+                            <Text style={[styles.expiryBadgeText, { color: expiryStatus.color }]}>
+                              {expiryStatus.status === 'expired' 
+                                ? `${expiryStatus.days}d overdue`
+                                : expiryStatus.status === 'expiring-soon'
+                                ? `${expiryStatus.days}d left`
+                                : `${expiryStatus.days}d valid`
+                              }
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.certificateActions}>
+                      <TouchableOpacity
+                        style={[styles.certActionButton, { backgroundColor: colors.primary + '15' }]}
+                        onPress={() => handleViewCertificate(cert.fileUri, cert.mimeType, cert.name)}
+                      >
+                        <Eye size={14} color={colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.certActionButton, { backgroundColor: colors.primary + '15' }]}
+                        onPress={() => handleDownloadCertificate(cert.fileUri, cert.name, cert.mimeType)}
+                      >
+                        <Download size={14} color={colors.primary} />
+                      </TouchableOpacity>
+                      {isAdmin && (
+                        <TouchableOpacity
+                          style={[styles.certActionButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleDeleteCertificate(item.id, cert.id, cert.name)}
+                        >
+                          <Trash2 size={14} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
@@ -469,7 +555,7 @@ export default function EquipmentManagementScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Equipment Management',
+          title: categoryName || 'Category',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
@@ -478,237 +564,107 @@ export default function EquipmentManagementScreen() {
               <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
             </TouchableOpacity>
           ),
-          headerRight: () => (
-            <TouchableOpacity 
-              onPress={() => setShowReminders(true)}
-              style={{ marginRight: 16, position: 'relative' as const }}
-            >
-              <Bell size={24} color={colors.text} />
-              {allReminders.length > 0 && (
-                <View style={[styles.reminderBadge, { backgroundColor: '#dc2626' }]}>
-                  <Text style={styles.reminderBadgeCount}>{allReminders.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ),
         }}
       />
 
-      <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <View style={[styles.searchBar, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Search size={20} color={colors.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search equipment by name, serial, plant #..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {searchQuery.trim() ? (
+        {isAdmin && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={() => setSubcategoryModalVisible(true)}
+            >
+              <FolderPlus size={18} color="#ffffff" />
+              <Text style={styles.actionButtonText}>Add Subcategory</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={() => handleOpenItemModal()}
+            >
+              <Plus size={18} color="#ffffff" />
+              <Text style={styles.actionButtonText}>Add Item</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {subcategories.length > 0 && (
           <>
-            <Text style={[styles.resultsTitle, { color: colors.text }]}>
-              Search Results ({filteredItems.length})
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Subcategories</Text>
+            {subcategories.map(sub => {
+              const items = getCategoryEquipmentItems(sub.id);
+              return (
+                <View key={sub.id} style={[styles.subcategoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.subcategoryHeader}>
+                    <View style={styles.subcategoryHeaderLeft}>
+                      <View style={[styles.subcategoryIcon, { backgroundColor: colors.primary + '15' }]}>
+                        <Package size={16} color={colors.primary} />
+                      </View>
+                      <View style={styles.subcategoryInfo}>
+                        <Text style={[styles.subcategoryName, { color: colors.text }]}>{sub.name}</Text>
+                        <Text style={[styles.subcategoryCount, { color: colors.textSecondary }]}>
+                          {items.length} {items.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                    </View>
+                    {isAdmin && (
+                      <View style={styles.subcategoryActions}>
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: colors.background }]}
+                          onPress={() => handleOpenItemModal(sub.id)}
+                        >
+                          <Plus size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: colors.background }]}
+                          onPress={() => handleEditSubcategory(sub.id, sub.name)}
+                        >
+                          <Edit2 size={14} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleDeleteSubcategory(sub.id, sub.name)}
+                        >
+                          <Trash2 size={14} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                  {items.length > 0 && (
+                    <View style={styles.subcategoryItems}>
+                      {items.map(item => renderItem(item))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {directItems.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {subcategories.length > 0 ? 'Direct Items' : 'Items'}
             </Text>
-            {filteredItems.length === 0 ? (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <Search size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Results Found</Text>
-                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                  Try adjusting your search query
-                </Text>
-              </View>
-            ) : (
-              filteredItems.map(item => {
-                const category = categories.find(c => c.id === item.categoryId);
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.searchResultCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                    onPress={() => {
-                      if (category) {
-                        handleNavigateToCategory(category.id, category.name);
-                      }
-                    }}
-                  >
-                    <View style={styles.searchResultHeader}>
-                      <Text style={[styles.searchResultName, { color: colors.text }]}>{item.name}</Text>
-                      <ChevronRight size={20} color={colors.textSecondary} />
-                    </View>
-                    {category && (
-                      <Text style={[styles.searchResultCategory, { color: colors.primary }]}>
-                        {category.name}
-                      </Text>
-                    )}
-                    <View style={styles.searchResultDetails}>
-                      {item.serialNumber && (
-                        <Text style={[styles.searchResultDetail, { color: colors.textSecondary }]}>
-                          S/N: {item.serialNumber}
-                        </Text>
-                      )}
-                      {item.plantNumber && (
-                        <Text style={[styles.searchResultDetail, { color: colors.textSecondary }]}>
-                          Plant #: {item.plantNumber}
-                        </Text>
-                      )}
-                    </View>
-                    {item.certificates.length > 0 && (
-                      <View style={styles.searchResultCerts}>
-                        <FileText size={14} color={colors.primary} />
-                        <Text style={[styles.searchResultCertsText, { color: colors.textSecondary }]}>
-                          {item.certificates.length} certificate{item.certificates.length !== 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })
-            )}
+            {directItems.map(item => renderItem(item))}
           </>
-        ) : (
-          <>
-            <View style={styles.header}>
-              <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                <Package size={28} color={colors.primary} />
-              </View>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>Equipment Management</Text>
-              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-                {rootCategories.length} {rootCategories.length === 1 ? 'category' : 'categories'}, {allItems.length} {allItems.length === 1 ? 'item' : 'items'}
-              </Text>
-            </View>
+        )}
 
-            {isAdmin && (
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: colors.primary }]}
-                onPress={() => setCategoryModalVisible(true)}
-              >
-                <FolderPlus size={20} color="#ffffff" />
-                <Text style={styles.addButtonText}>Create Category</Text>
-              </TouchableOpacity>
-            )}
-
-            {rootCategories.length === 0 ? (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <Package size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Categories Yet</Text>
-                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                  {isAdmin
-                    ? 'Create your first category to organize equipment'
-                    : 'No equipment categories have been created yet'}
-                </Text>
-              </View>
-            ) : (
-              rootCategories.map(category => {
-                const subcategories = getSubcategories(category.id);
-                const items = getCategoryEquipmentItems(category.id);
-                
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                    onPress={() => handleNavigateToCategory(category.id, category.name)}
-                  >
-                    <View style={styles.categoryHeader}>
-                      <View style={styles.categoryHeaderLeft}>
-                        <View style={[styles.categoryIcon, { backgroundColor: colors.primary + '15' }]}>
-                          <Package size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.categoryInfo}>
-                          <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
-                          <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>
-                            {subcategories.length > 0 && `${subcategories.length} subcategories • `}
-                            {items.length} {items.length === 1 ? 'item' : 'items'}
-                          </Text>
-                        </View>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
-            )}
-          </>
+        {subcategories.length === 0 && directItems.length === 0 && (
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+            <Package size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Items Yet</Text>
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              {isAdmin ? 'Add your first item or subcategory' : 'No items in this category'}
+            </Text>
+          </View>
         )}
       </ScrollView>
 
       <Modal
-        visible={showReminders}
+        visible={subcategoryModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowReminders(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.remindersContainer, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <View style={styles.modalHeaderLeft}>
-                <Bell size={24} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Reminders</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowReminders(false)}>
-                <X size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.remindersScroll}>
-              {allReminders.length === 0 ? (
-                <View style={styles.emptyReminders}>
-                  <Bell size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Active Reminders</Text>
-                  <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                    All certificates are up to date
-                  </Text>
-                </View>
-              ) : (
-                allReminders.map(reminder => (
-                  <View key={reminder.id} style={[styles.reminderCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <View style={[styles.reminderStatus, { backgroundColor: reminder.status === 'expired' ? '#fee2e2' : '#fef3c7' }]}>
-                      <AlertCircle size={16} color={reminder.status === 'expired' ? '#dc2626' : '#f59e0b'} />
-                    </View>
-                    <View style={styles.reminderContent}>
-                      <Text style={[styles.reminderItemName, { color: colors.text }]}>{reminder.itemName}</Text>
-                      <Text style={[styles.reminderCertName, { color: colors.textSecondary }]}>{reminder.certificateName}</Text>
-                      <View style={styles.reminderMeta}>
-                        <Calendar size={12} color={colors.textSecondary} />
-                        <Text style={[styles.reminderDate, { color: colors.textSecondary }]}>
-                          {reminder.status === 'expired' 
-                            ? `Expired ${reminder.daysUntilExpiry} days ago`
-                            : `Expires in ${reminder.daysUntilExpiry} days`}
-                        </Text>
-                      </View>
-                      <View style={styles.reminderBadges}>
-                        {reminder.has7DayReminder && (
-                          <View style={[styles.reminderTypeBadge, { backgroundColor: colors.primary + '20' }]}>
-                            <Text style={[styles.reminderTypeBadgeText, { color: colors.primary }]}>7-day</Text>
-                          </View>
-                        )}
-                        {reminder.has30DayReminder && (
-                          <View style={[styles.reminderTypeBadge, { backgroundColor: colors.primary + '20' }]}>
-                            <Text style={[styles.reminderTypeBadgeText, { color: colors.primary }]}>30-day</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={categoryModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={resetCategoryModal}
+        onRequestClose={resetSubcategoryModal}
       >
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -717,38 +673,36 @@ export default function EquipmentManagementScreen() {
           <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingCategoryId ? 'Edit Category' : parentCategoryId ? 'Create Subcategory' : 'Create Category'}
+                {editingSubcategoryId ? 'Edit Subcategory' : 'Add Subcategory'}
               </Text>
-              <TouchableOpacity onPress={resetCategoryModal}>
+              <TouchableOpacity onPress={resetSubcategoryModal}>
                 <X size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalContent}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                {parentCategoryId ? 'Subcategory' : 'Category'} Name *
-              </Text>
+              <Text style={[styles.label, { color: colors.text }]}>Subcategory Name *</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder={parentCategoryId ? "e.g., Chains, Hooks, Slings" : "e.g., Lifting, Tools, Safety"}
+                placeholder="e.g., Chains, Hooks, Slings"
                 placeholderTextColor={colors.textSecondary}
-                value={categoryName}
-                onChangeText={setCategoryName}
+                value={subcategoryName}
+                onChangeText={setSubcategoryName}
               />
             </View>
 
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background }]}
-                onPress={resetCategoryModal}
+                onPress={resetSubcategoryModal}
               >
                 <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                onPress={handleSaveCategory}
+                onPress={handleSaveSubcategory}
               >
-                <Text style={styles.saveButtonText}>{editingCategoryId ? 'Update' : 'Create'}</Text>
+                <Text style={styles.saveButtonText}>{editingSubcategoryId ? 'Update' : 'Create'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1051,6 +1005,43 @@ export default function EquipmentManagementScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        visible={viewCertificateModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setViewCertificateModal(false)}
+      >
+        <View style={styles.viewCertificateOverlay}>
+          <View style={[styles.viewCertificateContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {viewingCertificate?.name || 'Certificate'}
+              </Text>
+              <TouchableOpacity onPress={() => setViewCertificateModal(false)}>
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.viewCertificateContent}>
+              <Text style={[styles.viewCertificateNote, { color: colors.textSecondary }]}>
+                Certificate viewing on mobile requires downloading. Use the download button to save and view.
+              </Text>
+              <TouchableOpacity
+                style={[styles.downloadButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  if (viewingCertificate) {
+                    handleDownloadCertificate(viewingCertificate.uri, viewingCertificate.name, viewingCertificate.mimeType);
+                    setViewCertificateModal(false);
+                  }
+                }}
+              >
+                <Download size={20} color="#ffffff" />
+                <Text style={styles.downloadButtonText}>Download Certificate</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1059,66 +1050,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 16,
-  },
-  searchResultCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  searchResultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  searchResultName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    flex: 1,
-  },
-  searchResultCategory: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-  },
-  searchResultDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 8,
-  },
-  searchResultDetail: {
-    fontSize: 12,
-  },
-  searchResultCerts: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  searchResultCertsText: {
-    fontSize: 12,
-  },
   scrollView: {
     flex: 1,
   },
@@ -1126,75 +1057,224 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  header: {
-    alignItems: 'center',
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 24,
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-  },
-  addButton: {
-    borderRadius: 12,
-    padding: 16,
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 24,
+    borderRadius: 12,
+    padding: 14,
   },
-  addButtonText: {
-    fontSize: 16,
+  actionButtonText: {
+    fontSize: 14,
     fontWeight: '600' as const,
     color: '#ffffff',
   },
-  categoryCard: {
-    borderRadius: 12,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
     marginBottom: 12,
+    marginTop: 8,
+  },
+  subcategoryCard: {
+    borderRadius: 12,
+    marginBottom: 16,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  categoryHeader: {
+  subcategoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 14,
   },
-  categoryHeaderLeft: {
+  subcategoryHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+  subcategoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  categoryInfo: {
-    marginLeft: 12,
+  subcategoryInfo: {
+    marginLeft: 10,
     flex: 1,
   },
-  categoryName: {
-    fontSize: 16,
+  subcategoryName: {
+    fontSize: 15,
     fontWeight: '600' as const,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  categoryCount: {
+  subcategoryCount: {
+    fontSize: 12,
+  },
+  subcategoryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  iconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subcategoryItems: {
+    padding: 14,
+    paddingTop: 0,
+    gap: 12,
+  },
+  itemCard: {
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  itemHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  itemWarningBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  itemWarningText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  itemActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  itemActionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 10,
+  },
+  detailBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  itemNotes: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginBottom: 10,
+  },
+  certificatesSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  certificatesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  certificatesTitle: {
     fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  certificatesList: {
+    gap: 8,
+  },
+  certificateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 8,
+  },
+  certificateIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  certificateInfo: {
+    flex: 1,
+  },
+  certificateName: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  certificateMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  certificateExpiry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  certificateExpiryText: {
+    fontSize: 11,
+  },
+  expiryBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  expiryBadgeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  certificateActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  certActionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyState: {
     borderRadius: 16,
@@ -1212,31 +1292,10 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     lineHeight: 20,
   },
-  reminderBadge: {
-    position: 'absolute' as const,
-    top: -4,
-    right: -4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  reminderBadgeCount: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '700' as const,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
-  },
-  remindersContainer: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
   },
   modalContainer: {
     borderTopLeftRadius: 24,
@@ -1250,71 +1309,9 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
   },
-  modalHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-  },
-  remindersScroll: {
-    padding: 20,
-  },
-  emptyReminders: {
-    alignItems: 'center',
-    paddingVertical: 48,
-  },
-  reminderCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  reminderStatus: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reminderContent: {
-    flex: 1,
-  },
-  reminderItemName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  reminderCertName: {
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  reminderMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  reminderDate: {
-    fontSize: 12,
-  },
-  reminderBadges: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  reminderTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  reminderTypeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
   },
   modalScrollView: {
     maxHeight: '70%',
@@ -1434,5 +1431,41 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
+  },
+  viewCertificateOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  viewCertificateContainer: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  viewCertificateContent: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  viewCertificateNote: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  downloadButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#ffffff',
   },
 });
