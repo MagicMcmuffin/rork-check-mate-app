@@ -34,6 +34,41 @@ export interface Equipment {
   createdAt: string;
 }
 
+export interface EquipmentCategory {
+  id: string;
+  name: string;
+  companyId: string;
+  createdAt: string;
+}
+
+export interface EquipmentCertificate {
+  id: string;
+  equipmentItemId: string;
+  name: string;
+  fileUri: string;
+  mimeType: string;
+  expiryDate?: string;
+  has30DayReminder?: boolean;
+  has7DayReminder?: boolean;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
+export interface EquipmentItem {
+  id: string;
+  companyId: string;
+  categoryId: string;
+  name: string;
+  serialNumber?: string;
+  plantNumber?: string;
+  make?: string;
+  model?: string;
+  notes?: string;
+  certificates: EquipmentCertificate[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Company {
   id: string;
   name: string;

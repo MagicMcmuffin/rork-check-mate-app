@@ -3,16 +3,17 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
 import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar } from 'lucide-react-native';
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Equipment } from '@/types';
 
-type Section = 'equipment' | 'projects' | 'announcements';
+type Section = 'plant' | 'projects' | 'announcements' | 'equipment';
 
 export default function CompanyScreen() {
   const { user, company, addEquipment, deleteEquipment, addProject, updateProject, deleteProject, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement } = useApp();
   const { colors } = useTheme();
-  const [activeSection, setActiveSection] = useState<Section>('equipment');
+  const [activeSection, setActiveSection] = useState<Section>('plant');
   
   const [equipmentModalVisible, setEquipmentModalVisible] = useState(false);
   const [equipmentName, setEquipmentName] = useState('');
@@ -25,10 +26,6 @@ export default function CompanyScreen() {
   const [registration, setRegistration] = useState('');
   const [thoroughExaminationDate, setThoroughExaminationDate] = useState('');
   const [showExaminationDatePicker, setShowExaminationDatePicker] = useState(false);
-  const [nextServiceDate, setNextServiceDate] = useState('');
-  const [showServiceDatePicker, setShowServiceDatePicker] = useState(false);
-  const [purchaseDate, setPurchaseDate] = useState('');
-  const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
 
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -65,8 +62,6 @@ export default function CompanyScreen() {
         hitchSerial: hitchSerial.trim() || undefined,
         registration: registration.trim() || undefined,
         thoroughExaminationDate: thoroughExaminationDate.trim() || undefined,
-        nextServiceDate: nextServiceDate.trim() || undefined,
-        purchaseDate: purchaseDate.trim() || undefined,
         notes: notes.trim() || undefined,
       });
 
@@ -79,8 +74,6 @@ export default function CompanyScreen() {
       setHitchSerial('');
       setRegistration('');
       setThoroughExaminationDate('');
-      setNextServiceDate('');
-      setPurchaseDate('');
       setNotes('');
       setEquipmentModalVisible(false);
       Alert.alert('Success', 'Equipment added successfully');
@@ -498,6 +491,23 @@ export default function CompanyScreen() {
         <TouchableOpacity
           style={[
             styles.segmentButton,
+            activeSection === 'plant' && { backgroundColor: colors.primary },
+          ]}
+          onPress={() => setActiveSection('plant')}
+        >
+          <Wrench size={18} color={activeSection === 'plant' ? '#ffffff' : colors.textSecondary} />
+          <Text
+            style={[
+              styles.segmentText,
+              { color: activeSection === 'plant' ? '#ffffff' : colors.textSecondary },
+            ]}
+          >
+            Plant
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.segmentButton,
             activeSection === 'equipment' && { backgroundColor: colors.primary },
           ]}
           onPress={() => setActiveSection('equipment')}
@@ -509,7 +519,7 @@ export default function CompanyScreen() {
               { color: activeSection === 'equipment' ? '#ffffff' : colors.textSecondary },
             ]}
           >
-            Plant
+            Equip
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -549,7 +559,18 @@ export default function CompanyScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {activeSection === 'equipment' ? renderEquipmentSection() : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
+        {activeSection === 'plant' ? renderEquipmentSection() : activeSection === 'equipment' ? (
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+            <Wrench size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Equipment Management</Text>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 16 }]}
+              onPress={() => router.push('/equipment-management')}
+            >
+              <Text style={styles.addButtonText}>Go to Equipment Management</Text>
+            </TouchableOpacity>
+          </View>
+        ) : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
       </ScrollView>
 
       <Modal
@@ -720,60 +741,6 @@ export default function CompanyScreen() {
                         if (selectedDate) {
                           const formattedDate = selectedDate.toISOString().split('T')[0];
                           setThoroughExaminationDate(formattedDate);
-                        }
-                      }}
-                    />
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Next Service Date</Text>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => setShowServiceDatePicker(true)}
-                  >
-                    <Calendar size={18} color={colors.textSecondary} />
-                    <Text style={[nextServiceDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: nextServiceDate ? colors.text : colors.textSecondary }]}>
-                      {nextServiceDate || 'Select date'}
-                    </Text>
-                  </TouchableOpacity>
-                  {showServiceDatePicker && (
-                    <DateTimePicker
-                      value={nextServiceDate ? new Date(nextServiceDate) : new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={(event, selectedDate) => {
-                        setShowServiceDatePicker(Platform.OS === 'ios');
-                        if (selectedDate) {
-                          const formattedDate = selectedDate.toISOString().split('T')[0];
-                          setNextServiceDate(formattedDate);
-                        }
-                      }}
-                    />
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Purchase Date</Text>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => setShowPurchaseDatePicker(true)}
-                  >
-                    <Calendar size={18} color={colors.textSecondary} />
-                    <Text style={[purchaseDate ? styles.datePickerText : styles.datePickerPlaceholder, { color: purchaseDate ? colors.text : colors.textSecondary }]}>
-                      {purchaseDate || 'Select date'}
-                    </Text>
-                  </TouchableOpacity>
-                  {showPurchaseDatePicker && (
-                    <DateTimePicker
-                      value={purchaseDate ? new Date(purchaseDate) : new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={(event, selectedDate) => {
-                        setShowPurchaseDatePicker(Platform.OS === 'ios');
-                        if (selectedDate) {
-                          const formattedDate = selectedDate.toISOString().split('T')[0];
-                          setPurchaseDate(formattedDate);
                         }
                       }}
                     />
@@ -1090,12 +1057,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: 8,
-    gap: 6,
+    gap: 4,
   },
   segmentText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600' as const,
     color: '#64748b',
   },
