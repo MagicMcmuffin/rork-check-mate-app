@@ -496,100 +496,64 @@ export default function CompanyScreen() {
         </Text>
       </View>
 
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={[styles.segmentedControlContainer, { backgroundColor: colors.card }]}
-        contentContainerStyle={styles.segmentedControl}
-      >
+      <View style={styles.sectionsContainer}>
         <TouchableOpacity
-          style={[
-            styles.segmentButton,
-            activeSection === 'plant' && { backgroundColor: colors.primary },
-          ]}
-          onPress={() => setActiveSection('plant')}
+          style={[styles.announcementCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/notification-centre')}
         >
-          <Wrench size={18} color={activeSection === 'plant' ? '#ffffff' : colors.textSecondary} />
-          <Text
-            style={[
-              styles.segmentText,
-              { color: activeSection === 'plant' ? '#ffffff' : colors.textSecondary },
-            ]}
-          >
-            Plant
-          </Text>
+          <View style={[styles.announcementCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+            <Megaphone size={24} color={colors.primary} />
+          </View>
+          <View style={styles.announcementCardContent}>
+            <Text style={[styles.announcementCardTitle, { color: colors.text }]}>Announcements</Text>
+            <Text style={[styles.announcementCardSubtitle, { color: colors.textSecondary }]}>View company announcements and notifications</Text>
+          </View>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segmentButton,
-            activeSection === 'equipment' && { backgroundColor: colors.primary },
-          ]}
-          onPress={() => setActiveSection('equipment')}
-        >
-          <Wrench size={18} color={activeSection === 'equipment' ? '#ffffff' : colors.textSecondary} />
-          <Text
-            style={[
-              styles.segmentText,
-              { color: activeSection === 'equipment' ? '#ffffff' : colors.textSecondary },
-            ]}
-          >
-            Equipment
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segmentButton,
-            activeSection === 'projects' && { backgroundColor: colors.primary },
-          ]}
-          onPress={() => setActiveSection('projects')}
-        >
-          <Briefcase size={18} color={activeSection === 'projects' ? '#ffffff' : colors.textSecondary} />
-          <Text
-            style={[
-              styles.segmentText,
-              { color: activeSection === 'projects' ? '#ffffff' : colors.textSecondary },
-            ]}
-          >
-            Projects
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.segmentButton,
-            activeSection === 'announcements' && { backgroundColor: colors.primary },
-          ]}
-          onPress={() => setActiveSection('announcements')}
-        >
-          <Megaphone size={18} color={activeSection === 'announcements' ? '#ffffff' : colors.textSecondary} />
-          <Text
-            style={[
-              styles.segmentText,
-              { color: activeSection === 'announcements' ? '#ffffff' : colors.textSecondary },
-            ]}
-          >
-            Announcements
-          </Text>
-        </TouchableOpacity>
-        {isCompanyOrManagement && (
+
+        <View style={styles.gridContainer}>
           <TouchableOpacity
-            style={[
-              styles.segmentButton,
-              activeSection === 'holidays' && { backgroundColor: colors.primary },
-            ]}
-            onPress={() => setActiveSection('holidays')}
+            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setActiveSection('plant')}
           >
-            <Calendar size={18} color={activeSection === 'holidays' ? '#ffffff' : colors.textSecondary} />
-            <Text
-              style={[
-                styles.segmentText,
-                { color: activeSection === 'holidays' ? '#ffffff' : colors.textSecondary },
-              ]}
-            >
-              Holidays
-            </Text>
+            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
+              <Wrench size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.gridButtonText, { color: colors.text }]}>Plant</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
+
+          <TouchableOpacity
+            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setActiveSection('equipment')}
+          >
+            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
+              <Wrench size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.gridButtonText, { color: colors.text }]}>Equipment</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setActiveSection('projects')}
+          >
+            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
+              <Briefcase size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.gridButtonText, { color: colors.text }]}>Projects</Text>
+          </TouchableOpacity>
+
+          {isCompanyOrManagement && (
+            <TouchableOpacity
+              style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setActiveSection('holidays')}
+            >
+              <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
+                <Calendar size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.gridButtonText, { color: colors.text }]}>Holidays</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {activeSection === 'plant' ? renderEquipmentSection() : activeSection === 'equipment' ? (
@@ -1112,36 +1076,76 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
   },
-  segmentedControlContainer: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  sectionsContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  segmentedControl: {
-    flexDirection: 'row',
-    padding: 4,
-    gap: 8,
-  },
-  segmentButton: {
+  announcementCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-    minWidth: 90,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  segmentText: {
-    fontSize: 13,
+  announcementCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  announcementCardContent: {
+    flex: 1,
+  },
+  announcementCardTitle: {
+    fontSize: 16,
     fontWeight: '600' as const,
-    color: '#64748b',
+    marginBottom: 4,
+  },
+  announcementCardSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  gridButton: {
+    width: '48%',
+    aspectRatio: 1.2,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  gridIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  gridButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
   },
   addButton: {
     backgroundColor: '#1e40af',
