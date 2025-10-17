@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification, HolidayStatus } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification, HolidayStatus, PlantCategory, PlantItem, PlantCertificate } from '@/types';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -27,6 +27,8 @@ const STORAGE_KEYS = {
   EQUIPMENT_ITEMS: '@checkmate_equipment_items',
   HOLIDAY_REQUESTS: '@checkmate_holiday_requests',
   HOLIDAY_NOTIFICATIONS: '@checkmate_holiday_notifications',
+  PLANT_CATEGORIES: '@checkmate_plant_categories',
+  PLANT_ITEMS: '@checkmate_plant_items',
 } as const;
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -53,6 +55,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
   const [holidayRequests, setHolidayRequests] = useState<HolidayRequest[]>([]);
   const [holidayNotifications, setHolidayNotifications] = useState<HolidayNotification[]>([]);
+  const [plantCategories, setPlantCategories] = useState<PlantCategory[]>([]);
+  const [plantItems, setPlantItems] = useState<PlantItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -61,7 +65,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadData = async () => {
     try {
-      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData, greasingData, greasingInspectionsData, ticketsData, ticketRemindersData, airTestingData, equipmentCategoriesData, equipmentItemsData, holidayRequestsData, holidayNotificationsData] = await Promise.all([
+      const [userData, companyData, companiesData, usersData, plantData, quickHitchData, vehicleData, bucketData, notificationsData, positiveInterventionsData, fixLogsData, apprenticeshipData, announcementsData, draftsData, greasingData, greasingInspectionsData, ticketsData, ticketRemindersData, airTestingData, equipmentCategoriesData, equipmentItemsData, holidayRequestsData, holidayNotificationsData, plantCategoriesData, plantItemsData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANY),
         AsyncStorage.getItem(STORAGE_KEYS.COMPANIES),
@@ -85,6 +89,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
         AsyncStorage.getItem(STORAGE_KEYS.EQUIPMENT_ITEMS),
         AsyncStorage.getItem(STORAGE_KEYS.HOLIDAY_REQUESTS),
         AsyncStorage.getItem(STORAGE_KEYS.HOLIDAY_NOTIFICATIONS),
+        AsyncStorage.getItem(STORAGE_KEYS.PLANT_CATEGORIES),
+        AsyncStorage.getItem(STORAGE_KEYS.PLANT_ITEMS),
       ]);
 
       const safeJSONParse = (data: string | null, storageKey: string) => {
@@ -189,6 +195,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       const parsedHolidayNotifications = safeJSONParse(holidayNotificationsData, STORAGE_KEYS.HOLIDAY_NOTIFICATIONS);
       if (parsedHolidayNotifications) setHolidayNotifications(parsedHolidayNotifications);
+
+      const parsedPlantCategories = safeJSONParse(plantCategoriesData, STORAGE_KEYS.PLANT_CATEGORIES);
+      if (parsedPlantCategories) setPlantCategories(parsedPlantCategories);
+
+      const parsedPlantItems = safeJSONParse(plantItemsData, STORAGE_KEYS.PLANT_ITEMS);
+      if (parsedPlantItems) setPlantItems(parsedPlantItems);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -1492,6 +1504,123 @@ export const [AppProvider, useApp] = createContextHook(() => {
     setHolidayNotifications(updatedNotifications);
   }, [holidayRequests, holidayNotifications]);
 
+  const addPlantCategory = useCallback(async (name: string, parentCategoryId?: string) => {
+    if (!company) throw new Error('No company found');
+
+    const newCategory: PlantCategory = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      parentCategoryId,
+      companyId: company.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...plantCategories, newCategory];
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_CATEGORIES, JSON.stringify(updated));
+    setPlantCategories(updated);
+
+    return newCategory;
+  }, [company, plantCategories]);
+
+  const updatePlantCategory = useCallback(async (categoryId: string, name: string) => {
+    const updated = plantCategories.map(c => 
+      c.id === categoryId ? { ...c, name: name.trim() } : c
+    );
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_CATEGORIES, JSON.stringify(updated));
+    setPlantCategories(updated);
+  }, [plantCategories]);
+
+  const deletePlantCategory = useCallback(async (categoryId: string) => {
+    const categoryItems = plantItems.filter(i => i.categoryId === categoryId);
+    if (categoryItems.length > 0) {
+      throw new Error('Cannot delete category with items. Please delete all items first.');
+    }
+
+    const updated = plantCategories.filter(c => c.id !== categoryId);
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_CATEGORIES, JSON.stringify(updated));
+    setPlantCategories(updated);
+  }, [plantCategories, plantItems]);
+
+  const getCompanyPlantCategories = useCallback(() => {
+    if (!company) return [];
+    return plantCategories.filter(c => c.companyId === company.id);
+  }, [company, plantCategories]);
+
+  const addPlantItem = useCallback(async (item: Omit<PlantItem, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>) => {
+    if (!company) throw new Error('No company found');
+
+    const newItem: PlantItem = {
+      ...item,
+      id: Date.now().toString(),
+      companyId: company.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = [...plantItems, newItem];
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_ITEMS, JSON.stringify(updated));
+    setPlantItems(updated);
+
+    return newItem;
+  }, [company, plantItems]);
+
+  const updatePlantItem = useCallback(async (itemId: string, updates: Partial<PlantItem>) => {
+    const updated = plantItems.map(i => 
+      i.id === itemId ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i
+    );
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_ITEMS, JSON.stringify(updated));
+    setPlantItems(updated);
+  }, [plantItems]);
+
+  const deletePlantItem = useCallback(async (itemId: string) => {
+    const updated = plantItems.filter(i => i.id !== itemId);
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_ITEMS, JSON.stringify(updated));
+    setPlantItems(updated);
+  }, [plantItems]);
+
+  const getCompanyPlantItems = useCallback(() => {
+    if (!company) return [];
+    return plantItems.filter(i => i.companyId === company.id);
+  }, [company, plantItems]);
+
+  const getCategoryPlantItems = useCallback((categoryId: string) => {
+    return plantItems.filter(i => i.categoryId === categoryId);
+  }, [plantItems]);
+
+  const addPlantCertificate = useCallback(async (itemId: string, certificate: Omit<PlantCertificate, 'id' | 'plantItemId' | 'uploadedBy' | 'uploadedAt'>) => {
+    if (!user) throw new Error('No user found');
+
+    const newCertificate: PlantCertificate = {
+      ...certificate,
+      id: Date.now().toString(),
+      plantItemId: itemId,
+      uploadedBy: user.name,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    const updated = plantItems.map(i => 
+      i.id === itemId 
+        ? { ...i, certificates: [...i.certificates, newCertificate], updatedAt: new Date().toISOString() }
+        : i
+    );
+
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_ITEMS, JSON.stringify(updated));
+    setPlantItems(updated);
+
+    return newCertificate;
+  }, [user, plantItems]);
+
+  const deletePlantCertificate = useCallback(async (itemId: string, certificateId: string) => {
+    const updated = plantItems.map(i => 
+      i.id === itemId 
+        ? { ...i, certificates: i.certificates.filter(c => c.id !== certificateId), updatedAt: new Date().toISOString() }
+        : i
+    );
+
+    await AsyncStorage.setItem(STORAGE_KEYS.PLANT_ITEMS, JSON.stringify(updated));
+    setPlantItems(updated);
+  }, [plantItems]);
+
   return useMemo(() => ({
     user,
     company,
@@ -1515,6 +1644,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     equipmentItems,
     holidayRequests,
     holidayNotifications,
+    plantCategories,
+    plantItems,
     isLoading,
     registerCompany,
     joinCompany,
@@ -1593,5 +1724,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
     getCompanyHolidayNotifications,
     markHolidayNotificationRead,
     deleteHolidayRequest,
-  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, equipmentCategories, equipmentItems, holidayRequests, holidayNotifications, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted, submitAirTestingInspection, getCompanyAirTestingInspections, deleteAirTestingInspection, addEquipmentCategory, updateEquipmentCategory, deleteEquipmentCategory, getCompanyEquipmentCategories, addEquipmentItem, updateEquipmentItem, deleteEquipmentItem, getCompanyEquipmentItems, getCategoryEquipmentItems, addEquipmentCertificate, deleteEquipmentCertificate, submitHolidayRequest, getEmployeeHolidayRequests, getCompanyHolidayRequests, approveHolidayRequest, rejectHolidayRequest, getEmployeeHolidayNotifications, getCompanyHolidayNotifications, markHolidayNotificationRead, deleteHolidayRequest]);
+    addPlantCategory,
+    updatePlantCategory,
+    deletePlantCategory,
+    getCompanyPlantCategories,
+    addPlantItem,
+    updatePlantItem,
+    deletePlantItem,
+    getCompanyPlantItems,
+    getCategoryPlantItems,
+    addPlantCertificate,
+    deletePlantCertificate,
+  }), [user, company, companies, plantInspections, quickHitchInspections, vehicleInspections, bucketChangeInspections, notifications, positiveInterventions, fixLogs, apprenticeshipEntries, announcements, drafts, greasingRecords, greasingInspections, tickets, ticketReminders, airTestingInspections, equipmentCategories, equipmentItems, holidayRequests, holidayNotifications, plantCategories, plantItems, isLoading, registerCompany, joinCompany, login, submitPlantInspection, submitQuickHitchInspection, submitVehicleInspection, submitBucketChangeInspection, submitPositiveIntervention, logout, getCompanyInspections, getEmployeeInspections, getCompanyPositiveInterventions, getEmployeePositiveInterventions, getFixLogs, addProject, updateProject, deleteProject, getCompanyUsers, changeUserRole, removeEmployee, addEquipment, updateEquipment, deleteEquipment, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, deleteInspection, markInspectionFixed, submitApprenticeshipEntry, getCompanyApprenticeshipEntries, getApprenticeApprenticeshipEntries, createAnnouncement, getCompanyAnnouncements, deleteAnnouncement, updateCompanyLogo, saveDraft, getDrafts, deleteDraft, submitDraft, addGreasingRecord, getEquipmentGreasingRecords, deleteGreasingRecord, submitGreasingInspection, getCompanyGreasingInspections, deleteGreasingInspection, addTicket, updateTicket, deleteTicket, getEmployeeTickets, getEmployeeReminders, markReminderCompleted, submitAirTestingInspection, getCompanyAirTestingInspections, deleteAirTestingInspection, addEquipmentCategory, updateEquipmentCategory, deleteEquipmentCategory, getCompanyEquipmentCategories, addEquipmentItem, updateEquipmentItem, deleteEquipmentItem, getCompanyEquipmentItems, getCategoryEquipmentItems, addEquipmentCertificate, deleteEquipmentCertificate, submitHolidayRequest, getEmployeeHolidayRequests, getCompanyHolidayRequests, approveHolidayRequest, rejectHolidayRequest, getEmployeeHolidayNotifications, getCompanyHolidayNotifications, markHolidayNotificationRead, deleteHolidayRequest, addPlantCategory, updatePlantCategory, deletePlantCategory, getCompanyPlantCategories, addPlantItem, updatePlantItem, deletePlantItem, getCompanyPlantItems, getCategoryPlantItems, addPlantCertificate, deletePlantCertificate]);
 });

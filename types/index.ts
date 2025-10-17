@@ -431,3 +431,39 @@ export interface HolidayNotification {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface PlantCategory {
+  id: string;
+  name: string;
+  parentCategoryId?: string;
+  companyId: string;
+  createdAt: string;
+}
+
+export interface PlantCertificate {
+  id: string;
+  plantItemId: string;
+  name: string;
+  fileUri: string;
+  mimeType: string;
+  expiryDate?: string;
+  has30DayReminder?: boolean;
+  has7DayReminder?: boolean;
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
+export interface PlantItem {
+  id: string;
+  companyId: string;
+  categoryId: string;
+  name: string;
+  serialNumber?: string;
+  plantNumber?: string;
+  make?: string;
+  model?: string;
+  notes?: string;
+  certificates: PlantCertificate[];
+  createdAt: string;
+  updatedAt: string;
+}

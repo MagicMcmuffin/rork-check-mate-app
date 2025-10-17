@@ -62,8 +62,8 @@ export default function PlantManagementScreen() {
   const categories = getCompanyPlantCategories();
   const allItems = getCompanyPlantItems();
 
-  const rootCategories = categories.filter(c => !c.parentCategoryId);
-  const getSubcategories = (parentId: string) => categories.filter(c => c.parentCategoryId === parentId);
+  const rootCategories = categories.filter((c: { parentCategoryId?: string }) => !c.parentCategoryId);
+  const getSubcategories = (parentId: string) => categories.filter((c: { parentCategoryId?: string }) => c.parentCategoryId === parentId);
 
   const getExpiryStatus = (expiryDate?: string) => {
     if (!expiryDate) return null;
@@ -94,8 +94,8 @@ export default function PlantManagementScreen() {
       itemId: string;
     }> = [];
 
-    allItems.forEach(item => {
-      item.certificates.forEach(cert => {
+    allItems.forEach((item: { id: string; name: string; certificates: Array<{ id: string; name: string; expiryDate?: string; has7DayReminder?: boolean; has30DayReminder?: boolean }> }) => {
+      item.certificates.forEach((cert: { id: string; name: string; expiryDate?: string; has7DayReminder?: boolean; has30DayReminder?: boolean }) => {
         if (cert.expiryDate && (cert.has7DayReminder || cert.has30DayReminder)) {
           const expiryStatus = getExpiryStatus(cert.expiryDate);
           if (expiryStatus && (expiryStatus.status === 'expired' || expiryStatus.status === 'expiring-soon')) {
@@ -121,7 +121,7 @@ export default function PlantManagementScreen() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return allItems;
     const query = searchQuery.toLowerCase();
-    return allItems.filter(item => 
+    return allItems.filter((item: { name: string; serialNumber?: string; plantNumber?: string; make?: string; model?: string }) => 
       item.name.toLowerCase().includes(query) ||
       item.serialNumber?.toLowerCase().includes(query) ||
       item.plantNumber?.toLowerCase().includes(query) ||
@@ -186,7 +186,7 @@ export default function PlantManagementScreen() {
     setItemModalVisible(true);
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: { id: string; categoryId: string; name: string; serialNumber?: string; plantNumber?: string; make?: string; model?: string; notes?: string }) => {
     setEditingItemId(item.id);
     setSelectedCategoryId(item.categoryId);
     setItemName(item.name);
@@ -438,8 +438,8 @@ export default function PlantManagementScreen() {
 
   const handleNavigateToCategory = (categoryId: string, categoryName: string) => {
     router.push({
-      pathname: '/plant-category-detail',
-      params: { categoryId, categoryName }
+      pathname: '/equipment-category-detail',
+      params: { categoryId, categoryName, type: 'plant' }
     });
   };
 
@@ -506,8 +506,8 @@ export default function PlantManagementScreen() {
                 </Text>
               </View>
             ) : (
-              filteredItems.map(item => {
-                const category = categories.find(c => c.id === item.categoryId);
+              filteredItems.map((item: { id: string; name: string; categoryId: string; serialNumber?: string; plantNumber?: string; certificates: any[] }) => {
+                const category = categories.find((c: { id: string; name: string }) => c.id === item.categoryId);
                 return (
                   <TouchableOpacity
                     key={item.id}
@@ -585,7 +585,7 @@ export default function PlantManagementScreen() {
                 </Text>
               </View>
             ) : (
-              rootCategories.map(category => {
+              rootCategories.map((category: { id: string; name: string }) => {
                 const subcategories = getSubcategories(category.id);
                 const items = getCategoryPlantItems(category.id);
                 
