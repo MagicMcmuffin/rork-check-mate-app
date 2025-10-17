@@ -1,8 +1,8 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Building2 } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal } from 'react-native';
+import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Building2, MessageSquare } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, Linking } from 'react-native';
 import { UserRole } from '@/types';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,9 +14,14 @@ export default function TeamScreen() {
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; currentRole: UserRole } | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'team' | 'leaderboard'>('team');
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageRecipient, setMessageRecipient] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [messageSubject, setMessageSubject] = useState('');
+  const [messageBody, setMessageBody] = useState('');
 
   const companyUsers = getCompanyUsers();
   const isAdmin = user?.role === 'company' || user?.role === 'administrator';
+  const canSendMessages = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
 
   const leaderboardData = useMemo(() => {
     const interventions = getCompanyPositiveInterventions();
@@ -177,6 +182,35 @@ export default function TeamScreen() {
         },
       ]
     );
+  };
+
+  const handleOpenMessageModal = (userId: string, userName: string, userEmail: string) => {
+    setMessageRecipient({ id: userId, name: userName, email: userEmail });
+    setMessageSubject('');
+    setMessageBody('');
+    setShowMessageModal(true);
+  };
+
+  const handleSendMessage = () => {
+    if (!messageRecipient) return;
+    if (!messageSubject.trim()) {
+      Alert.alert('Error', 'Please enter a subject');
+      return;
+    }
+    if (!messageBody.trim()) {
+      Alert.alert('Error', 'Please enter a message');
+      return;
+    }
+
+    const mailtoUrl = `mailto:${messageRecipient.email}?subject=${encodeURIComponent(messageSubject)}&body=${encodeURIComponent(messageBody)}`;
+    
+    Linking.openURL(mailtoUrl)
+      .then(() => {
+        setShowMessageModal(false);
+      })
+      .catch(() => {
+        Alert.alert('Error', `Unable to open email app. Please email ${messageRecipient.name} at ${messageRecipient.email}`);
+      });
   };
 
   return (
@@ -341,24 +375,34 @@ export default function TeamScreen() {
                     </View>
                   </View>
                 </View>
-                {isAdmin && (
-                  <View style={styles.actionButtons}>
+                <View style={styles.actionButtons}>
+                  {canSendMessages && member.email && (
                     <TouchableOpacity
-                      style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => handleChangeRole(member.id, member.name, member.role)}
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(member.id, member.name, member.email)}
                     >
-                      <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      <MessageSquare size={16} color="#3b82f6" />
                     </TouchableOpacity>
-                    {user?.role === 'company' && (
+                  )}
+                  {isAdmin && (
+                    <>
                       <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                        onPress={() => handleRemoveEmployee(member.id, member.name)}
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(member.id, member.name, member.role)}
                       >
-                        <Trash2 size={16} color="#dc2626" />
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
                       </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(member.id, member.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
             ))
           )}
@@ -400,24 +444,34 @@ export default function TeamScreen() {
                     </View>
                   </View>
                 </View>
-                {isAdmin && (
-                  <View style={styles.actionButtons}>
+                <View style={styles.actionButtons}>
+                  {canSendMessages && mechanic.email && (
                     <TouchableOpacity
-                      style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => handleChangeRole(mechanic.id, mechanic.name, mechanic.role)}
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(mechanic.id, mechanic.name, mechanic.email)}
                     >
-                      <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      <MessageSquare size={16} color="#3b82f6" />
                     </TouchableOpacity>
-                    {user?.role === 'company' && (
+                  )}
+                  {isAdmin && (
+                    <>
                       <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                        onPress={() => handleRemoveEmployee(mechanic.id, mechanic.name)}
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(mechanic.id, mechanic.name, mechanic.role)}
                       >
-                        <Trash2 size={16} color="#dc2626" />
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
                       </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(mechanic.id, mechanic.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
             ))
           )}
@@ -459,24 +513,34 @@ export default function TeamScreen() {
                     </View>
                   </View>
                 </View>
-                {isAdmin && (
-                  <View style={styles.actionButtons}>
+                <View style={styles.actionButtons}>
+                  {canSendMessages && apprentice.email && (
                     <TouchableOpacity
-                      style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => handleChangeRole(apprentice.id, apprentice.name, apprentice.role)}
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(apprentice.id, apprentice.name, apprentice.email)}
                     >
-                      <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      <MessageSquare size={16} color="#3b82f6" />
                     </TouchableOpacity>
-                    {user?.role === 'company' && (
+                  )}
+                  {isAdmin && (
+                    <>
                       <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                        onPress={() => handleRemoveEmployee(apprentice.id, apprentice.name)}
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(apprentice.id, apprentice.name, apprentice.role)}
                       >
-                        <Trash2 size={16} color="#dc2626" />
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
                       </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(apprentice.id, apprentice.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
             ))
           )}
@@ -518,24 +582,34 @@ export default function TeamScreen() {
                     </View>
                   </View>
                 </View>
-                {isAdmin && (
-                  <View style={styles.actionButtons}>
+                <View style={styles.actionButtons}>
+                  {canSendMessages && employee.email && (
                     <TouchableOpacity
-                      style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => handleChangeRole(employee.id, employee.name, employee.role)}
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(employee.id, employee.name, employee.email)}
                     >
-                      <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      <MessageSquare size={16} color="#3b82f6" />
                     </TouchableOpacity>
-                    {user?.role === 'company' && (
+                  )}
+                  {isAdmin && (
+                    <>
                       <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                        onPress={() => handleRemoveEmployee(employee.id, employee.name)}
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(employee.id, employee.name, employee.role)}
                       >
-                        <Trash2 size={16} color="#dc2626" />
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
                       </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(employee.id, employee.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
             ))
           )}
@@ -756,6 +830,69 @@ export default function TeamScreen() {
             >
               <Text style={[styles.modalCancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showMessageModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowMessageModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMessageModal(false)}
+        >
+          <View style={[styles.messageModalContent, { backgroundColor: colors.card }]} onStartShouldSetResponder={() => true}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Send Message</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+              To: {messageRecipient?.name}
+            </Text>
+
+            <View style={styles.messageInputs}>
+              <View style={styles.messageInputGroup}>
+                <Text style={[styles.messageLabel, { color: colors.text }]}>Subject</Text>
+                <TextInput
+                  style={[styles.messageInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={messageSubject}
+                  onChangeText={setMessageSubject}
+                  placeholder="Enter subject"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.messageInputGroup}>
+                <Text style={[styles.messageLabel, { color: colors.text }]}>Message</Text>
+                <TextInput
+                  style={[styles.messageInput, styles.messageTextArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  value={messageBody}
+                  onChangeText={setMessageBody}
+                  placeholder="Type your message"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+
+            <View style={styles.messageModalButtons}>
+              <TouchableOpacity
+                style={[styles.messageModalButton, { backgroundColor: colors.background }]}
+                onPress={() => setShowMessageModal(false)}
+              >
+                <Text style={[styles.messageModalButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.messageModalButton, { backgroundColor: '#3b82f6' }]}
+                onPress={handleSendMessage}
+              >
+                <MessageSquare size={18} color="#ffffff" />
+                <Text style={[styles.messageModalButtonText, { color: '#ffffff' }]}>Send</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -1207,5 +1344,53 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1e40af',
   },
-
+  messageModalContent: {
+    borderRadius: 20,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  messageInputs: {
+    marginVertical: 20,
+  },
+  messageInputGroup: {
+    marginBottom: 16,
+  },
+  messageLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  messageInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+  },
+  messageTextArea: {
+    height: 120,
+    paddingTop: 12,
+  },
+  messageModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  messageModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  messageModalButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
 });

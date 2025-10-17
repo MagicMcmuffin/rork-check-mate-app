@@ -58,6 +58,7 @@ export default function EquipmentManagementScreen() {
   const [viewCertificateUri, setViewCertificateUri] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
+  const canSeeReminders = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic';
   const categories = getCompanyEquipmentCategories();
   const allItems = getCompanyEquipmentItems();
 
@@ -478,7 +479,7 @@ export default function EquipmentManagementScreen() {
               <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
             </TouchableOpacity>
           ),
-          headerRight: () => (
+          headerRight: () => canSeeReminders ? (
             <TouchableOpacity 
               onPress={() => setShowReminders(true)}
               style={{ marginRight: 16, position: 'relative' as const }}
@@ -490,7 +491,7 @@ export default function EquipmentManagementScreen() {
                 </View>
               )}
             </TouchableOpacity>
-          ),
+          ) : null,
         }}
       />
 

@@ -236,7 +236,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={styles.settingRow}
-            onPress={() => Alert.alert('Coming Soon', 'This feature will be available soon')}
+            onPress={() => router.push('/notification-centre' as any)}
             activeOpacity={0.7}
           >
             <View style={styles.settingLeft}>
@@ -244,9 +244,9 @@ export default function SettingsScreen() {
                 <Bell size={20} color="#3b82f6" />
               </View>
               <View style={styles.settingTextContainer}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Notifications</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Notification Centre</Text>
                 <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-                  Manage notification preferences
+                  View plant and equipment reminders
                 </Text>
               </View>
             </View>
