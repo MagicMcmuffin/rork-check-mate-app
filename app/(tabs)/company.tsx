@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package } from 'lucide-react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
@@ -498,93 +498,90 @@ export default function CompanyScreen() {
 
       <View style={styles.sectionsContainer}>
         <TouchableOpacity
-          style={[styles.announcementCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/notification-centre')}
         >
-          <View style={[styles.announcementCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+          <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+            <Bell size={24} color={colors.primary} />
+          </View>
+          <View style={styles.sectionCardContent}>
+            <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Notifications</Text>
+            <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>View all system notifications</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setActiveSection('announcements')}
+        >
+          <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
             <Megaphone size={24} color={colors.primary} />
           </View>
-          <View style={styles.announcementCardContent}>
-            <Text style={[styles.announcementCardTitle, { color: colors.text }]}>Announcements</Text>
-            <Text style={[styles.announcementCardSubtitle, { color: colors.textSecondary }]}>View company announcements and notifications</Text>
+          <View style={styles.sectionCardContent}>
+            <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
+            <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
           </View>
         </TouchableOpacity>
 
         <View style={styles.gridContainer}>
           <TouchableOpacity
-            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setActiveSection('plant')}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push('/plant-management')}
           >
-            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
-              <Wrench size={20} color={colors.primary} />
+            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Wrench size={24} color={colors.primary} />
             </View>
-            <Text style={[styles.gridButtonText, { color: colors.text }]}>Plant</Text>
+            <View style={styles.sectionCardContent}>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage plant items</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setActiveSection('equipment')}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push('/equipment-management')}
           >
-            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
-              <Wrench size={20} color={colors.primary} />
+            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Package size={24} color={colors.primary} />
             </View>
-            <Text style={[styles.gridButtonText, { color: colors.text }]}>Equipment</Text>
+            <View style={styles.sectionCardContent}>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Equipment</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage equipment</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setActiveSection('projects')}
           >
-            <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
-              <Briefcase size={20} color={colors.primary} />
+            <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Briefcase size={24} color={colors.primary} />
             </View>
-            <Text style={[styles.gridButtonText, { color: colors.text }]}>Projects</Text>
+            <View style={styles.sectionCardContent}>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Projects</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage projects</Text>
+            </View>
           </TouchableOpacity>
 
           {isCompanyOrManagement && (
             <TouchableOpacity
-              style={[styles.gridButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => setActiveSection('holidays')}
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/holiday-management')}
             >
-              <View style={[styles.gridIconWrapper, { backgroundColor: colors.primary + '20' }]}>
-                <Calendar size={20} color={colors.primary} />
+              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Calendar size={24} color={colors.primary} />
               </View>
-              <Text style={[styles.gridButtonText, { color: colors.text }]}>Holidays</Text>
+              <View style={styles.sectionCardContent}>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Holidays</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Manage holidays</Text>
+              </View>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {activeSection === 'plant' ? renderEquipmentSection() : activeSection === 'equipment' ? (
-          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Wrench size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Full Equipment Management</Text>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary, marginBottom: 16 }]}>
-              Create categories, manage items, upload certificates, and set reminders
-            </Text>
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 0 }]}
-              onPress={() => router.push('/equipment-management')}
-            >
-              <Text style={styles.addButtonText}>Open Equipment Management</Text>
-            </TouchableOpacity>
-          </View>
-        ) : activeSection === 'projects' ? renderProjectsSection() : activeSection === 'holidays' ? (
-          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-            <Calendar size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Holiday Management</Text>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary, marginBottom: 16 }]}>
-              View and manage employee holiday requests, approve/reject requests, and see the holiday calendar
-            </Text>
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 0 }]}
-              onPress={() => router.push('/holiday-management')}
-            >
-              <Text style={styles.addButtonText}>Open Holiday Management</Text>
-            </TouchableOpacity>
-          </View>
-        ) : renderAnnouncementsSection()}
+        {activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
       </ScrollView>
 
       <Modal
@@ -1079,14 +1076,14 @@ const styles = StyleSheet.create({
   sectionsContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+    gap: 12,
   },
-  announcementCard: {
+  sectionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1094,7 +1091,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  announcementCardIcon: {
+  sectionCardIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -1102,50 +1099,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  announcementCardContent: {
+  sectionCardContent: {
     flex: 1,
   },
-  announcementCardTitle: {
+  sectionCardTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
     marginBottom: 4,
   },
-  announcementCardSubtitle: {
+  sectionCardSubtitle: {
     fontSize: 13,
     lineHeight: 18,
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
-  },
-  gridButton: {
-    width: '48%',
-    aspectRatio: 1.2,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  gridIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  gridButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    textAlign: 'center' as const,
   },
   addButton: {
     backgroundColor: '#1e40af',
