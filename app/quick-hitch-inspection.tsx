@@ -1,10 +1,10 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { QUICK_HITCH_ITEMS, DAYS_OF_WEEK } from '@/constants/inspections';
-import { QuickHitchCheck, DayOfWeek, CheckStatus } from '@/types';
-import { useRouter, Stack } from 'expo-router';
-import { CheckCircle2, X, Check, ChevronDown } from 'lucide-react-native';
-import { useState } from 'react';
+import { QUICK_HITCH_ITEMS } from '@/constants/inspections';
+import { QuickHitchCheck, DayOfWeek, CheckStatus, WeeklyDraftData } from '@/types';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { CheckCircle2, X, Check, ChevronDown, Save, Send, Calendar, ArrowLeft } from 'lucide-react-native';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,27 +18,85 @@ import {
   Platform,
 } from 'react-native';
 
+const DAYS_OF_WEEK_DATA: { day: DayOfWeek; label: string }[] = [
+  { day: 'M', label: 'Mon' },
+  { day: 'T', label: 'Tue' },
+  { day: 'W', label: 'Wed' },
+  { day: 'Th', label: 'Thu' },
+  { day: 'F', label: 'Fri' },
+  { day: 'S', label: 'Sat' },
+  { day: 'Su', label: 'Sun' },
+];
+
 export default function QuickHitchInspectionScreen() {
-  const { user, company, submitQuickHitchInspection } = useApp();
+  const { user, company, submitQuickHitchInspection, saveDraft, getDrafts, deleteDraft } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const draftId = params.draftId as string | undefined;
+
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
   const [operatorName, setOperatorName] = useState(user?.name || '');
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
+  const [customMachine, setCustomMachine] = useState('');
+  const [weeklyData, setWeeklyData] = useState<WeeklyDraftData>({
+    equipmentId: '',
+    excavatorDetails: '',
+    quickHitchModel: '',
+    days: DAYS_OF_WEEK_DATA.map(d => ({
+      day: d.day,
+      date: '',
+      completed: false,
+      checks: [],
+      additionalData: { remarks: '', operatorName: '' },
+    })),
+    weekStartDate: new Date().toISOString().split('T')[0],
+  });
   const [checks, setChecks] = useState<QuickHitchCheck[]>([]);
   const [remarks, setRemarks] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [customMachine, setCustomMachine] = useState('');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | undefined>(draftId);
 
   const plantEquipment = company?.equipment?.filter(e => e.type === 'plant') || [];
 
+  useEffect(() => {
+    if (draftId && user) {
+      const drafts = getDrafts(user.id);
+      const draft = drafts.find(d => d.id === draftId);
+      if (draft && draft.type === 'quickhitch' && draft.isWeeklyReport) {
+        const data = draft.data as WeeklyDraftData;
+        setWeeklyData(data);
+        setSelectedEquipment(data.equipmentId || '');
+        setCustomMachine(data.excavatorDetails || '');
+        setSelectedProject(data.projectId || '');
+        
+        const currentDayData = data.days.find(d => d.day === selectedDay);
+        if (currentDayData) {
+          setChecks(currentDayData.checks as QuickHitchCheck[]);
+          setRemarks(currentDayData.additionalData?.remarks || '');
+          setOperatorName(currentDayData.additionalData?.operatorName || user.name || '');
+        }
+      }
+    }
+  }, [draftId, user, getDrafts, selectedDay]);
+
+  useEffect(() => {
+    const currentDayData = weeklyData.days.find(d => d.day === selectedDay);
+    if (currentDayData) {
+      setChecks(currentDayData.checks as QuickHitchCheck[]);
+      setRemarks(currentDayData.additionalData?.remarks || '');
+      setOperatorName(currentDayData.additionalData?.operatorName || user?.name || '');
+    }
+  }, [selectedDay, weeklyData.days]);
+
   const handleCheckChange = (itemId: string, status: boolean | CheckStatus) => {
     setChecks(prev => {
-      const existing = prev.find(c => c.itemId === itemId && c.day === selectedDay);
+      const existing = prev.find(c => c.itemId === itemId);
       if (existing) {
         return prev.map(c =>
-          c.itemId === itemId && c.day === selectedDay ? { ...c, status } : c
+          c.itemId === itemId ? { ...c, status } : c
         );
       }
       return [...prev, { itemId, day: selectedDay, status }];
@@ -46,51 +104,128 @@ export default function QuickHitchInspectionScreen() {
   };
 
   const getCheckStatus = (itemId: string): boolean | CheckStatus | null => {
-    const check = checks.find(c => c.itemId === itemId && c.day === selectedDay);
+    const check = checks.find(c => c.itemId === itemId);
     return check?.status ?? null;
   };
 
-  const handleSubmit = async () => {
+  const handleSaveDay = async () => {
     const finalExcavatorDetails = selectedEquipment === 'other' 
       ? customMachine.trim() 
       : selectedEquipment 
         ? plantEquipment.find(e => e.id === selectedEquipment)?.name || ''
         : '';
 
-    if (!operatorName.trim() || !finalExcavatorDetails) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!finalExcavatorDetails) {
+      Alert.alert('Error', 'Please select or enter machine/excavator details');
       return;
     }
 
-    if (checks.length === 0) {
-      Alert.alert('Error', 'Please complete at least one check');
-      return;
-    }
+    const updatedDays = weeklyData.days.map(d => {
+      if (d.day === selectedDay) {
+        return {
+          ...d,
+          checks,
+          completed: checks.length > 0,
+          date: new Date().toISOString().split('T')[0],
+          additionalData: {
+            remarks: remarks.trim(),
+            operatorName: operatorName.trim(),
+          },
+        };
+      }
+      return d;
+    });
 
-    setIsSubmitting(true);
+    const updatedWeeklyData: WeeklyDraftData = {
+      ...weeklyData,
+      equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
+      excavatorDetails: finalExcavatorDetails,
+      quickHitchModel: '',
+      projectId: selectedProject || undefined,
+      days: updatedDays,
+    };
+
+    setWeeklyData(updatedWeeklyData);
+
+    setIsSavingDraft(true);
     try {
-      await submitQuickHitchInspection({
-        companyId: company!.id,
-        projectId: selectedProject || undefined,
-        employeeId: user!.id,
-        equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
-        operatorName: operatorName.trim(),
-        quickHitchModel: '',
-        excavatorDetails: finalExcavatorDetails,
-        date: new Date().toISOString().split('T')[0],
-        checks,
-        remarks: remarks.trim(),
-      });
-
-      Alert.alert('Success', 'Inspection submitted successfully', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      const savedDraft = await saveDraft('quickhitch', updatedWeeklyData, currentDraftId, true);
+      setCurrentDraftId(savedDraft.id);
+      Alert.alert('Success', `${DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label} saved successfully!`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit inspection. Please try again.');
-      console.error('Submit error:', error);
+      console.error('Error saving draft:', error);
+      Alert.alert('Error', 'Failed to save. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsSavingDraft(false);
     }
+  };
+
+  const handleSubmitWeek = async () => {
+    const completedDays = weeklyData.days.filter(d => d.completed);
+    
+    if (completedDays.length === 0) {
+      Alert.alert('Error', 'Please complete at least one day before submitting');
+      return;
+    }
+
+    const finalExcavatorDetails = selectedEquipment === 'other' 
+      ? customMachine.trim() 
+      : selectedEquipment 
+        ? plantEquipment.find(e => e.id === selectedEquipment)?.name || ''
+        : '';
+
+    if (!finalExcavatorDetails) {
+      Alert.alert('Error', 'Please select or enter machine/excavator details');
+      return;
+    }
+
+    if (!user || !company) {
+      Alert.alert('Error', 'User or company information not found');
+      return;
+    }
+
+    Alert.alert(
+      'Submit Weekly Quick Hitch Inspection',
+      `Submit inspection for ${completedDays.length} day(s)?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              for (const dayData of completedDays) {
+                await submitQuickHitchInspection({
+                  companyId: company.id,
+                  projectId: selectedProject || undefined,
+                  employeeId: user.id,
+                  equipmentId: selectedEquipment !== 'other' ? selectedEquipment || undefined : undefined,
+                  operatorName: dayData.additionalData?.operatorName || user.name || '',
+                  quickHitchModel: '',
+                  excavatorDetails: finalExcavatorDetails,
+                  date: dayData.date || new Date().toISOString().split('T')[0],
+                  checks: dayData.checks as QuickHitchCheck[],
+                  remarks: dayData.additionalData?.remarks || '',
+                });
+              }
+
+              if (currentDraftId && deleteDraft) {
+                await deleteDraft(currentDraftId);
+              }
+
+              Alert.alert('Success', 'Weekly quick hitch inspection submitted successfully', [
+                { text: 'OK', onPress: () => router.back() },
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to submit inspection. Please try again.');
+              console.error('Submit error:', error);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderCheckControl = (item: typeof QUICK_HITCH_ITEMS[0]) => {
@@ -147,8 +282,13 @@ export default function QuickHitchInspectionScreen() {
     return acc;
   }, {} as Record<string, typeof QUICK_HITCH_ITEMS>);
 
+  const getDayCompletionStatus = (day: DayOfWeek): boolean => {
+    const dayData = weeklyData.days.find(d => d.day === day);
+    return dayData?.completed || false;
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -156,16 +296,69 @@ export default function QuickHitchInspectionScreen() {
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginLeft: 8 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={true}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Quick Hitch Inspection</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Daily inspection record</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Weekly Quick Hitch Inspection</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete checks for each day</Text>
+        </View>
+
+        <View style={[styles.daySelector, { backgroundColor: colors.card }]}>
+          <View style={styles.daySelectorHeader}>
+            <Calendar size={18} color={colors.primary} />
+            <Text style={[styles.daySelectorTitle, { color: colors.text }]}>Select Day</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
+            {DAYS_OF_WEEK_DATA.map(({ day, label }) => {
+              const isCompleted = getDayCompletionStatus(day);
+              const isSelected = selectedDay === day;
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    isSelected && [styles.dayButtonActive, { backgroundColor: colors.primary }],
+                    isCompleted && !isSelected && [styles.dayButtonCompleted, { backgroundColor: '#10b981', borderColor: '#10b981' }],
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayButtonText,
+                      { color: colors.text },
+                      (isSelected || isCompleted) && styles.dayButtonTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                  {isCompleted && !isSelected && (
+                    <View style={styles.completedBadge}>
+                      <CheckCircle2 size={14} color="#ffffff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={[styles.formSection, { backgroundColor: colors.card }]}>
@@ -202,7 +395,7 @@ export default function QuickHitchInspectionScreen() {
           )}
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Operator Name</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Operator Name for {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               placeholder="Enter operator name"
@@ -259,23 +452,6 @@ export default function QuickHitchInspectionScreen() {
           </View>
         </View>
 
-        <View style={styles.daySelector}>
-          <Text style={[styles.daySelectorLabel, { color: colors.text }]}>Select Day</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
-            {DAYS_OF_WEEK.map(day => (
-              <TouchableOpacity
-                key={day}
-                style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
-                onPress={() => setSelectedDay(day)}
-              >
-                <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
         <View style={[styles.legendSection, { backgroundColor: colors.card }]}>
           <Text style={[styles.legendTitle, { color: colors.text }]}>Status Key</Text>
           <View style={styles.legendItems}>
@@ -303,7 +479,7 @@ export default function QuickHitchInspectionScreen() {
         ))}
 
         <View style={[styles.notesSection, { backgroundColor: colors.card }]}>
-          <Text style={[styles.label, { color: colors.text }]}>Remarks (Defects etc.)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Remarks for {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label} (Defects etc.)</Text>
           <TextInput
             style={[styles.notesInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
             placeholder="Enter any remarks or defects..."
@@ -316,22 +492,41 @@ export default function QuickHitchInspectionScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <CheckCircle2 size={20} color="#ffffff" />
-              <Text style={styles.submitButtonText}>Submit Inspection</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: colors.card, borderColor: colors.primary }, isSavingDraft && styles.buttonDisabled]}
+            onPress={handleSaveDay}
+            disabled={isSavingDraft}
+          >
+            {isSavingDraft ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <>
+                <Save size={20} color={colors.primary} />
+                <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.buttonDisabled]}
+            onPress={handleSubmitWeek}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Send size={20} color="#ffffff" />
+                <Text style={styles.submitButtonText}>Submit Week</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
+    </>
   );
 }
 
@@ -382,13 +577,20 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   daySelector: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
   },
-  daySelectorLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1e293b',
+  daySelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 12,
+  },
+  daySelectorTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   dayButtons: {
     gap: 8,
@@ -397,21 +599,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 2,
+    minWidth: 60,
+    alignItems: 'center',
+    position: 'relative' as const,
   },
   dayButtonActive: {
     backgroundColor: '#0d9488',
     borderColor: '#0d9488',
   },
+  dayButtonCompleted: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
   dayButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748b',
   },
   dayButtonTextActive: {
     color: '#ffffff',
+  },
+  completedBadge: {
+    position: 'absolute' as const,
+    top: -6,
+    right: -6,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 2,
   },
   categorySection: {
     marginBottom: 16,
@@ -517,6 +731,23 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     minHeight: 100,
   },
+  actionButtons: {
+    gap: 12,
+  },
+  saveButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
   submitButton: {
     backgroundColor: '#0d9488',
     borderRadius: 12,
@@ -526,7 +757,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  submitButtonDisabled: {
+  buttonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {

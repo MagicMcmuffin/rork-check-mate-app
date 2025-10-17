@@ -1,9 +1,9 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, DAYS_OF_WEEK, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
-import { PlantInspectionCheck, DayOfWeek, CheckStatus } from '@/types';
+import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, CHECK_STATUS_OPTIONS } from '@/constants/inspections';
+import { PlantInspectionCheck, DayOfWeek, CheckStatus, WeeklyDraftData } from '@/types';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X, Save } from 'lucide-react-native';
+import { CheckCircle2, ChevronDown, ChevronUp, FileText, Camera, X, Save, Send, Calendar, ArrowLeft } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -15,26 +15,50 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
+const DAYS_OF_WEEK_DATA: { day: DayOfWeek; label: string }[] = [
+  { day: 'M', label: 'Mon' },
+  { day: 'T', label: 'Tue' },
+  { day: 'W', label: 'Wed' },
+  { day: 'Th', label: 'Thu' },
+  { day: 'F', label: 'Fri' },
+  { day: 'S', label: 'Sat' },
+  { day: 'Su', label: 'Sun' },
+];
+
 export default function PlantInspectionScreen() {
-  const { user, company, submitPlantInspection, saveDraft, getDrafts } = useApp();
+  const { user, company, submitPlantInspection, saveDraft, getDrafts, deleteDraft } = useApp();
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
   const draftId = params.draftId as string | undefined;
   
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
   const [plantNumber, setPlantNumber] = useState('');
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>('');
   const [carriedOutBy, setCarriedOutBy] = useState(user?.name || '');
   const [selectedProject, setSelectedProject] = useState<string>('');
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
+  const [weeklyData, setWeeklyData] = useState<WeeklyDraftData>({
+    equipmentId: '',
+    plantNumber: '',
+    days: DAYS_OF_WEEK_DATA.map(d => ({
+      day: d.day,
+      date: '',
+      completed: false,
+      checks: [],
+      additionalData: { notesOnDefects: '', carriedOutBy: '' },
+    })),
+    weekStartDate: new Date().toISOString().split('T')[0],
+  });
   const [checks, setChecks] = useState<PlantInspectionCheck[]>([]);
   const [notesOnDefects, setNotesOnDefects] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [isLoadingDraft, setIsLoadingDraft] = useState(!!draftId);
+  const [currentDraftId, setCurrentDraftId] = useState<string | undefined>(draftId);
 
   const allItems = [...PLANT_INSPECTION_ITEMS, ...PLANT_INSPECTION_SECONDARY_ITEMS];
 
@@ -44,41 +68,49 @@ export default function PlantInspectionScreen() {
     if (draftId && user) {
       const drafts = getDrafts(user.id);
       const draft = drafts.find(d => d.id === draftId);
-      
-      if (draft && draft.type === 'plant') {
-        const data = draft.data as any;
-        console.log('Loading draft:', draftId);
-        setPlantNumber(data.plantNumber || '');
+      if (draft && draft.type === 'plant' && draft.isWeeklyReport) {
+        const data = draft.data as WeeklyDraftData;
+        setWeeklyData(data);
         setSelectedEquipmentId(data.equipmentId || '');
-        setCarriedOutBy(data.carriedOutBy || user.name || '');
+        setPlantNumber(data.plantNumber || '');
         setSelectedProject(data.projectId || '');
-        setChecks(data.checks || []);
-        setNotesOnDefects(data.notesOnDefects || '');
-        setIsLoadingDraft(false);
-      } else {
-        console.error('Draft not found or invalid type');
-        setIsLoadingDraft(false);
+        
+        const currentDayData = data.days.find(d => d.day === selectedDay);
+        if (currentDayData) {
+          setChecks(currentDayData.checks as PlantInspectionCheck[]);
+          setNotesOnDefects(currentDayData.additionalData?.notesOnDefects || '');
+          setCarriedOutBy(currentDayData.additionalData?.carriedOutBy || user.name || '');
+        }
       }
     }
-  }, [draftId, user, getDrafts]);
+  }, [draftId, user, getDrafts, selectedDay]);
+
+  useEffect(() => {
+    const currentDayData = weeklyData.days.find(d => d.day === selectedDay);
+    if (currentDayData) {
+      setChecks(currentDayData.checks as PlantInspectionCheck[]);
+      setNotesOnDefects(currentDayData.additionalData?.notesOnDefects || '');
+      setCarriedOutBy(currentDayData.additionalData?.carriedOutBy || user?.name || '');
+    }
+  }, [selectedDay, weeklyData.days]);
 
   const handleCheckChange = (itemId: string, status: CheckStatus) => {
     setChecks(prev => {
-      const existing = prev.find(c => c.itemId === itemId && c.day === selectedDay);
+      const existing = prev.find(c => c.itemId === itemId);
       if (existing) {
         return prev.map(c =>
-          c.itemId === itemId && c.day === selectedDay ? { ...c, status } : c
+          c.itemId === itemId ? { ...c, status } : c
         );
       }
       return [...prev, { itemId, day: selectedDay, status }];
     });
 
     if (status === 'B' || status === 'C') {
-      setExpandedItems(prev => new Set(prev).add(`${itemId}-${selectedDay}`));
+      setExpandedItems(prev => new Set(prev).add(itemId));
     } else {
       setExpandedItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(`${itemId}-${selectedDay}`);
+        newSet.delete(itemId);
         return newSet;
       });
     }
@@ -87,7 +119,7 @@ export default function PlantInspectionScreen() {
   const handleNotesChange = (itemId: string, notes: string) => {
     setChecks(prev => {
       return prev.map(c =>
-        c.itemId === itemId && c.day === selectedDay ? { ...c, notes } : c
+        c.itemId === itemId ? { ...c, notes } : c
       );
     });
   };
@@ -112,7 +144,7 @@ export default function PlantInspectionScreen() {
         const imageUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
         setChecks(prev => {
           return prev.map(c => {
-            if (c.itemId === itemId && c.day === selectedDay) {
+            if (c.itemId === itemId) {
               return { ...c, pictures: [...(c.pictures || []), imageUri] };
             }
             return c;
@@ -128,7 +160,7 @@ export default function PlantInspectionScreen() {
   const handleRemovePicture = (itemId: string, pictureIndex: number) => {
     setChecks(prev => {
       return prev.map(c => {
-        if (c.itemId === itemId && c.day === selectedDay) {
+        if (c.itemId === itemId) {
           const pictures = c.pictures || [];
           return { ...c, pictures: pictures.filter((_, i) => i !== pictureIndex) };
         }
@@ -138,140 +170,225 @@ export default function PlantInspectionScreen() {
   };
 
   const toggleExpanded = (itemId: string) => {
-    const key = `${itemId}-${selectedDay}`;
     setExpandedItems(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
       } else {
-        newSet.add(key);
+        newSet.add(itemId);
       }
       return newSet;
     });
   };
 
   const getCheckStatus = (itemId: string): CheckStatus => {
-    const check = checks.find(c => c.itemId === itemId && c.day === selectedDay);
+    const check = checks.find(c => c.itemId === itemId);
     return check?.status || null;
   };
 
   const getCheckNotes = (itemId: string): string => {
-    const check = checks.find(c => c.itemId === itemId && c.day === selectedDay);
+    const check = checks.find(c => c.itemId === itemId);
     return check?.notes || '';
   };
 
   const getCheckPictures = (itemId: string): string[] => {
-    const check = checks.find(c => c.itemId === itemId && c.day === selectedDay);
+    const check = checks.find(c => c.itemId === itemId);
     return check?.pictures || [];
   };
 
   const isExpanded = (itemId: string): boolean => {
-    return expandedItems.has(`${itemId}-${selectedDay}`);
+    return expandedItems.has(itemId);
   };
 
-  const handleSaveDraft = async () => {
-    if (!plantNumber.trim() && checks.length === 0) {
-      Alert.alert('Error', 'Please add some data before saving as draft');
+  const handleSaveDay = async () => {
+    if (!plantNumber.trim()) {
+      Alert.alert('Error', 'Please enter plant name');
       return;
     }
 
+    const updatedDays = weeklyData.days.map(d => {
+      if (d.day === selectedDay) {
+        return {
+          ...d,
+          checks,
+          completed: checks.length > 0,
+          date: new Date().toISOString().split('T')[0],
+          additionalData: {
+            notesOnDefects: notesOnDefects.trim(),
+            carriedOutBy: carriedOutBy.trim(),
+          },
+        };
+      }
+      return d;
+    });
+
+    const updatedWeeklyData: WeeklyDraftData = {
+      ...weeklyData,
+      equipmentId: selectedEquipmentId || undefined,
+      plantNumber: plantNumber.trim(),
+      projectId: selectedProject || undefined,
+      days: updatedDays,
+    };
+
+    setWeeklyData(updatedWeeklyData);
+
     setIsSavingDraft(true);
     try {
-      console.log('Saving draft with ID:', draftId);
-      await saveDraft('plant', {
-        companyId: company!.id,
-        projectId: selectedProject || undefined,
-        employeeId: user!.id,
-        employeeName: user!.name || 'Unknown',
-        plantNumber: plantNumber.trim(),
-        equipmentId: selectedEquipmentId || undefined,
-        carriedOutBy: carriedOutBy.trim(),
-        date: new Date().toISOString().split('T')[0],
-        checks,
-        notesOnDefects: notesOnDefects.trim(),
-      }, draftId);
-
-      Alert.alert('Success', draftId ? 'Draft updated successfully' : 'Draft saved successfully. You can continue this inspection later from the Reports tab.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      const savedDraft = await saveDraft('plant', updatedWeeklyData, currentDraftId, true);
+      setCurrentDraftId(savedDraft.id);
+      Alert.alert('Success', `${DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label} saved successfully!`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to save draft. Please try again.');
-      console.error('Save draft error:', error);
+      console.error('Error saving draft:', error);
+      Alert.alert('Error', 'Failed to save. Please try again.');
     } finally {
       setIsSavingDraft(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!plantNumber.trim() || !carriedOutBy.trim()) {
-      Alert.alert('Error', 'Please fill in Plant Number and Carried Out By fields');
+  const handleSubmitWeek = async () => {
+    const completedDays = weeklyData.days.filter(d => d.completed);
+    
+    if (completedDays.length === 0) {
+      Alert.alert('Error', 'Please complete at least one day before submitting');
       return;
     }
 
-    if (checks.length === 0) {
-      Alert.alert('Error', 'Please complete at least one check');
+    if (!plantNumber.trim()) {
+      Alert.alert('Error', 'Please enter plant name');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await submitPlantInspection({
-        companyId: company!.id,
-        projectId: selectedProject || undefined,
-        employeeId: user!.id,
-        employeeName: user!.name || 'Unknown',
-        plantNumber: plantNumber.trim(),
-        equipmentId: selectedEquipmentId || undefined,
-        carriedOutBy: carriedOutBy.trim(),
-        date: new Date().toISOString().split('T')[0],
-        checks,
-        notesOnDefects: notesOnDefects.trim(),
-      });
-
-      Alert.alert('Success', 'Inspection submitted successfully', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit inspection. Please try again.');
-      console.error('Submit error:', error);
-    } finally {
-      setIsSubmitting(false);
+    if (!user || !company) {
+      Alert.alert('Error', 'User or company information not found');
+      return;
     }
+
+    Alert.alert(
+      'Submit Weekly Plant Inspection',
+      `Submit inspection for ${completedDays.length} day(s)?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              for (const dayData of completedDays) {
+                await submitPlantInspection({
+                  companyId: company.id,
+                  projectId: selectedProject || undefined,
+                  employeeId: user.id,
+                  employeeName: user.name || 'Unknown',
+                  plantNumber: plantNumber.trim(),
+                  equipmentId: selectedEquipmentId || undefined,
+                  carriedOutBy: dayData.additionalData?.carriedOutBy || user.name || '',
+                  date: dayData.date || new Date().toISOString().split('T')[0],
+                  checks: dayData.checks as PlantInspectionCheck[],
+                  notesOnDefects: dayData.additionalData?.notesOnDefects || '',
+                });
+              }
+
+              if (currentDraftId && deleteDraft) {
+                await deleteDraft(currentDraftId);
+              }
+
+              Alert.alert('Success', 'Weekly plant inspection submitted successfully', [
+                { text: 'OK', onPress: () => router.back() },
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to submit inspection. Please try again.');
+              console.error('Submit error:', error);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  if (isLoadingDraft) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Plant Inspection',
-            headerStyle: { backgroundColor: colors.card },
-            headerTintColor: colors.text,
-            headerShadowVisible: false,
-          }}
-        />
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.subtitle, { color: colors.textSecondary, marginTop: 16 }]}>Loading draft...</Text>
-      </View>
-    );
-  }
+  const getDayCompletionStatus = (day: DayOfWeek): boolean => {
+    const dayData = weeklyData.days.find(d => d.day === day);
+    return dayData?.completed || false;
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <>
       <Stack.Screen
         options={{
           headerShown: true,
-          title: draftId ? 'Edit Draft' : 'Plant Inspection',
+          title: 'Plant Inspection',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginLeft: 8 }}
+            >
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Plant Daily Inspection</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete all required checks</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Weekly Plant Inspection</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Complete checks for each day</Text>
+        </View>
+
+        <View style={[styles.daySelector, { backgroundColor: colors.card }]}>
+          <View style={styles.daySelectorHeader}>
+            <Calendar size={18} color={colors.primary} />
+            <Text style={[styles.daySelectorTitle, { color: colors.text }]}>Select Day</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
+            {DAYS_OF_WEEK_DATA.map(({ day, label }) => {
+              const isCompleted = getDayCompletionStatus(day);
+              const isSelected = selectedDay === day;
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    isSelected && [styles.dayButtonActive, { backgroundColor: colors.primary }],
+                    isCompleted && !isSelected && [styles.dayButtonCompleted, { backgroundColor: '#10b981', borderColor: '#10b981' }],
+                  ]}
+                  onPress={() => setSelectedDay(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayButtonText,
+                      { color: colors.text },
+                      (isSelected || isCompleted) && styles.dayButtonTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                  {isCompleted && !isSelected && (
+                    <View style={styles.completedBadge}>
+                      <CheckCircle2 size={14} color="#ffffff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={[styles.formSection, { backgroundColor: colors.card }]}>
@@ -348,7 +465,7 @@ export default function PlantInspectionScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Carried Out By</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Carried Out By for {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
               placeholder="Enter name"
@@ -357,23 +474,6 @@ export default function PlantInspectionScreen() {
               onChangeText={setCarriedOutBy}
             />
           </View>
-        </View>
-
-        <View style={styles.daySelector}>
-          <Text style={[styles.daySelectorLabel, { color: colors.text }]}>Select Day</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
-            {DAYS_OF_WEEK.map(day => (
-              <TouchableOpacity
-                key={day}
-                style={[styles.dayButton, { backgroundColor: colors.card, borderColor: colors.border }, selectedDay === day && styles.dayButtonActive]}
-                onPress={() => setSelectedDay(day)}
-              >
-                <Text style={[styles.dayButtonText, { color: colors.textSecondary }, selectedDay === day && styles.dayButtonTextActive]}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </View>
 
         <View style={[styles.legendSection, { backgroundColor: colors.card }]}>
@@ -509,7 +609,7 @@ export default function PlantInspectionScreen() {
         </View>
 
         <View style={[styles.notesSection, { backgroundColor: colors.card }]}>
-          <Text style={[styles.label, { color: colors.text }]}>Notes on Defects</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Notes on Defects for {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label}</Text>
           <TextInput
             style={[styles.notesInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
             placeholder="Enter any defects or issues found..."
@@ -522,39 +622,41 @@ export default function PlantInspectionScreen() {
           />
         </View>
 
-        <View style={styles.buttonContainer}>
+        <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.draftButton, isSavingDraft && styles.draftButtonDisabled]}
-            onPress={handleSaveDraft}
-            disabled={isSavingDraft || isSubmitting}
+            style={[styles.saveButton, { backgroundColor: colors.card, borderColor: colors.primary }, isSavingDraft && styles.buttonDisabled]}
+            onPress={handleSaveDay}
+            disabled={isSavingDraft}
           >
             {isSavingDraft ? (
-              <ActivityIndicator color="#1e40af" />
+              <ActivityIndicator color={colors.primary} />
             ) : (
               <>
-                <Save size={20} color="#1e40af" />
-                <Text style={styles.draftButtonText}>Save Draft</Text>
+                <Save size={20} color={colors.primary} />
+                <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save {DAYS_OF_WEEK_DATA.find(d => d.day === selectedDay)?.label}</Text>
               </>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isSubmitting || isSavingDraft}
+            style={[styles.submitButton, isSubmitting && styles.buttonDisabled]}
+            onPress={handleSubmitWeek}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
               <>
-                <CheckCircle2 size={20} color="#ffffff" />
-                <Text style={styles.submitButtonText}>Submit</Text>
+                <Send size={20} color="#ffffff" />
+                <Text style={styles.submitButtonText}>Submit Week</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      </View>
+    </>
   );
 }
 
@@ -605,13 +707,20 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   daySelector: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
   },
-  daySelectorLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#1e293b',
+  daySelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 12,
+  },
+  daySelectorTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   dayButtons: {
     gap: 8,
@@ -620,21 +729,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 2,
+    minWidth: 60,
+    alignItems: 'center',
+    position: 'relative' as const,
   },
   dayButtonActive: {
     backgroundColor: '#1e40af',
     borderColor: '#1e40af',
   },
+  dayButtonCompleted: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
   dayButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#64748b',
   },
   dayButtonTextActive: {
     color: '#ffffff',
+  },
+  completedBadge: {
+    position: 'absolute' as const,
+    top: -6,
+    right: -6,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 2,
   },
   checklistSection: {
     gap: 12,
@@ -696,33 +817,24 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     minHeight: 100,
   },
-  buttonContainer: {
-    flexDirection: 'row',
+  actionButtons: {
     gap: 12,
-    marginTop: 24,
   },
-  draftButton: {
-    flex: 1,
+  saveButton: {
     backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#1e40af',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
     gap: 8,
+    borderWidth: 2,
   },
-  draftButtonDisabled: {
-    opacity: 0.6,
-  },
-  draftButtonText: {
-    color: '#1e40af',
+  saveButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
   },
   submitButton: {
-    flex: 1,
     backgroundColor: '#1e40af',
     borderRadius: 12,
     padding: 16,
@@ -731,7 +843,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  submitButtonDisabled: {
+  buttonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
