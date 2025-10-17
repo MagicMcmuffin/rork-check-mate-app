@@ -24,6 +24,7 @@ export interface Equipment {
   registration?: string;
   thoroughExaminationDate?: string;
   thoroughExaminationCertificate?: string;
+  has30DayReminder?: boolean;
   nextServiceDate?: string;
   purchaseDate?: string;
   notes?: string;

@@ -54,6 +54,7 @@ export default function EquipmentScreen() {
         registration: registration.trim() || undefined,
         thoroughExaminationDate: type === 'plant' && thoroughExaminationDate ? thoroughExaminationDate : undefined,
         thoroughExaminationCertificate: type === 'plant' && thoroughExaminationCertificate ? thoroughExaminationCertificate : undefined,
+        has30DayReminder: type === 'plant' && thoroughExaminationDate ? set30DayReminder : undefined,
       });
 
       setName('');
