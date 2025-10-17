@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench, FlaskConical } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench, FlaskConical, X } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -17,6 +17,7 @@ export default function InspectionsScreen() {
   const [expandedApprenticeship, setExpandedApprenticeship] = useState(false);
   const [expandedImprovement, setExpandedImprovement] = useState(false);
   const [expandedQualityControl, setExpandedQualityControl] = useState(false);
+  const [showAllAnnouncementsModal, setShowAllAnnouncementsModal] = useState(false);
   const userCompanies = getUserCompanies();
   const notifications = getCompanyNotifications();
   const unreadNotifications = notifications.filter(n => !n.isCompleted);
@@ -160,7 +161,7 @@ export default function InspectionsScreen() {
               {announcements.length > 3 && (
                 <TouchableOpacity 
                   style={styles.viewAllButton}
-                  onPress={() => router.push('/(tabs)/company')}
+                  onPress={() => setShowAllAnnouncementsModal(true)}
                 >
                   <Text style={styles.viewAllText}>View All</Text>
                   <ChevronRight size={16} color="#1e40af" />
@@ -581,6 +582,64 @@ export default function InspectionsScreen() {
             >
               <Text style={[styles.modalCloseButtonText, { color: colors.textSecondary }]}>Close</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showAllAnnouncementsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAllAnnouncementsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.announcementsModalContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.announcementsModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.announcementsModalTitle, { color: colors.text }]}>All Announcements</Text>
+              <TouchableOpacity
+                onPress={() => setShowAllAnnouncementsModal(false)}
+                style={styles.announcementsModalCloseButton}
+              >
+                <X size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.announcementsModalScroll}
+              contentContainerStyle={styles.announcementsModalContent}
+            >
+              {announcements.map((announcement) => {
+                const priorityColor = announcement.priority === 'high' ? '#ef4444' : announcement.priority === 'normal' ? '#3b82f6' : '#6b7280';
+                return (
+                  <View
+                    key={announcement.id}
+                    style={[styles.announcementModalItem, { backgroundColor: colors.background, borderLeftColor: priorityColor }]}
+                  >
+                    <View style={styles.announcementContent}>
+                      <View style={styles.announcementTitleRow}>
+                        <Text style={[styles.announcementModalItemTitle, { color: colors.text }]}>{announcement.title}</Text>
+                        <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
+                          <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
+                            {announcement.priority.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.announcementModalItemMessage, { color: colors.textSecondary }]}>
+                        {announcement.message}
+                      </Text>
+                      <View style={styles.announcementMeta}>
+                        <Text style={[styles.announcementAuthor, { color: colors.textSecondary }]}>
+                          By {announcement.authorName}
+                        </Text>
+                        <Text style={[styles.announcementDate, { color: colors.textSecondary }]}>
+                          {new Date(announcement.createdAt).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1080,5 +1139,48 @@ const styles = StyleSheet.create({
   },
   subItemDescription: {
     fontSize: 13,
+  },
+  announcementsModalContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  announcementsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  announcementsModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  announcementsModalCloseButton: {
+    padding: 4,
+  },
+  announcementsModalScroll: {
+    flex: 1,
+  },
+  announcementsModalContent: {
+    padding: 20,
+  },
+  announcementModalItem: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+  },
+  announcementModalItemTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  announcementModalItemMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
   },
 });
