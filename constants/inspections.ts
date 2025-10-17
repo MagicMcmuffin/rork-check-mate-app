@@ -137,3 +137,14 @@ export const HAZARD_SEVERITY_OPTIONS = [
   { value: 'medium', label: 'Medium', color: '#f59e0b', description: 'Moderate hazard requiring attention' },
   { value: 'high', label: 'High', color: '#ef4444', description: 'Serious hazard requiring immediate action' },
 ] as const;
+
+export const GREASING_CHECK_ITEMS = [
+  { id: 'all_points_greased', name: 'All grease points located and greased', category: 'Lubrication' },
+  { id: 'correct_grease_type', name: 'Correct grease type used', category: 'Lubrication' },
+  { id: 'proper_amount', name: 'Proper amount of grease applied', category: 'Lubrication' },
+  { id: 'no_leaks', name: 'No grease leaks detected', category: 'Inspection' },
+  { id: 'fittings_clean', name: 'Grease fittings clean and functional', category: 'Inspection' },
+  { id: 'worn_parts', name: 'No excessively worn parts detected', category: 'Inspection' },
+  { id: 'damaged_seals', name: 'No damaged seals or boots', category: 'Inspection' },
+  { id: 'proper_access', name: 'All points accessible for greasing', category: 'Inspection' },
+];

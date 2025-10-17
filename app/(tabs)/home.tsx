@@ -274,7 +274,7 @@ export default function InspectionsScreen() {
                 </View>
                 <View>
                   <Text style={[styles.categoryTitle, { color: colors.text }]}>Plant & Vehicle</Text>
-                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>4 inspections</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>6 inspections</Text>
                 </View>
               </View>
               <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
@@ -345,6 +345,36 @@ export default function InspectionsScreen() {
                 <View style={styles.subItemContent}>
                   <Text style={[styles.subItemTitle, { color: colors.text }]}>Bucket/Implement Change</Text>
                   <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Shake, rattle & roll tests</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push({ pathname: '/greasing-inspection', params: { equipmentType: 'plant' } })}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#dcfce7' }]}>
+                  <Wrench size={20} color="#16a34a" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Plant Greasing Inspection</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Weekly greasing checks for plant</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push({ pathname: '/greasing-inspection', params: { equipmentType: 'vehicles' } })}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#fef3c7' }]}>
+                  <Car size={20} color="#ca8a04" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Vehicle Greasing Inspection</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Weekly greasing checks for vehicles</Text>
                 </View>
                 <ChevronRight size={18} color={colors.textSecondary} />
               </TouchableOpacity>

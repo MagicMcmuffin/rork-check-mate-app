@@ -241,7 +241,7 @@ export interface Announcement {
   createdAt: string;
 }
 
-export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention';
+export type DraftType = 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'intervention' | 'greasing';
 
 export interface DayData {
   day: DayOfWeek;
@@ -270,7 +270,7 @@ export interface Draft {
   companyId: string;
   employeeId: string;
   employeeName: string;
-  data: Partial<PlantInspection | QuickHitchInspection | VehicleInspection | BucketChangeInspection | PositiveIntervention> | WeeklyDraftData;
+  data: Partial<PlantInspection | QuickHitchInspection | VehicleInspection | BucketChangeInspection | PositiveIntervention | GreasingInspection> | WeeklyDraftData;
   isWeeklyReport?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -287,5 +287,27 @@ export interface GreasingRecord {
   time: string;
   notes?: string;
   nextDueDate?: string;
+  createdAt: string;
+}
+
+export interface GreasingInspectionCheck {
+  itemId: string;
+  status: CheckStatus;
+  notes?: string;
+}
+
+export interface GreasingInspection {
+  id: string;
+  companyId: string;
+  projectId?: string;
+  employeeId: string;
+  employeeName: string;
+  equipmentId?: string;
+  equipmentName: string;
+  equipmentType: 'plant' | 'vehicles';
+  date: string;
+  checks: GreasingInspectionCheck[];
+  greasingDuration: string;
+  additionalNotes: string;
   createdAt: string;
 }
