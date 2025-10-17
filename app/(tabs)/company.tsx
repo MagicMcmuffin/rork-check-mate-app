@@ -520,9 +520,9 @@ export default function CompanyScreen() {
                   <View style={[styles.announcementIcon, { backgroundColor: priorityColor + '20' }]}>
                     <Megaphone size={24} color={priorityColor} />
                   </View>
-                  <View style={styles.cardInfo}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <Text style={[styles.cardName, { color: colors.text }]}>{announcement.title}</Text>
+                  <View style={styles.announcementCardInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <Text style={[styles.cardName, { color: colors.text, flex: 0 }]}>{announcement.title}</Text>
                       <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
                         <Text style={[styles.priorityBadgeText, { color: priorityColor }]}>
                           {announcement.priority.toUpperCase()}
@@ -536,7 +536,7 @@ export default function CompanyScreen() {
                     </Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.deleteButton}
+                    style={styles.announcementDeleteButton}
                     onPress={() => handleDeleteAnnouncement(announcement.id)}
                   >
                     <Trash2 size={18} color="#dc2626" />
@@ -1802,6 +1802,17 @@ const styles = StyleSheet.create({
   announcementHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+  },
+  announcementCardInfo: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  announcementDeleteButton: {
+    padding: 8,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginLeft: 8,
   },
   announcementIcon: {
     width: 48,
