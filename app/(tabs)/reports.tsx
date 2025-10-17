@@ -1,5 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Draft, DraftType } from '@/types';
 import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -894,7 +895,7 @@ export default function ReportsScreen() {
               )}
             </>
           )
-        ) : (
+        ) : mainTab === 'mychecks' ? (
           <>
             <View style={styles.statsContainer}>
               <View style={[styles.statCard, { backgroundColor: colors.card }]}>
@@ -1048,6 +1049,170 @@ export default function ReportsScreen() {
                 })}
               </View>
             )}
+          </>
+        ) : (
+          <>
+            {(() => {
+              const myDrafts = user ? getDrafts(user.id) : [];
+              
+              const handleSubmitDraft = async (draftId: string) => {
+                Alert.alert(
+                  'Submit Draft',
+                  'Are you sure you want to submit this inspection to the company?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Submit',
+                      onPress: async () => {
+                        try {
+                          await submitDraft(draftId);
+                          Alert.alert('Success', 'Inspection submitted successfully');
+                        } catch (error) {
+                          console.error('Error submitting draft:', error);
+                          Alert.alert('Error', 'Failed to submit inspection. Please try again.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              };
+
+              const handleDeleteDraft = async (draftId: string) => {
+                Alert.alert(
+                  'Delete Draft',
+                  'Are you sure you want to delete this draft?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await deleteDraft(draftId);
+                        } catch (error) {
+                          console.error('Error deleting draft:', error);
+                          Alert.alert('Error', 'Failed to delete draft');
+                        }
+                      },
+                    },
+                  ]
+                );
+              };
+
+              const getDraftTitle = (draft: Draft) => {
+                switch (draft.type) {
+                  case 'plant': return 'Plant Inspection';
+                  case 'quickhitch': return 'Quick Hitch Inspection';
+                  case 'vehicle': return 'Vehicle Inspection';
+                  case 'bucketchange': return 'Bucket Change Inspection';
+                  case 'intervention': return 'Positive Intervention';
+                  default: return 'Unknown Type';
+                }
+              };
+
+              const getDraftDetails = (draft: Draft) => {
+                const data = draft.data as any;
+                switch (draft.type) {
+                  case 'plant': return data.plantNumber || 'No plant number';
+                  case 'quickhitch': return data.excavatorDetails || 'No machine details';
+                  case 'vehicle': return data.vehicleRegistration || 'No registration';
+                  case 'bucketchange': return data.bucketType || 'No bucket type';
+                  case 'intervention': return data.hazardDescription || 'No description';
+                  default: return '';
+                }
+              };
+
+              const getDraftIcon = (type: DraftType) => {
+                switch (type) {
+                  case 'plant': return { color: '#1e40af', bg: '#dbeafe' };
+                  case 'quickhitch': return { color: '#0d9488', bg: '#ccfbf1' };
+                  case 'vehicle': return { color: '#f59e0b', bg: '#fef3c7' };
+                  case 'bucketchange': return { color: '#ec4899', bg: '#fce7f3' };
+                  case 'intervention': return { color: '#10b981', bg: '#dcfce7' };
+                  default: return { color: '#64748b', bg: '#f1f5f9' };
+                }
+              };
+
+              return (
+                <>
+                  <View style={[styles.draftInfoCard, { backgroundColor: colors.card }]}>
+                    <FilePlus size={24} color={colors.primary} />
+                    <View style={styles.draftInfoContent}>
+                      <Text style={[styles.draftInfoTitle, { color: colors.text }]}>Draft Inspections</Text>
+                      <Text style={[styles.draftInfoText, { color: colors.textSecondary }]}>
+                        Save your inspections throughout the week and submit them all at once. Perfect for daily checks or weekly reports.
+                      </Text>
+                    </View>
+                  </View>
+
+                  {myDrafts.length === 0 ? (
+                    <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                      <FilePlus size={48} color={colors.textSecondary} />
+                      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Drafts Yet</Text>
+                      <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                        Saved drafts will appear here. You can save inspections and submit them later.
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.reportsList}>
+                      {myDrafts.map((draft) => {
+                        const iconStyle = getDraftIcon(draft.type);
+                        return (
+                          <View key={draft.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
+                            <View style={styles.reportCardContent}>
+                              <View style={styles.reportHeader}>
+                                <View style={[styles.reportIcon, { backgroundColor: iconStyle.bg }]}>
+                                  <FileText size={20} color={iconStyle.color} />
+                                </View>
+                                <View style={styles.reportInfo}>
+                                  <Text style={[styles.reportTitle, { color: colors.text }]}>
+                                    {getDraftTitle(draft)}
+                                  </Text>
+                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]} numberOfLines={1}>
+                                    {getDraftDetails(draft)}
+                                  </Text>
+                                </View>
+                              </View>
+
+                              <View style={styles.reportDetails}>
+                                <View style={styles.reportDetail}>
+                                  <Calendar size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                    {formatDate(draft.updatedAt)}
+                                  </Text>
+                                </View>
+                                <View style={styles.reportDetail}>
+                                  <Clock size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                    {formatTime(draft.updatedAt)}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            <View style={styles.draftActions}>
+                              <TouchableOpacity
+                                style={[styles.draftActionButton, styles.submitDraftButton]}
+                                onPress={() => handleSubmitDraft(draft.id)}
+                              >
+                                <Send size={16} color="#ffffff" />
+                                <Text style={styles.submitDraftButtonText}>Submit</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.draftActionButton, styles.deleteDraftButton]}
+                                onPress={() => handleDeleteDraft(draft.id)}
+                              >
+                                <Trash2 size={16} color="#dc2626" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
       </ScrollView>
@@ -1522,5 +1687,58 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  draftInfoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  draftInfoContent: {
+    flex: 1,
+  },
+  draftInfoTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  draftInfoText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  draftActions: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 8,
+  },
+  draftActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  submitDraftButton: {
+    backgroundColor: '#1e40af',
+    flex: 1,
+  },
+  submitDraftButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#ffffff',
+  },
+  deleteDraftButton: {
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 12,
   },
 });
