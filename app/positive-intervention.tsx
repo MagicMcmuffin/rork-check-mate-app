@@ -19,10 +19,12 @@ export default function PositiveInterventionScreen() {
   const [site, setSite] = useState('');
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [pictures, setPictures] = useState<string[]>([]);
+  const [beforePictures, setBeforePictures] = useState<string[]>([]);
+  const [afterPictures, setAfterPictures] = useState<string[]>([]);
   const [showSeverityPicker, setShowSeverityPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleTakePicture = async () => {
+  const handleTakePicture = async (type: 'general' | 'before' | 'after') => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
@@ -39,7 +41,14 @@ export default function PositiveInterventionScreen() {
       });
 
       if (!result.canceled && result.assets[0].base64) {
-        setPictures([...pictures, `data:image/jpeg;base64,${result.assets[0].base64}`]);
+        const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        if (type === 'before') {
+          setBeforePictures([...beforePictures, imageData]);
+        } else if (type === 'after') {
+          setAfterPictures([...afterPictures, imageData]);
+        } else {
+          setPictures([...pictures, imageData]);
+        }
       }
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -47,7 +56,7 @@ export default function PositiveInterventionScreen() {
     }
   };
 
-  const handleSelectPicture = async () => {
+  const handleSelectPicture = async (type: 'general' | 'before' | 'after') => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -56,12 +65,25 @@ export default function PositiveInterventionScreen() {
     });
 
     if (!result.canceled && result.assets[0].base64) {
-      setPictures([...pictures, `data:image/jpeg;base64,${result.assets[0].base64}`]);
+      const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      if (type === 'before') {
+        setBeforePictures([...beforePictures, imageData]);
+      } else if (type === 'after') {
+        setAfterPictures([...afterPictures, imageData]);
+      } else {
+        setPictures([...pictures, imageData]);
+      }
     }
   };
 
-  const handleRemovePicture = (index: number) => {
-    setPictures(pictures.filter((_, i) => i !== index));
+  const handleRemovePicture = (index: number, type: 'general' | 'before' | 'after') => {
+    if (type === 'before') {
+      setBeforePictures(beforePictures.filter((_, i) => i !== index));
+    } else if (type === 'after') {
+      setAfterPictures(afterPictures.filter((_, i) => i !== index));
+    } else {
+      setPictures(pictures.filter((_, i) => i !== index));
+    }
   };
 
   const handleSubmit = async () => {
@@ -95,6 +117,8 @@ export default function PositiveInterventionScreen() {
         location: location.trim() || undefined,
         site: site.trim() || undefined,
         pictures: pictures.length > 0 ? pictures : undefined,
+        beforePictures: beforePictures.length > 0 ? beforePictures : undefined,
+        afterPictures: afterPictures.length > 0 ? afterPictures : undefined,
       });
 
       Alert.alert('Success', 'Positive intervention submitted successfully', [
@@ -288,16 +312,17 @@ export default function PositiveInterventionScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.labelRow}>
             <Camera size={18} color={colors.textSecondary} />
-            <Text style={[styles.label, { color: colors.text }]}>Photos (Optional)</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Before Photos (Optional)</Text>
           </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>Photos of the hazard before action</Text>
 
           <View style={styles.picturesContainer}>
-            {pictures.map((picture, index) => (
+            {beforePictures.map((picture, index) => (
               <View key={index} style={styles.pictureWrapper}>
                 <Image source={{ uri: picture }} style={styles.picture} />
                 <TouchableOpacity
                   style={styles.removePictureButton}
-                  onPress={() => handleRemovePicture(index)}
+                  onPress={() => handleRemovePicture(index, 'before')}
                 >
                   <X size={16} color="#ffffff" />
                 </TouchableOpacity>
@@ -308,7 +333,7 @@ export default function PositiveInterventionScreen() {
           <View style={styles.pictureButtons}>
             <TouchableOpacity
               style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={handleTakePicture}
+              onPress={() => handleTakePicture('before')}
             >
               <Camera size={20} color={colors.textSecondary} />
               <Text style={[styles.pictureButtonText, { color: colors.text }]}>Take Photo</Text>
@@ -316,7 +341,87 @@ export default function PositiveInterventionScreen() {
 
             <TouchableOpacity
               style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={handleSelectPicture}
+              onPress={() => handleSelectPicture('before')}
+            >
+              <FileText size={20} color={colors.textSecondary} />
+              <Text style={[styles.pictureButtonText, { color: colors.text }]}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.labelRow}>
+            <Camera size={18} color={colors.textSecondary} />
+            <Text style={[styles.label, { color: colors.text }]}>After Photos (Optional)</Text>
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>Photos of the hazard after action taken</Text>
+
+          <View style={styles.picturesContainer}>
+            {afterPictures.map((picture, index) => (
+              <View key={index} style={styles.pictureWrapper}>
+                <Image source={{ uri: picture }} style={styles.picture} />
+                <TouchableOpacity
+                  style={styles.removePictureButton}
+                  onPress={() => handleRemovePicture(index, 'after')}
+                >
+                  <X size={16} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.pictureButtons}>
+            <TouchableOpacity
+              style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => handleTakePicture('after')}
+            >
+              <Camera size={20} color={colors.textSecondary} />
+              <Text style={[styles.pictureButtonText, { color: colors.text }]}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => handleSelectPicture('after')}
+            >
+              <FileText size={20} color={colors.textSecondary} />
+              <Text style={[styles.pictureButtonText, { color: colors.text }]}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.labelRow}>
+            <Camera size={18} color={colors.textSecondary} />
+            <Text style={[styles.label, { color: colors.text }]}>Additional Photos (Optional)</Text>
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>Any other relevant photos</Text>
+
+          <View style={styles.picturesContainer}>
+            {pictures.map((picture, index) => (
+              <View key={index} style={styles.pictureWrapper}>
+                <Image source={{ uri: picture }} style={styles.picture} />
+                <TouchableOpacity
+                  style={styles.removePictureButton}
+                  onPress={() => handleRemovePicture(index, 'general')}
+                >
+                  <X size={16} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.pictureButtons}>
+            <TouchableOpacity
+              style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => handleTakePicture('general')}
+            >
+              <Camera size={20} color={colors.textSecondary} />
+              <Text style={[styles.pictureButtonText, { color: colors.text }]}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.pictureButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => handleSelectPicture('general')}
             >
               <FileText size={20} color={colors.textSecondary} />
               <Text style={[styles.pictureButtonText, { color: colors.text }]}>Choose Photo</Text>
@@ -443,6 +548,11 @@ const styles = StyleSheet.create({
   },
   pickerPlaceholder: {
     fontSize: 15,
+  },
+  helperText: {
+    fontSize: 13,
+    marginBottom: 12,
+    marginTop: -8,
   },
   picturesContainer: {
     flexDirection: 'row',

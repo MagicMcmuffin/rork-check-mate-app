@@ -207,6 +207,8 @@ export interface PositiveIntervention {
   site?: string;
   location?: string;
   pictures?: string[];
+  beforePictures?: string[];
+  afterPictures?: string[];
   createdAt: string;
 }
 
