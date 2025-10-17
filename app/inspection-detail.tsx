@@ -2,7 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Calendar, User, FileText, CheckCircle2, XCircle, AlertCircle, Image as ImageIcon, CheckCheck, Download } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CheckStatus } from '@/types';
 import { PLANT_INSPECTION_ITEMS, PLANT_INSPECTION_SECONDARY_ITEMS, QUICK_HITCH_ITEMS, VEHICLE_INSPECTION_ITEMS, BUCKET_CHANGE_ITEMS } from '@/constants/inspections';
@@ -115,16 +115,32 @@ export default function InspectionDetailScreen() {
   };
 
   const getDefaultFilename = () => {
-    if (type === 'plant') {
-      return `plant-inspection-${inspection.plantNumber}-${inspection.date}`;
-    } else if (type === 'quickhitch') {
-      return `quickhitch-inspection-${inspection.quickHitchModel}-${inspection.date}`;
-    } else if (type === 'vehicle') {
-      return `vehicle-inspection-${inspection.vehicleRegistration}-${inspection.date}`;
-    } else if (type === 'bucketchange') {
-      return `bucket-change-${inspection.bucketType}-${inspection.date}`;
-    }
-    return `inspection-${inspection.date}`;
+    const projectName = inspection.projectId && company
+      ? company.projects.find(p => p.id === inspection.projectId)?.name
+      : null;
+    
+    const employeeName = 'employeeName' in inspection 
+      ? inspection.employeeName 
+      : 'operatorName' in inspection 
+      ? inspection.operatorName 
+      : '';
+    
+    const checkType = type === 'plant' 
+      ? 'Plant-Inspection'
+      : type === 'quickhitch' 
+      ? 'QuickHitch-Inspection'
+      : type === 'vehicle' 
+      ? 'Vehicle-Inspection'
+      : 'Bucket-Change';
+    
+    const parts = [
+      projectName,
+      checkType,
+      employeeName.replace(/\s+/g, '-'),
+      inspection.date
+    ].filter(Boolean);
+    
+    return parts.join('_');
   };
 
   const handleDownloadButtonPress = () => {
@@ -728,7 +744,10 @@ export default function InspectionDetailScreen() {
           animationType="slide"
           onRequestClose={() => setShowFilenameModal(false)}
         >
-          <View style={styles.filenameModalContainer}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.filenameModalContainer}
+          >
             <TouchableOpacity
               style={styles.filenameModalOverlay}
               activeOpacity={1}
@@ -744,6 +763,8 @@ export default function InspectionDetailScreen() {
                 placeholder="Enter filename"
                 placeholderTextColor={colors.textSecondary}
                 autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleDownloadPDF}
               />
               <Text style={[styles.filenameModalNote, { color: colors.textSecondary }]}>.pdf will be added automatically</Text>
               <View style={styles.filenameModalActions}>
@@ -762,7 +783,7 @@ export default function InspectionDetailScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </SafeAreaView>
     </>
