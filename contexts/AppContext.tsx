@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate } from '@/types';
+import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification } from '@/types';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -25,6 +25,8 @@ const STORAGE_KEYS = {
   AIR_TESTING_INSPECTIONS: '@checkmate_air_testing_inspections',
   EQUIPMENT_CATEGORIES: '@checkmate_equipment_categories',
   EQUIPMENT_ITEMS: '@checkmate_equipment_items',
+  HOLIDAY_REQUESTS: '@checkmate_holiday_requests',
+  HOLIDAY_NOTIFICATIONS: '@checkmate_holiday_notifications',
 } as const;
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -49,6 +51,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [airTestingInspections, setAirTestingInspections] = useState<AirTestingInspection[]>([]);
   const [equipmentCategories, setEquipmentCategories] = useState<EquipmentCategory[]>([]);
   const [equipmentItems, setEquipmentItems] = useState<EquipmentItem[]>([]);
+  const [holidayRequests, setHolidayRequests] = useState<HolidayRequest[]>([]);
+  const [holidayNotifications, setHolidayNotifications] = useState<HolidayNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

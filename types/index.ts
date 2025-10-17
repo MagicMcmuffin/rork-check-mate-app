@@ -403,3 +403,31 @@ export interface AirTestingInspection {
   notes?: string;
   createdAt: string;
 }
+
+export type HolidayStatus = 'pending' | 'approved' | 'rejected';
+
+export interface HolidayRequest {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  status: HolidayStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
+export interface HolidayNotification {
+  id: string;
+  companyId: string;
+  requestId: string;
+  employeeId: string;
+  employeeName: string;
+  message: string;
+  type: 'request' | 'approved' | 'rejected';
+  isRead: boolean;
+  createdAt: string;
+}

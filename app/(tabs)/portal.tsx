@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { FileText, Bell, Award, BookOpen } from 'lucide-react-native';
+import { FileText, Bell, Award, BookOpen, Calendar } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -31,6 +31,14 @@ export default function MyPortalScreen() {
       icon: FileText,
       color: '#3b82f6',
       route: 'my-tickets' as any,
+    },
+    {
+      id: 'holidays',
+      title: 'Holiday Requests',
+      description: 'Request and track your holidays',
+      icon: Calendar,
+      color: '#ec4899',
+      route: 'my-holidays' as any,
     },
     {
       id: 'reminders',
