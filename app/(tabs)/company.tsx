@@ -562,12 +562,15 @@ export default function CompanyScreen() {
         {activeSection === 'plant' ? renderEquipmentSection() : activeSection === 'equipment' ? (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
             <Wrench size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Equipment Management</Text>
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Full Equipment Management</Text>
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary, marginBottom: 16 }]}>
+              Create categories, manage items, upload certificates, and set reminders
+            </Text>
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 16 }]}
+              style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 0 }]}
               onPress={() => router.push('/equipment-management')}
             >
-              <Text style={styles.addButtonText}>Go to Equipment Management</Text>
+              <Text style={styles.addButtonText}>Open Equipment Management</Text>
             </TouchableOpacity>
           </View>
         ) : activeSection === 'projects' ? renderProjectsSection() : renderAnnouncementsSection()}
