@@ -1,10 +1,11 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Star } from 'lucide-react-native';
+import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Star, Database } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Linking, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const { user, company, logout, updateUserProfile, updateCompanyLogo } = useApp();
@@ -134,6 +135,40 @@ export default function SettingsScreen() {
               Alert.alert('Success', 'Company logo removed successfully');
             } catch (error) {
               Alert.alert('Error', 'Failed to remove company logo');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearCache = () => {
+    Alert.alert(
+      'Clear All Cache',
+      'This will clear all data including your login session, inspections, and settings. You will be logged out and will need to log in again. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Cache',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              Alert.alert(
+                'Cache Cleared',
+                'All cache has been cleared successfully. The app will now reload.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      router.replace('/');
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              console.error('Error clearing cache:', error);
+              Alert.alert('Error', 'Failed to clear cache. Please try again.');
             }
           },
         },
@@ -308,6 +343,25 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions</Text>
           
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={handleClearCache}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#5f3a1e' : '#fef3c7' }]}>
+                <Database size={20} color="#f59e0b" />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Clear All Cache</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Clear all stored data and reset app
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.settingRow}
             onPress={handleLogout}
