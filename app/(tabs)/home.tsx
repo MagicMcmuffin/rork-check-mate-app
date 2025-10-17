@@ -274,7 +274,7 @@ export default function InspectionsScreen() {
                 </View>
                 <View>
                   <Text style={[styles.categoryTitle, { color: colors.text }]}>Plant & Vehicle</Text>
-                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>6 inspections</Text>
+                  <Text style={[styles.categorySubtitle, { color: colors.textSecondary }]}>5 inspections</Text>
                 </View>
               </View>
               <View style={[styles.expandIcon, { backgroundColor: colors.background }]}>
@@ -364,20 +364,7 @@ export default function InspectionsScreen() {
                 <ChevronRight size={18} color={colors.textSecondary} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.subItemCard, { backgroundColor: colors.card }]}
-                onPress={() => router.push({ pathname: '/greasing-inspection', params: { equipmentType: 'vehicles' } })}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.subItemIcon, { backgroundColor: '#fef3c7' }]}>
-                  <Car size={20} color="#ca8a04" />
-                </View>
-                <View style={styles.subItemContent}>
-                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Vehicle Greasing Inspection</Text>
-                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Weekly greasing checks for vehicles</Text>
-                </View>
-                <ChevronRight size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
+
             </View>
           )}
 
