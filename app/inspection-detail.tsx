@@ -591,6 +591,13 @@ export default function InspectionDetailScreen() {
         options={{
           headerShown: true,
           title: 'Inspection Details',
+          headerStyle: {
+            backgroundColor: colors.card,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+          },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ArrowLeft size={24} color={colors.text} />
