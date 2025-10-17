@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
@@ -279,6 +280,51 @@ export default function EquipmentManagementScreen() {
     setMake('');
     setModel('');
     setNotes('');
+  };
+
+  const handlePickFromCameraRoll = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant access to your photo library');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        if (Platform.OS === 'web') {
+          setCertificateFile({
+            uri: asset.uri,
+            mimeType: 'image/jpeg',
+            name: `image_${Date.now()}.jpg`,
+          });
+        } else {
+          const fileInfo = await FileSystem.getInfoAsync(asset.uri);
+          if (fileInfo.exists && fileInfo.size && fileInfo.size < 10 * 1024 * 1024) {
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            const dataUri = `data:image/jpeg;base64,${base64}`;
+            setCertificateFile({
+              uri: dataUri,
+              mimeType: 'image/jpeg',
+              name: `image_${Date.now()}.jpg`,
+            });
+          } else {
+            Alert.alert('Error', 'File is too large. Maximum size is 10MB.');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error picking from camera roll:', error);
+      Alert.alert('Error', 'Failed to pick image from camera roll');
+    }
   };
 
   const handlePickCertificate = async () => {
@@ -949,30 +995,50 @@ export default function EquipmentManagementScreen() {
 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Certificate File *</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.uploadButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      certificateFile && { borderColor: colors.primary }
-                    ]}
-                    onPress={handlePickCertificate}
-                  >
-                    {certificateFile ? (
-                      <>
-                        <Check size={20} color={colors.primary} />
-                        <Text style={[styles.uploadButtonText, { color: colors.primary }]}>
-                          {certificateFile.name}
+                  {certificateFile ? (
+                    <View
+                      style={[
+                        styles.uploadButton,
+                        { backgroundColor: colors.background, borderColor: colors.primary }
+                      ]}
+                    >
+                      <Check size={20} color={colors.primary} />
+                      <Text style={[styles.uploadButtonText, { color: colors.primary, flex: 1 }]}>
+                        {certificateFile.name}
+                      </Text>
+                      <TouchableOpacity onPress={() => setCertificateFile(null)}>
+                        <X size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadOptionsContainer}>
+                      {fileType !== 'pdf' && (
+                        <TouchableOpacity
+                          style={[
+                            styles.uploadOptionButton,
+                            { backgroundColor: colors.primary }
+                          ]}
+                          onPress={handlePickFromCameraRoll}
+                        >
+                          <ImageIcon size={20} color="#ffffff" />
+                          <Text style={styles.uploadOptionButtonText}>Camera Roll</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.uploadOptionButton,
+                          { backgroundColor: colors.primary },
+                          fileType !== 'pdf' && { flex: 1 }
+                        ]}
+                        onPress={handlePickCertificate}
+                      >
+                        <Upload size={20} color="#ffffff" />
+                        <Text style={styles.uploadOptionButtonText}>
+                          {fileType === 'pdf' ? 'Select PDF' : 'Browse Files'}
                         </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={20} color={colors.textSecondary} />
-                        <Text style={[styles.uploadButtonText, { color: colors.textSecondary }]}>
-                          Select {fileType === 'pdf' ? 'PDF' : fileType === 'image' ? 'Image' : 'PDF or Image'}
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -1401,6 +1467,24 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontSize: 14,
     fontWeight: '500' as const,
+  },
+  uploadOptionsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  uploadOptionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 10,
+    padding: 14,
+  },
+  uploadOptionButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#ffffff',
   },
   datePickerButton: {
     flexDirection: 'row',
