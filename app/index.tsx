@@ -37,7 +37,7 @@ export default function OnboardingScreen() {
             resizeMode="contain"
           />
           <Text style={styles.title}>Check Mate</Text>
-          <Text style={styles.subtitle}>Machine Inspection Checklists</Text>
+          <Text style={styles.subtitle}>Complete Safety & Inspection Management</Text>
         </View>
 
         <View style={styles.adBanner}>
