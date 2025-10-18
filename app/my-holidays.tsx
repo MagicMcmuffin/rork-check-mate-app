@@ -46,6 +46,7 @@ export default function MyHolidaysScreen() {
   };
 
   const handleDayPress = (day: any) => {
+    console.log('Day pressed:', day);
     const selectedDate = new Date(day.dateString);
     if (selectingDate === 'start') {
       setStartDate(selectedDate);
@@ -144,7 +145,10 @@ export default function MyHolidaysScreen() {
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setShowModal(true)}
+          onPress={() => {
+            console.log('New Holiday Request button pressed');
+            setShowModal(true);
+          }}
           activeOpacity={0.7}
         >
           <Plus size={20} color="#fff" />
@@ -197,6 +201,7 @@ export default function MyHolidaysScreen() {
         transparent
         animationType="slide"
         onRequestClose={() => {
+          console.log('Modal close requested');
           setShowModal(false);
           setSelectingDate('start');
         }}
