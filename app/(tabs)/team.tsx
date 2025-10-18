@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Stack } from 'expo-router';
-import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Building2, MessageSquare } from 'lucide-react-native';
+import { Stack, router } from 'expo-router';
+import { Users, Shield, User, Crown, Copy, Trash2, Wrench, Briefcase, GraduationCap, Trophy, RotateCcw, Building2, MessageSquare, Eye } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Modal, TextInput, Linking } from 'react-native';
 import { UserRole } from '@/types';
 import * as Clipboard from 'expo-clipboard';
@@ -376,6 +376,14 @@ export default function TeamScreen() {
                   </View>
                 </View>
                 <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${member.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
                   {canSendMessages && member.email && (
                     <TouchableOpacity
                       style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
@@ -445,6 +453,14 @@ export default function TeamScreen() {
                   </View>
                 </View>
                 <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${mechanic.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
                   {canSendMessages && mechanic.email && (
                     <TouchableOpacity
                       style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
@@ -514,6 +530,14 @@ export default function TeamScreen() {
                   </View>
                 </View>
                 <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${apprentice.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
                   {canSendMessages && apprentice.email && (
                     <TouchableOpacity
                       style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
@@ -583,6 +607,14 @@ export default function TeamScreen() {
                   </View>
                 </View>
                 <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${employee.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
                   {canSendMessages && employee.email && (
                     <TouchableOpacity
                       style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
