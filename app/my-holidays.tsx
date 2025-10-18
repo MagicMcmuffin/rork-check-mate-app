@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
@@ -149,94 +149,111 @@ export default function MyHolidaysScreen() {
         animationType="slide"
         onRequestClose={() => setShowModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>New Holiday Request</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Start Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowStartPicker(true)}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.modalOverlay}
+            onPress={() => setShowModal(false)}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                contentContainerStyle={styles.modalScrollContent}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
               >
-                <Text style={styles.dateButtonText}>{startDate.toLocaleDateString()}</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>New Holiday Request</Text>
 
-            {showStartPicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selected) => {
-                  setShowStartPicker(Platform.OS === 'ios');
-                  if (selected) {
-                    setStartDate(selected);
-                    if (selected > endDate) {
-                      setEndDate(selected);
-                    }
-                  }
-                }}
-              />
-            )}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Start Date</Text>
+                    <TouchableOpacity
+                      style={styles.dateButton}
+                      onPress={() => setShowStartPicker(true)}
+                    >
+                      <Text style={styles.dateButtonText}>{startDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                  </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>End Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowEndPicker(true)}
-              >
-                <Text style={styles.dateButtonText}>{endDate.toLocaleDateString()}</Text>
-              </TouchableOpacity>
-            </View>
+                  {showStartPicker && (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selected) => {
+                        setShowStartPicker(Platform.OS === 'ios');
+                        if (selected) {
+                          setStartDate(selected);
+                          if (selected > endDate) {
+                            setEndDate(selected);
+                          }
+                        }
+                      }}
+                    />
+                  )}
 
-            {showEndPicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selected) => {
-                  setShowEndPicker(Platform.OS === 'ios');
-                  if (selected) setEndDate(selected);
-                }}
-                minimumDate={startDate}
-              />
-            )}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>End Date</Text>
+                    <TouchableOpacity
+                      style={styles.dateButton}
+                      onPress={() => setShowEndPicker(true)}
+                    >
+                      <Text style={styles.dateButtonText}>{endDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                  </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Reason (Optional)</Text>
-              <TextInput
-                style={styles.textArea}
-                value={reason}
-                onChangeText={setReason}
-                placeholder="Enter reason for holiday..."
-                placeholderTextColor="#64748b"
-                multiline
-                numberOfLines={3}
-              />
-            </View>
+                  {showEndPicker && (
+                    <DateTimePicker
+                      value={endDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, selected) => {
+                        setShowEndPicker(Platform.OS === 'ios');
+                        if (selected) setEndDate(selected);
+                      }}
+                      minimumDate={startDate}
+                    />
+                  )}
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => {
-                  setShowModal(false);
-                  setReason('');
-                  setStartDate(new Date());
-                  setEndDate(new Date());
-                }}
-              >
-                <Text style={styles.modalButtonCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSubmit]}
-                onPress={handleSubmitRequest}
-              >
-                <Text style={styles.modalButtonSubmitText}>Submit Request</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Reason (Optional)</Text>
+                    <TextInput
+                      style={styles.textArea}
+                      value={reason}
+                      onChangeText={setReason}
+                      placeholder="Enter reason for holiday..."
+                      placeholderTextColor="#64748b"
+                      multiline
+                      numberOfLines={3}
+                    />
+                  </View>
+
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalButtonCancel]}
+                      onPress={() => {
+                        setShowModal(false);
+                        setReason('');
+                        setStartDate(new Date());
+                        setEndDate(new Date());
+                      }}
+                    >
+                      <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalButtonSubmit]}
+                      onPress={handleSubmitRequest}
+                    >
+                      <Text style={styles.modalButtonSubmitText}>Submit Request</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -370,6 +387,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
@@ -378,6 +399,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 500,
+    minWidth: 300,
   },
   modalTitle: {
     fontSize: 24,
