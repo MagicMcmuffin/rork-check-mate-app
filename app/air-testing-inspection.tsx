@@ -32,6 +32,8 @@ export default function AirTestingInspectionScreen() {
   const [customPipeSize, setCustomPipeSize] = useState('');
   const [testPressure, setTestPressure] = useState('');
   const [testDuration, setTestDuration] = useState('');
+  const [startNumber, setStartNumber] = useState('');
+  const [finishNumber, setFinishNumber] = useState('');
   const [testResult, setTestResult] = useState<'pass' | 'fail' | undefined>();
   const [startImage, setStartImage] = useState<string | undefined>();
   const [finishImage, setFinishImage] = useState<string | undefined>();
@@ -162,6 +164,8 @@ export default function AirTestingInspectionScreen() {
                 pipeSize: finalPipeSize,
                 testPressure: testPressure.trim() || undefined,
                 testDuration: testDuration.trim() || undefined,
+                startNumber: startNumber.trim() || undefined,
+                finishNumber: finishNumber.trim() || undefined,
                 testResult,
                 startImage,
                 finishImage,
@@ -333,6 +337,30 @@ export default function AirTestingInspectionScreen() {
                   value={testDuration}
                   onChangeText={setTestDuration}
                   keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Start Number</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Enter start reading"
+                  placeholderTextColor={colors.textSecondary}
+                  value={startNumber}
+                  onChangeText={setStartNumber}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Finish Number</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Enter finish reading"
+                  placeholderTextColor={colors.textSecondary}
+                  value={finishNumber}
+                  onChangeText={setFinishNumber}
+                  keyboardType="decimal-pad"
                 />
               </View>
 

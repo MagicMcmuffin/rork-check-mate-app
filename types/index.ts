@@ -397,6 +397,8 @@ export interface AirTestingInspection {
   pipeSize: string;
   testPressure?: string;
   testDuration?: string;
+  startNumber?: string;
+  finishNumber?: string;
   testResult?: 'pass' | 'fail';
   startImage?: string;
   finishImage?: string;
