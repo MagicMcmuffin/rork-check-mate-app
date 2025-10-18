@@ -211,11 +211,12 @@ export default function MyHolidaysScreen() {
           setShowModal(false);
         }}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowModal(false)}
-        >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowModal(false)}
+          />
           <View style={styles.modalContainer}>
             <ScrollView 
               style={styles.modalContent}
@@ -329,7 +330,7 @@ export default function MyHolidaysScreen() {
                 </View>
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -461,6 +462,13 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContainer: {
