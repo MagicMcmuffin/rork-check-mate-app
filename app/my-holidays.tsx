@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
@@ -13,7 +13,7 @@ export default function MyHolidaysScreen() {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [reason, setReason] = useState('');
-  const [selectingDate, setSelectingDate] = useState<'start' | 'end' | null>(null);
+  const [selectingDate, setSelectingDate] = useState<'start' | 'end' | null>('start');
 
   const { submitHolidayRequest, getEmployeeHolidayRequests, getEmployeeHolidayNotifications, markHolidayNotificationRead } = useApp();
 
@@ -39,7 +39,7 @@ export default function MyHolidaysScreen() {
       setReason('');
       setStartDate(new Date());
       setEndDate(new Date());
-      setSelectingDate(null);
+      setSelectingDate('start');
     } catch (error) {
       console.error('Error submitting holiday request:', error);
     }
@@ -198,15 +198,19 @@ export default function MyHolidaysScreen() {
         animationType="slide"
         onRequestClose={() => {
           setShowModal(false);
-          setSelectingDate(null);
+          setSelectingDate('start');
         }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContentWrapper}>
             <ScrollView 
               style={styles.modalScrollView}
               contentContainerStyle={styles.modalScrollContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>New Holiday Request</Text>
@@ -239,38 +243,36 @@ export default function MyHolidaysScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {selectingDate && (
-                  <View style={styles.calendarWrapper}>
-                    <Text style={styles.calendarHint}>
-                      {selectingDate === 'start' ? 'Select start date' : 'Select end date'}
-                    </Text>
-                    <Calendar
-                      current={selectingDate === 'start' ? startDate.toISOString().split('T')[0] : endDate.toISOString().split('T')[0]}
-                      onDayPress={handleDayPress}
-                      markedDates={getMarkedDates()}
-                      markingType="period"
-                      minDate={selectingDate === 'end' ? startDate.toISOString().split('T')[0] : undefined}
-                      theme={{
-                        calendarBackground: '#1e293b',
-                        textSectionTitleColor: '#94a3b8',
-                        selectedDayBackgroundColor: '#ec4899',
-                        selectedDayTextColor: '#fff',
-                        todayTextColor: '#ec4899',
-                        dayTextColor: '#fff',
-                        textDisabledColor: '#475569',
-                        monthTextColor: '#fff',
-                        indicatorColor: '#ec4899',
-                        textDayFontWeight: '500',
-                        textMonthFontWeight: '700',
-                        textDayHeaderFontWeight: '600',
-                        textDayFontSize: 14,
-                        textMonthFontSize: 16,
-                        textDayHeaderFontSize: 12,
-                        arrowColor: '#ec4899',
-                      }}
-                    />
-                  </View>
-                )}
+                <View style={styles.calendarWrapper}>
+                  <Text style={styles.calendarHint}>
+                    {selectingDate === 'start' ? 'Select start date' : 'Select end date'}
+                  </Text>
+                  <Calendar
+                    current={selectingDate === 'start' ? startDate.toISOString().split('T')[0] : endDate.toISOString().split('T')[0]}
+                    onDayPress={handleDayPress}
+                    markedDates={getMarkedDates()}
+                    markingType="period"
+                    minDate={selectingDate === 'end' ? startDate.toISOString().split('T')[0] : undefined}
+                    theme={{
+                      calendarBackground: '#1e293b',
+                      textSectionTitleColor: '#94a3b8',
+                      selectedDayBackgroundColor: '#ec4899',
+                      selectedDayTextColor: '#fff',
+                      todayTextColor: '#ec4899',
+                      dayTextColor: '#fff',
+                      textDisabledColor: '#475569',
+                      monthTextColor: '#fff',
+                      indicatorColor: '#ec4899',
+                      textDayFontWeight: '500',
+                      textMonthFontWeight: '700',
+                      textDayHeaderFontWeight: '600',
+                      textDayFontSize: 14,
+                      textMonthFontSize: 16,
+                      textDayHeaderFontSize: 12,
+                      arrowColor: '#ec4899',
+                    }}
+                  />
+                </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Reason (Optional)</Text>
@@ -293,7 +295,7 @@ export default function MyHolidaysScreen() {
                       setReason('');
                       setStartDate(new Date());
                       setEndDate(new Date());
-                      setSelectingDate(null);
+                      setSelectingDate('start');
                     }}
                   >
                     <Text style={styles.modalButtonCancelText}>Cancel</Text>
@@ -308,7 +310,7 @@ export default function MyHolidaysScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
