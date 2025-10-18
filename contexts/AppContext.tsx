@@ -554,13 +554,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return newProject;
   }, [company, companies]);
 
-  const updateProject = useCallback(async (projectId: string, name: string, projectNumber: string, emails: string[]) => {
+  const updateProject = useCallback(async (projectId: string, name: string, projectNumber: string, emails: string[], assignedEmployeeIds?: string[]) => {
     if (!company) throw new Error('No company found');
 
     const updatedCompany = {
       ...company,
       projects: (company.projects || []).map(p => 
-        p.id === projectId ? { ...p, name, projectNumber, emails } : p
+        p.id === projectId ? { ...p, name, projectNumber, emails, assignedEmployeeIds } : p
       ),
     };
 

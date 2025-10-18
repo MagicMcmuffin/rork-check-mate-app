@@ -9,6 +9,7 @@ export interface Project {
   name: string;
   projectNumber: string;
   emails: string[];
+  assignedEmployeeIds?: string[];
   createdAt: string;
 }
 
