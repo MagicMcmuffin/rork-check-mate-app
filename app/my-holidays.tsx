@@ -1,19 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle } from 'lucide-react-native';
+import { Calendar as CalendarIcon, Plus, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
-import { Calendar } from 'react-native-calendars';
 
 export default function MyHolidaysScreen() {
   const router = useRouter();
   const { user } = useApp();
   
   const [showModal, setShowModal] = useState(false);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [reason, setReason] = useState('');
-  const [selectingDate, setSelectingDate] = useState<'start' | 'end' | null>('start');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const { submitHolidayRequest, getEmployeeHolidayRequests, getEmployeeHolidayNotifications, markHolidayNotificationRead } = useApp();
 
@@ -28,6 +27,8 @@ export default function MyHolidaysScreen() {
   }, [user, getEmployeeHolidayNotifications]);
 
   const handleSubmitRequest = async () => {
+    if (!startDate || !endDate) return;
+    
     try {
       console.log('Holiday request submitted', { startDate, endDate, reason });
       await submitHolidayRequest(
@@ -37,62 +38,67 @@ export default function MyHolidaysScreen() {
       );
       setShowModal(false);
       setReason('');
-      setStartDate(new Date());
-      setEndDate(new Date());
-      setSelectingDate('start');
+      setStartDate(null);
+      setEndDate(null);
+      setCurrentMonth(new Date());
     } catch (error) {
       console.error('Error submitting holiday request:', error);
     }
   };
 
-  const handleDayPress = (day: any) => {
-    console.log('Day pressed:', day);
-    const selectedDate = new Date(day.dateString);
-    if (selectingDate === 'start') {
-      setStartDate(selectedDate);
-      if (selectedDate > endDate) {
-        setEndDate(selectedDate);
-      }
-      setSelectingDate('end');
-    } else if (selectingDate === 'end') {
-      if (selectedDate >= startDate) {
-        setEndDate(selectedDate);
-        setSelectingDate(null);
+  const handleDayPress = (date: Date) => {
+    console.log('Day pressed:', date);
+    
+    if (!startDate || (startDate && endDate)) {
+      setStartDate(date);
+      setEndDate(null);
+    } else if (startDate && !endDate) {
+      if (date >= startDate) {
+        setEndDate(date);
       } else {
-        setStartDate(selectedDate);
+        setStartDate(date);
+        setEndDate(null);
       }
     }
   };
 
-  const getMarkedDates = () => {
-    const marked: any = {};
-    const start = startDate.toISOString().split('T')[0];
-    const end = endDate.toISOString().split('T')[0];
-    
-    if (!selectingDate || selectingDate === 'end') {
-      let currentDate = new Date(startDate);
-      while (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split('T')[0];
-        marked[dateStr] = {
-          color: '#ec4899',
-          textColor: '#fff',
-        };
-        if (dateStr === start) {
-          marked[dateStr].startingDay = true;
-        }
-        if (dateStr === end) {
-          marked[dateStr].endingDay = true;
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    } else {
-      marked[start] = {
-        selected: true,
-        selectedColor: '#ec4899',
-      };
+  const getDaysInMonth = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
     }
-    
-    return marked;
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const isDateInRange = (date: Date | null) => {
+    if (!date || !startDate) return false;
+    if (!endDate) return date.toDateString() === startDate.toDateString();
+    return date >= startDate && date <= endDate;
+  };
+
+  const isToday = (date: Date | null) => {
+    if (!date) return false;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   const formatDate = (date: string) => {
@@ -203,104 +209,100 @@ export default function MyHolidaysScreen() {
         onRequestClose={() => {
           console.log('Modal close requested');
           setShowModal(false);
-          setSelectingDate('start');
         }}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
+        <View style={styles.modalOverlay}>
           <TouchableOpacity 
             style={styles.modalOverlayTouchable}
             activeOpacity={1}
-            onPress={() => {
-              setShowModal(false);
-              setSelectingDate('start');
-            }}
+            onPress={() => setShowModal(false)}
           >
             <TouchableOpacity 
               activeOpacity={1}
               onPress={(e) => e.stopPropagation()}
-              style={styles.modalContentWrapper}
             >
               <ScrollView 
-                style={styles.modalScrollView}
+                style={styles.modalContent}
                 contentContainerStyle={styles.modalScrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-              <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>New Holiday Request</Text>
 
-                <View style={styles.dateSelectionHeader}>
-                  <TouchableOpacity
-                    style={[styles.dateTypeButton, selectingDate === 'start' && styles.dateTypeButtonActive]}
-                    onPress={() => setSelectingDate('start')}
-                  >
-                    <Text style={[styles.dateTypeButtonText, selectingDate === 'start' && styles.dateTypeButtonTextActive]}>
-                      Start Date
+                <View style={styles.selectedDatesContainer}>
+                  <View style={styles.selectedDateBox}>
+                    <Text style={styles.selectedDateLabel}>Start Date</Text>
+                    <Text style={styles.selectedDateText}>
+                      {startDate ? startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not selected'}
                     </Text>
-                    <Text style={[styles.dateTypeButtonDate, selectingDate === 'start' && styles.dateTypeButtonDateActive]}>
-                      {startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    </Text>
-                  </TouchableOpacity>
+                  </View>
                   <View style={styles.dateArrow}>
                     <Text style={styles.dateArrowText}>→</Text>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.dateTypeButton, selectingDate === 'end' && styles.dateTypeButtonActive]}
-                    onPress={() => setSelectingDate('end')}
-                  >
-                    <Text style={[styles.dateTypeButtonText, selectingDate === 'end' && styles.dateTypeButtonTextActive]}>
-                      End Date
+                  <View style={styles.selectedDateBox}>
+                    <Text style={styles.selectedDateLabel}>End Date</Text>
+                    <Text style={styles.selectedDateText}>
+                      {endDate ? endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not selected'}
                     </Text>
-                    <Text style={[styles.dateTypeButtonDate, selectingDate === 'end' && styles.dateTypeButtonDateActive]}>
-                      {endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    </Text>
-                  </TouchableOpacity>
+                  </View>
                 </View>
 
-                <View style={styles.calendarWrapper}>
-                  <Text style={styles.calendarHint}>
-                    {selectingDate === 'start' ? 'Select start date' : 'Select end date'}
-                  </Text>
-                  <Calendar
-                    current={selectingDate === 'start' ? startDate.toISOString().split('T')[0] : endDate.toISOString().split('T')[0]}
-                    onDayPress={handleDayPress}
-                    markedDates={getMarkedDates()}
-                    markingType="period"
-                    minDate={selectingDate === 'end' ? startDate.toISOString().split('T')[0] : undefined}
-                    theme={{
-                      calendarBackground: '#1e293b',
-                      textSectionTitleColor: '#94a3b8',
-                      selectedDayBackgroundColor: '#ec4899',
-                      selectedDayTextColor: '#fff',
-                      todayTextColor: '#ec4899',
-                      dayTextColor: '#fff',
-                      textDisabledColor: '#475569',
-                      monthTextColor: '#fff',
-                      indicatorColor: '#ec4899',
-                      textDayFontWeight: '500',
-                      textMonthFontWeight: '700',
-                      textDayHeaderFontWeight: '600',
-                      textDayFontSize: 14,
-                      textMonthFontSize: 16,
-                      textDayHeaderFontSize: 12,
-                      arrowColor: '#ec4899',
-                    }}
-                  />
+                <View style={styles.calendarContainer}>
+                  <View style={styles.calendarHeader}>
+                    <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
+                      <ChevronLeft size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.monthTitle}>
+                      {currentMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                    </Text>
+                    <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
+                      <ChevronRight size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.calendar}>
+                    <View style={styles.calendarDayNames}>
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                        <Text key={day} style={styles.dayName}>{day}</Text>
+                      ))}
+                    </View>
+                    <View style={styles.calendarDays}>
+                      {getDaysInMonth().map((date, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[
+                            styles.calendarDay,
+                            isDateInRange(date) && styles.calendarDaySelected,
+                            isToday(date) && styles.calendarDayToday,
+                          ]}
+                          onPress={() => date && handleDayPress(date)}
+                          disabled={!date}
+                        >
+                          {date && (
+                            <Text style={[
+                              styles.calendarDayText,
+                              isDateInRange(date) && styles.calendarDayTextSelected,
+                              isToday(date) && styles.calendarDayTextToday,
+                            ]}>
+                              {date.getDate()}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Reason (Optional)</Text>
+                  <Text style={styles.inputLabel}>Notes (Optional)</Text>
                   <TextInput
                     style={styles.textArea}
                     value={reason}
                     onChangeText={setReason}
-                    placeholder="Enter reason for holiday..."
+                    placeholder="Add any notes about your holiday request..."
                     placeholderTextColor="#64748b"
                     multiline
-                    numberOfLines={3}
+                    numberOfLines={4}
                   />
                 </View>
 
@@ -310,25 +312,29 @@ export default function MyHolidaysScreen() {
                     onPress={() => {
                       setShowModal(false);
                       setReason('');
-                      setStartDate(new Date());
-                      setEndDate(new Date());
-                      setSelectingDate('start');
+                      setStartDate(null);
+                      setEndDate(null);
+                      setCurrentMonth(new Date());
                     }}
                   >
                     <Text style={styles.modalButtonCancelText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonSubmit]}
+                    style={[
+                      styles.modalButton, 
+                      styles.modalButtonSubmit,
+                      (!startDate || !endDate) && styles.modalButtonDisabled
+                    ]}
                     onPress={handleSubmitRequest}
+                    disabled={!startDate || !endDate}
                   >
                     <Text style={styles.modalButtonSubmitText}>Submit Request</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
               </ScrollView>
             </TouchableOpacity>
           </TouchableOpacity>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
@@ -460,28 +466,20 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalOverlayTouchable: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
   },
-  modalContentWrapper: {
+  modalContent: {
     backgroundColor: '#1e293b',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
-    width: '100%',
-  },
-  modalScrollView: {
-    flex: 1,
+    maxHeight: '95%',
   },
   modalScrollContent: {
     padding: 24,
     paddingBottom: 40,
-  },
-  modalContent: {
-    width: '100%',
   },
   modalTitle: {
     fontSize: 24,
@@ -490,41 +488,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
-  dateSelectionHeader: {
+  selectedDatesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 8,
+    marginBottom: 24,
+    gap: 12,
   },
-  dateTypeButton: {
+  selectedDateBox: {
     flex: 1,
     backgroundColor: '#334155',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#334155',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#475569',
   },
-  dateTypeButtonActive: {
-    backgroundColor: '#ec489920',
-    borderColor: '#ec4899',
-  },
-  dateTypeButtonText: {
+  selectedDateLabel: {
     fontSize: 12,
     fontWeight: '600' as const,
     color: '#94a3b8',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  dateTypeButtonTextActive: {
-    color: '#ec4899',
-  },
-  dateTypeButtonDate: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+  selectedDateText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
     color: '#fff',
-  },
-  dateTypeButtonDateActive: {
-    color: '#ec4899',
   },
   dateArrow: {
     paddingHorizontal: 4,
@@ -533,21 +520,75 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#64748b',
   },
-  calendarWrapper: {
-    marginBottom: 20,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#334155',
+  calendarContainer: {
+    marginBottom: 24,
   },
-  calendarHint: {
-    fontSize: 14,
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  monthButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  calendar: {
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  calendarDayNames: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dayName: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
     fontWeight: '600' as const,
     color: '#94a3b8',
-    textAlign: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#0f172a',
+    paddingVertical: 8,
+  },
+  calendarDays: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDay: {
+    width: '14.28%' as any,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  calendarDaySelected: {
+    backgroundColor: '#ec4899',
+  },
+  calendarDayToday: {
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+  },
+  calendarDayText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: '#fff',
+  },
+  calendarDayTextSelected: {
+    color: '#fff',
+    fontWeight: '700' as const,
+  },
+  calendarDayTextToday: {
+    color: '#3b82f6',
   },
   inputGroup: {
     marginBottom: 20,
@@ -558,17 +599,7 @@ const styles = StyleSheet.create({
     color: '#e2e8f0',
     marginBottom: 8,
   },
-  dateButton: {
-    backgroundColor: '#334155',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#475569',
-  },
-  dateButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
+
   textArea: {
     backgroundColor: '#334155',
     color: '#fff',
@@ -601,6 +632,10 @@ const styles = StyleSheet.create({
   },
   modalButtonSubmit: {
     backgroundColor: '#ec4899',
+  },
+  modalButtonDisabled: {
+    backgroundColor: '#475569',
+    opacity: 0.5,
   },
   modalButtonSubmitText: {
     color: '#fff',
