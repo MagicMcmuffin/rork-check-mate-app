@@ -201,11 +201,11 @@ export default function MyHolidaysScreen() {
           setSelectingDate('start');
         }}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContentWrapper}>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContentWrapper}
+          >
             <ScrollView 
               style={styles.modalScrollView}
               contentContainerStyle={styles.modalScrollContent}
@@ -309,8 +309,8 @@ export default function MyHolidaysScreen() {
                 </View>
               </View>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
