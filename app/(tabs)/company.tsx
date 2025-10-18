@@ -620,7 +620,15 @@ export default function CompanyScreen() {
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: colors.primary, marginTop: 12, marginBottom: 8 }]}
+                onPress={() => setAnnouncementModalVisible(true)}
+              >
+                <Plus size={20} color="#ffffff" />
+                <Text style={styles.addButtonText}>Create Announcement</Text>
+              </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
                 <TouchableOpacity
                   style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
                   onPress={() => setAnnouncementExpandModalVisible(true)}
