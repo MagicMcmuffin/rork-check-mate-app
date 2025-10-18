@@ -211,22 +211,18 @@ export default function MyHolidaysScreen() {
           setShowModal(false);
         }}
       >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalOverlayTouchable}
-            activeOpacity={1}
-            onPress={() => setShowModal(false)}
-          >
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <ScrollView 
+              style={styles.modalContent}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              <ScrollView 
-                style={styles.modalContent}
-                contentContainerStyle={styles.modalScrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
                 <Text style={styles.modalTitle}>New Holiday Request</Text>
 
                 <View style={styles.selectedDatesContainer}>
@@ -331,10 +327,9 @@ export default function MyHolidaysScreen() {
                     <Text style={styles.modalButtonSubmitText}>Submit Request</Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </View>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -468,14 +463,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
-  modalOverlayTouchable: {
-    flex: 1,
+  modalContainer: {
+    maxHeight: '95%',
   },
   modalContent: {
     backgroundColor: '#1e293b',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '95%',
   },
   modalScrollContent: {
     padding: 24,
