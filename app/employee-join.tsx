@@ -1,5 +1,4 @@
 import { useApp } from '@/contexts/AppContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Users, KeyRound, CheckCircle2 } from 'lucide-react-native';
 import { useState } from 'react';
@@ -19,7 +18,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EmployeeJoinScreen() {
   const { joinCompany } = useApp();
-  const { colors } = useTheme();
+  
+  const colors = {
+    background: '#0f172a',
+    card: '#1e293b',
+    text: '#f1f5f9',
+    textSecondary: '#94a3b8',
+    border: '#334155',
+    primary: '#3b82f6',
+  };
   const router = useRouter();
   const [employeeName, setEmployeeName] = useState('');
   const [email, setEmail] = useState('');
@@ -245,7 +252,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#ccfbf1',
+    backgroundColor: '#0d9488' + '20',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -294,7 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   featureCard: {
-    backgroundColor: '#f0fdfa',
+    backgroundColor: '#0d9488' + '20',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,

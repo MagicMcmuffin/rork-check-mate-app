@@ -608,18 +608,18 @@ export default function CompanyScreen() {
             </View>
           </TouchableOpacity>
 
-          <View style={[styles.announcementSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.announcementSectionHeader}>
-              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
-                <Megaphone size={24} color={colors.primary} />
+          {isCompanyOrManagement && (
+            <View style={[styles.announcementSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.announcementSectionHeader}>
+                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>  
+                  <Megaphone size={24} color={colors.primary} />
+                </View>
+                <View style={styles.sectionCardContent}>
+                  <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
+                  <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
+                </View>
               </View>
-              <View style={styles.sectionCardContent}>
-                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Announcements</Text>
-                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Company-wide announcements</Text>
-              </View>
-            </View>
 
-            {isCompanyOrManagement && (
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
                 <TouchableOpacity
                   style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
@@ -639,8 +639,8 @@ export default function CompanyScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           <View style={styles.gridContainer}>
             <TouchableOpacity

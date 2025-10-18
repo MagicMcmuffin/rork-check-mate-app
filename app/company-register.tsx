@@ -1,5 +1,4 @@
 import { useApp } from '@/contexts/AppContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Building2, CheckCircle2, User, Mail } from 'lucide-react-native';
 import { useState } from 'react';
@@ -19,7 +18,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CompanyRegisterScreen() {
   const { registerCompany } = useApp();
-  const { colors } = useTheme();
+  
+  const colors = {
+    background: '#0f172a',
+    card: '#1e293b',
+    text: '#f1f5f9',
+    textSecondary: '#94a3b8',
+    border: '#334155',
+    primary: '#3b82f6',
+  };
   const router = useRouter();
   const [ownerName, setOwnerName] = useState('');
   const [companyName, setCompanyName] = useState('');
