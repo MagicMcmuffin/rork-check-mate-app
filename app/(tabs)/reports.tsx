@@ -1,11 +1,11 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, SlidersHorizontal, ArrowUpDown, ClipboardList } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, ClipboardList, BarChart3, Activity } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   generatePlantInspectionPDF,
   generateQuickHitchInspectionPDF,
@@ -13,35 +13,27 @@ import {
   generateBucketChangeInspectionPDF,
   generatePositiveInterventionPDF,
   generateWeeklyInspectionPDF,
-  generateGreasingRecordsPDF,
   generateAirTestingInspectionPDF
 } from '@/lib/pdf-generator';
 
 export default function ReportsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks' | 'drafts'>('reports');
-  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'testing' | 'equipment-reports'>('inspections');
-  const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'greasing'>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
-  const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-  const [selectedPipeRun, setSelectedPipeRun] = useState<string>('');
-  const [dateSearchVisible, setDateSearchVisible] = useState(false);
-  const [searchStartDate, setSearchStartDate] = useState('');
-  const [searchEndDate, setSearchEndDate] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'inspections' | 'interventions' | 'fixes' | 'testing' | 'equipment-reports'>('inspections');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilterVisible, setDateFilterVisible] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [sortBy, setSortBy] = useState<'date' | 'status' | 'type'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const appContext = useApp();
   
   if (!appContext) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={styles.emptyState}>
-          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Loading...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -60,9 +52,6 @@ export default function ReportsScreen() {
     getDrafts,
     deleteDraft,
     submitDraft,
-    greasingRecords,
-    deleteGreasingRecord,
-    getCompanyGreasingInspections,
     deleteGreasingInspection,
     getCompanyAirTestingInspections,
     deleteAirTestingInspection,
@@ -72,26 +61,20 @@ export default function ReportsScreen() {
     deleteEquipmentReport,
   } = appContext;
   
-  if (!deleteInspection || !markInspectionFixed) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={styles.emptyState}>
-          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Error Loading</Text>
-          <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>Required functions are not available</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-  
+  const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
+
   const inspections = getCompanyInspections ? getCompanyInspections() : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
   const positiveInterventions = getCompanyPositiveInterventions ? getCompanyPositiveInterventions() : [];
   const fixLogs = getFixLogs ? getFixLogs() : [];
-  const companyGreasingRecords = company ? (greasingRecords || []).filter(r => r.companyId === company.id) : [];
-  const companyGreasingInspections = getCompanyGreasingInspections ? getCompanyGreasingInspections() : [];
-  const companyAirTestingInspections = getCompanyAirTestingInspections ? getCompanyAirTestingInspections() : [];
-  const companyEquipmentReports = getCompanyEquipmentReports ? getCompanyEquipmentReports() : [];
+  const airTestingInspections = getCompanyAirTestingInspections ? getCompanyAirTestingInspections() : [];
+  const equipmentReports = getCompanyEquipmentReports ? getCompanyEquipmentReports() : [];
 
-  const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
+  const allInspections = [
+    ...inspections.plant.map(i => ({ ...i, type: 'plant' as const })),
+    ...inspections.quickHitch.map(i => ({ ...i, type: 'quickhitch' as const })),
+    ...inspections.vehicle.map(i => ({ ...i, type: 'vehicle' as const })),
+    ...inspections.bucketChange.map(i => ({ ...i, type: 'bucketchange' as const })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const myInspections = user && getEmployeeInspections ? getEmployeeInspections(user.id) : { plant: [], quickHitch: [], vehicle: [], bucketChange: [] };
   const myPositiveInterventions = user && getEmployeePositiveInterventions ? getEmployeePositiveInterventions(user.id) : [];
@@ -103,78 +86,14 @@ export default function ReportsScreen() {
     ...myInspections.bucketChange.map(i => ({ ...i, type: 'bucketchange' as const })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const myAllItems = [
-    ...myAllInspections.map(i => ({ ...i, itemType: 'inspection' as const })),
-    ...myPositiveInterventions.map(i => ({ ...i, itemType: 'intervention' as const })),
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const isDateInRange = (dateString: string) => {
-    if (!searchStartDate && !searchEndDate) return true;
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const start = searchStartDate ? new Date(searchStartDate) : null;
-    const end = searchEndDate ? new Date(searchEndDate) : null;
-    
-    if (start && end) {
-      return date >= start && date <= end;
-    } else if (start) {
-      return date >= start;
-    } else if (end) {
-      return date <= end;
-    }
-    return true;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const allInspections = [
-    ...inspections.plant.map(i => ({ ...i, type: 'plant' as const })),
-    ...inspections.quickHitch.map(i => ({ ...i, type: 'quickhitch' as const })),
-    ...inspections.vehicle.map(i => ({ ...i, type: 'vehicle' as const })),
-    ...inspections.bucketChange.map(i => ({ ...i, type: 'bucketchange' as const })),
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  let filteredInspections = selectedProject === 'all'
-    ? allInspections
-    : allInspections.filter(i => i.projectId === selectedProject);
-
-  filteredInspections = filteredInspections.filter(i => isDateInRange(i.createdAt));
-
-  if (selectedType !== 'all') {
-    filteredInspections = filteredInspections.filter(i => i.type === selectedType);
-  }
-
-  if (selectedStatus !== 'all') {
-    if (selectedStatus === 'fixed') {
-      filteredInspections = filteredInspections.filter(i => {
-        const fixed = 'isFixed' in i && i.isFixed === true;
-        console.log(`Inspection ${i.id}: isFixed = ${fixed}`, { hasProperty: 'isFixed' in i, value: (i as any).isFixed });
-        return fixed;
-      });
-      console.log(`Found ${filteredInspections.length} fixed inspections`);
-    } else if (selectedStatus === 'pending') {
-      filteredInspections = filteredInspections.filter(i => {
-        const pending = !('isFixed' in i) || i.isFixed !== true;
-        console.log(`Inspection ${i.id}: pending = ${pending}`, { hasProperty: 'isFixed' in i, value: (i as any).isFixed });
-        return pending;
-      });
-      console.log(`Found ${filteredInspections.length} pending inspections`);
-    }
-  }
-
-  let filteredInterventions = selectedSeverity === 'all'
-    ? positiveInterventions
-    : positiveInterventions.filter(i => i.severity === selectedSeverity);
-
-  filteredInterventions = filteredInterventions.filter(i => isDateInRange(i.createdAt));
-
-  const projectStats = company?.projects.map(project => {
-    const count = positiveInterventions.filter(i => i.projectId === project.id).length;
-    return { project, count };
-  }).sort((a, b) => b.count - a.count) || [];
-
-  const maxCount = Math.max(...projectStats.map(s => s.count), 1);
-
-  const getProjectName = (projectId?: string) => {
-    if (!projectId || !company) return 'No Project';
-    return company.projects.find(p => p.id === projectId)?.name || 'Unknown Project';
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const getInspectedItemName = (inspection: typeof allInspections[0]) => {
@@ -193,730 +112,276 @@ export default function ReportsScreen() {
     return 'Unknown';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const clearDateSearch = () => {
-    setSearchStartDate('');
-    setSearchEndDate('');
-  };
-
-  const handleDownloadAllReports = async () => {
-    if (!company) return;
-    
-    setIsDownloading(true);
-    try {
-      const projectName = selectedProject !== 'all' 
-        ? company.projects.find(p => p.id === selectedProject)?.name 
-        : undefined;
-
-      let itemsToDownload: any[] = [];
-
-      if (selectedTab === 'inspections') {
-        itemsToDownload = filteredInspections.filter(i => isDateInRange(i.createdAt));
-      } else if (selectedTab === 'interventions') {
-        itemsToDownload = filteredInterventions.filter(i => isDateInRange(i.createdAt));
-      }
-
-      if (itemsToDownload.length === 0) {
-        Alert.alert('No Reports', 'No reports found for the selected filters and date range.');
-        return;
-      }
-
-      for (const item of itemsToDownload) {
-        if (selectedTab === 'inspections') {
-          const type = item.type;
-          if (type === 'plant') {
-            await generatePlantInspectionPDF(item, company.name, projectName);
-          } else if (type === 'quickhitch') {
-            await generateQuickHitchInspectionPDF(item, company.name, projectName);
-          } else if (type === 'vehicle') {
-            await generateVehicleInspectionPDF(item, company.name, projectName);
-          } else if (type === 'bucketchange') {
-            await generateBucketChangeInspectionPDF(item, company.name, projectName);
-          }
-        } else if (selectedTab === 'interventions') {
-          await generatePositiveInterventionPDF(item, company.name, projectName);
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      Alert.alert('Success', `${itemsToDownload.length} report(s) downloaded successfully!`);
-    } catch (error) {
-      console.error('Error downloading reports:', error);
-      Alert.alert('Error', 'Failed to download some reports. Please try again.');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleDeleteInspection = (inspectionId: string, type: string) => {
-    Alert.alert(
-      'Delete Report',
-      'Are you sure you want to delete this inspection report?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteInspection(inspectionId, type);
-              console.log('Inspection deleted successfully');
-            } catch (error) {
-              console.error('Error deleting inspection:', error);
-              Alert.alert('Error', 'Failed to delete inspection');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleMarkFixed = (inspectionId: string, type: string) => {
-    Alert.alert(
-      'Mark as Fixed',
-      'Mark this issue as resolved?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Fixed',
-          onPress: async () => {
-            try {
-              console.log('🔧 Marking inspection as fixed:', inspectionId, type);
-              await markInspectionFixed(inspectionId, type);
-              console.log('✅ Inspection marked as fixed successfully');
-              Alert.alert('Success', 'Inspection has been marked as fixed');
-            } catch (error) {
-              console.error('❌ Error marking inspection as fixed:', error);
-              Alert.alert('Error', 'Failed to mark inspection as fixed');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.title, { color: colors.text }]}>Reports & Checks</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>View reports and your inspection history</Text>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={[styles.title, { color: colors.text }]}>Reports</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Track inspections and activity</Text>
           </View>
           {canViewReports && mainTab === 'reports' && (
             <View style={styles.headerActions}>
               <TouchableOpacity
-                style={[styles.iconButton, { backgroundColor: colors.card }]}
-                onPress={() => setDateSearchVisible(!dateSearchVisible)}
+                style={[styles.headerButton, { backgroundColor: colors.card }]}
+                onPress={() => setDateFilterVisible(!dateFilterVisible)}
               >
-                <Search size={20} color={colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.iconButton, { backgroundColor: colors.primary }]}
-                onPress={handleDownloadAllReports}
-                disabled={isDownloading}
-              >
-                {isDownloading ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Download size={20} color="#ffffff" />
-                )}
+                <Calendar size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {dateSearchVisible && mainTab === 'reports' && canViewReports && (
-          <View style={[styles.dateSearchCard, { backgroundColor: colors.card }]}>
-            <View style={styles.dateSearchHeader}>
-              <View style={styles.dateSearchTitle}>
-                <Calendar size={18} color={colors.primary} />
-                <Text style={[styles.dateSearchTitleText, { color: colors.text }]}>Search by Date Range</Text>
-              </View>
-              <TouchableOpacity onPress={() => setDateSearchVisible(false)}>
-                <X size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.dateInputsContainer}>
-              <View style={styles.dateInputWrapper}>
-                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>Start Date</Text>
-                <TextInput
-                  style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  value={searchStartDate}
-                  onChangeText={setSearchStartDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              </View>
-              <View style={styles.dateInputWrapper}>
-                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>End Date</Text>
-                <TextInput
-                  style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  value={searchEndDate}
-                  onChangeText={setSearchEndDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              </View>
-            </View>
-            {(searchStartDate || searchEndDate) && (
-              <TouchableOpacity
-                style={[styles.clearButton, { backgroundColor: colors.background }]}
-                onPress={clearDateSearch}
-              >
-                <X size={16} color={colors.textSecondary} />
-                <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear Filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        <View style={[styles.mainTabsContainer, { backgroundColor: colors.card }]}>
+        <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
           <TouchableOpacity
-            style={[styles.mainTab, mainTab === 'reports' && styles.mainTabActive]}
+            style={[styles.tabItem, mainTab === 'reports' && [styles.tabItemActive, { backgroundColor: colors.primary }]]}
             onPress={() => setMainTab('reports')}
           >
-            <FileText size={18} color={mainTab === 'reports' ? '#1e40af' : colors.textSecondary} />
-            <Text style={[styles.mainTabText, { color: colors.textSecondary }, mainTab === 'reports' && styles.mainTabTextActive]}>Reports</Text>
+            <BarChart3 size={18} color={mainTab === 'reports' ? '#fff' : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: mainTab === 'reports' ? '#fff' : colors.textSecondary }]}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.mainTab, mainTab === 'mychecks' && styles.mainTabActive]}
+            style={[styles.tabItem, mainTab === 'mychecks' && [styles.tabItemActive, { backgroundColor: colors.primary }]]}
             onPress={() => setMainTab('mychecks')}
           >
-            <History size={18} color={mainTab === 'mychecks' ? '#1e40af' : colors.textSecondary} />
-            <Text style={[styles.mainTabText, { color: colors.textSecondary }, mainTab === 'mychecks' && styles.mainTabTextActive]}>My Checks</Text>
+            <Activity size={18} color={mainTab === 'mychecks' ? '#fff' : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: mainTab === 'mychecks' ? '#fff' : colors.textSecondary }]}>My Checks</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.mainTab, mainTab === 'drafts' && styles.mainTabActive]}
+            style={[styles.tabItem, mainTab === 'drafts' && [styles.tabItemActive, { backgroundColor: colors.primary }]]}
             onPress={() => setMainTab('drafts')}
           >
-            <FilePlus size={18} color={mainTab === 'drafts' ? '#1e40af' : colors.textSecondary} />
-            <Text style={[styles.mainTabText, { color: colors.textSecondary }, mainTab === 'drafts' && styles.mainTabTextActive]}>Drafts</Text>
+            <FilePlus size={18} color={mainTab === 'drafts' ? '#fff' : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: mainTab === 'drafts' ? '#fff' : colors.textSecondary }]}>Drafts</Text>
           </TouchableOpacity>
         </View>
+      </View>
 
+      {dateFilterVisible && mainTab === 'reports' && canViewReports && (
+        <View style={[styles.dateFilterCard, { backgroundColor: colors.card }]}>
+          <View style={styles.dateFilterHeader}>
+            <Text style={[styles.dateFilterTitle, { color: colors.text }]}>Date Range</Text>
+            <TouchableOpacity onPress={() => setDateFilterVisible(false)}>
+              <X size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.dateInputRow}>
+            <View style={styles.dateInputWrapper}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>From</Text>
+              <TextInput
+                style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                value={startDate}
+                onChangeText={setStartDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+            <View style={styles.dateInputWrapper}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>To</Text>
+              <TextInput
+                style={[styles.dateInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                value={endDate}
+                onChangeText={setEndDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+          </View>
+          {(startDate || endDate) && (
+            <TouchableOpacity
+              style={[styles.clearButton, { backgroundColor: colors.background }]}
+              onPress={() => { setStartDate(''); setEndDate(''); }}
+            >
+              <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {mainTab === 'reports' ? (
           !canViewReports ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-              <FileText size={64} color={colors.textSecondary} />
-              <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Reports Not Available</Text>
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                You don&apos;t have permission to view inspection reports
+            <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+              <FileText size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Access Restricted</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                You don&apos;t have permission to view reports
               </Text>
             </View>
           ) : (
             <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsContainer}>
+              <View style={styles.statsGrid}>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{filteredInspections.length}</Text>
+                  <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
+                    <FileText size={20} color="#1e40af" />
+                  </View>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{allInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Inspections</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{positiveInterventions.length}</Text>
+                  <View style={[styles.statIconContainer, { backgroundColor: '#dcfce7' }]}>
+                    <AlertTriangle size={20} color="#10b981" />
+                  </View>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{positiveInterventions.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Interventions</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{fixLogs.length}</Text>
+                  <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
+                    <Wrench size={20} color="#f59e0b" />
+                  </View>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{fixLogs.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fixes</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{companyGreasingInspections.length}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Greasing</Text>
+                  <View style={[styles.statIconContainer, { backgroundColor: '#cffafe' }]}>
+                    <Wind size={20} color="#06b6d4" />
+                  </View>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{airTestingInspections.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Air Tests</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{companyAirTestingInspections.length}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Air Testing</Text>
+                  <View style={[styles.statIconContainer, { backgroundColor: '#f3e8ff' }]}>
+                    <ClipboardList size={20} color="#8b5cf6" />
+                  </View>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{equipmentReports.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Equipment</Text>
                 </View>
-                <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                  <Text style={styles.statValue}>{companyEquipmentReports.length}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Equipment Reports</Text>
-                </View>
-              </ScrollView>
-
-              <View style={[styles.tabsContainer, { backgroundColor: colors.card }]}>
-                <TouchableOpacity
-                  style={[styles.tab, selectedTab === 'inspections' && styles.tabActive]}
-                  onPress={() => setSelectedTab('inspections')}
-                >
-                  <FileText size={18} color={selectedTab === 'inspections' ? '#1e40af' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'inspections' && styles.tabTextActive]}>Inspections</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, selectedTab === 'interventions' && styles.tabActive]}
-                  onPress={() => setSelectedTab('interventions')}
-                >
-                  <AlertTriangle size={18} color={selectedTab === 'interventions' ? '#10b981' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'interventions' && styles.tabTextActive]}>PIs</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, selectedTab === 'fixes' && styles.tabActive]}
-                  onPress={() => setSelectedTab('fixes')}
-                >
-                  <Wrench size={18} color={selectedTab === 'fixes' ? '#f59e0b' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'fixes' && styles.tabTextActive]}>Fixes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, selectedTab === 'testing' && styles.tabActive]}
-                  onPress={() => setSelectedTab('testing')}
-                >
-                  <Wind size={18} color={selectedTab === 'testing' ? '#06b6d4' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'testing' && styles.tabTextActive]}>Testing</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, selectedTab === 'equipment-reports' && styles.tabActive]}
-                  onPress={() => setSelectedTab('equipment-reports')}
-                >
-                  <ClipboardList size={18} color={selectedTab === 'equipment-reports' ? '#8b5cf6' : colors.textSecondary} />
-                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'equipment-reports' && styles.tabTextActive]}>Reports</Text>
-                </TouchableOpacity>
               </View>
 
-              {company && company.projects.length > 0 && selectedTab === 'inspections' && (
-                <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
-                  <View style={styles.filterHeader}>
-                    <FolderOpen size={18} color="#1e40af" />
-                    <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Project</Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtons}>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedProject === 'all' && styles.filterButtonActive]}
-                      onPress={() => setSelectedProject('all')}
-                    >
-                      <Layers size={16} color={selectedProject === 'all' ? '#ffffff' : colors.textSecondary} />
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedProject === 'all' && styles.filterButtonTextActive]}>
-                        All Projects
-                      </Text>
-                    </TouchableOpacity>
-                    {company.projects.map(project => (
-                      <TouchableOpacity
-                        key={project.id}
-                        style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedProject === project.id && styles.filterButtonActive]}
-                        onPress={() => setSelectedProject(project.id)}
-                      >
-                        <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedProject === project.id && styles.filterButtonTextActive]}>
-                          {project.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+              <View style={[styles.categoryBar, { backgroundColor: colors.card }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                  <TouchableOpacity
+                    style={[styles.categoryChip, selectedCategory === 'inspections' && [styles.categoryChipActive, { backgroundColor: '#1e40af' }]]}
+                    onPress={() => setSelectedCategory('inspections')}
+                  >
+                    <FileText size={16} color={selectedCategory === 'inspections' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.categoryChipText, { color: selectedCategory === 'inspections' ? '#fff' : colors.textSecondary }]}>
+                      Inspections
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryChip, selectedCategory === 'interventions' && [styles.categoryChipActive, { backgroundColor: '#10b981' }]]}
+                    onPress={() => setSelectedCategory('interventions')}
+                  >
+                    <AlertTriangle size={16} color={selectedCategory === 'interventions' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.categoryChipText, { color: selectedCategory === 'interventions' ? '#fff' : colors.textSecondary }]}>
+                      Interventions
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryChip, selectedCategory === 'fixes' && [styles.categoryChipActive, { backgroundColor: '#f59e0b' }]]}
+                    onPress={() => setSelectedCategory('fixes')}
+                  >
+                    <Wrench size={16} color={selectedCategory === 'fixes' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.categoryChipText, { color: selectedCategory === 'fixes' ? '#fff' : colors.textSecondary }]}>
+                      Fixes
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryChip, selectedCategory === 'testing' && [styles.categoryChipActive, { backgroundColor: '#06b6d4' }]]}
+                    onPress={() => setSelectedCategory('testing')}
+                  >
+                    <Wind size={16} color={selectedCategory === 'testing' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.categoryChipText, { color: selectedCategory === 'testing' ? '#fff' : colors.textSecondary }]}>
+                      Testing
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryChip, selectedCategory === 'equipment-reports' && [styles.categoryChipActive, { backgroundColor: '#8b5cf6' }]]}
+                    onPress={() => setSelectedCategory('equipment-reports')}
+                  >
+                    <ClipboardList size={16} color={selectedCategory === 'equipment-reports' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.categoryChipText, { color: selectedCategory === 'equipment-reports' ? '#fff' : colors.textSecondary }]}>
+                      Equipment
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
 
-              {selectedTab === 'inspections' && (
-                <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
-                  <View style={styles.filterHeader}>
-                    <Filter size={18} color="#1e40af" />
-                    <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Type</Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtons}>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'all' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('all')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'all' && styles.filterButtonTextActive]}>All Types</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'plant' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('plant')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'plant' && styles.filterButtonTextActive]}>Plant</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'quickhitch' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('quickhitch')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'quickhitch' && styles.filterButtonTextActive]}>Quick Hitch</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'vehicle' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('vehicle')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'vehicle' && styles.filterButtonTextActive]}>Vehicle</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'bucketchange' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('bucketchange')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'bucketchange' && styles.filterButtonTextActive]}>Bucket</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedType === 'greasing' && styles.filterButtonActive]}
-                      onPress={() => setSelectedType('greasing')}
-                    >
-                      <Droplet size={16} color={selectedType === 'greasing' ? '#ffffff' : colors.textSecondary} />
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedType === 'greasing' && styles.filterButtonTextActive]}>Greasing</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </View>
-              )}
-
-              {selectedTab === 'inspections' && (
-                <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
-                  <View style={styles.filterHeader}>
-                    <CheckCircle size={18} color="#1e40af" />
-                    <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Status</Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtons}>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedStatus === 'all' && styles.filterButtonActive]}
-                      onPress={() => setSelectedStatus('all')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedStatus === 'all' && styles.filterButtonTextActive]}>All Status</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedStatus === 'pending' && styles.filterButtonActive]}
-                      onPress={() => setSelectedStatus('pending')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedStatus === 'pending' && styles.filterButtonTextActive]}>Pending</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedStatus === 'fixed' && styles.filterButtonActive]}
-                      onPress={() => setSelectedStatus('fixed')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedStatus === 'fixed' && styles.filterButtonTextActive]}>Fixed</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </View>
-              )}
-
-              {selectedTab === 'interventions' && (
-                <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
-                  <View style={styles.filterHeader}>
-                    <AlertTriangle size={18} color="#1e40af" />
-                    <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Severity</Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtons}>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedSeverity === 'all' && styles.filterButtonActive]}
-                      onPress={() => setSelectedSeverity('all')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedSeverity === 'all' && styles.filterButtonTextActive]}>All Severity</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedSeverity === 'low' && styles.filterButtonActive]}
-                      onPress={() => setSelectedSeverity('low')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedSeverity === 'low' && styles.filterButtonTextActive]}>Low</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedSeverity === 'medium' && styles.filterButtonActive]}
-                      onPress={() => setSelectedSeverity('medium')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedSeverity === 'medium' && styles.filterButtonTextActive]}>Medium</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.filterButton, { backgroundColor: colors.background, borderColor: colors.border }, selectedSeverity === 'high' && styles.filterButtonActive]}
-                      onPress={() => setSelectedSeverity('high')}
-                    >
-                      <Text style={[styles.filterButtonText, { color: colors.textSecondary }, selectedSeverity === 'high' && styles.filterButtonTextActive]}>High</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </View>
-              )}
-
-              {selectedTab === 'interventions' && company && company.projects.length > 0 && positiveInterventions.length > 0 && (
-                <View style={[styles.chartSection, { backgroundColor: colors.card }]}>
-                  <View style={styles.chartHeader}>
-                    <TrendingUp size={20} color="#10b981" />
-                    <Text style={[styles.chartTitle, { color: colors.text }]}>Leading Projects</Text>
-                  </View>
-                  <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Projects by positive interventions</Text>
-                  <View style={styles.chartContainer}>
-                    {projectStats.slice(0, 5).map((stat, index) => (
-                      <View key={stat.project.id} style={styles.chartRow}>
-                        <View style={styles.chartLabelContainer}>
-                          <Text style={[styles.chartRank, { color: colors.textSecondary }]}>#{index + 1}</Text>
-                          <Text style={[styles.chartLabel, { color: colors.text }]} numberOfLines={1}>{stat.project.name}</Text>
-                        </View>
-                        <View style={styles.chartBarContainer}>
-                          <View
-                            style={[
-                              styles.chartBar,
-                              {
-                                width: `${(stat.count / maxCount) * 100}%`,
-                                backgroundColor: index === 0 ? '#10b981' : index === 1 ? '#3b82f6' : index === 2 ? '#f59e0b' : colors.border,
-                              },
-                            ]}
-                          />
-                          <Text style={[styles.chartValue, { color: colors.text }]}>{stat.count}</Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {selectedTab === 'inspections' && selectedType === 'greasing' ? (
-                companyGreasingInspections.length === 0 ? (
-                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                    <Droplet size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Greasing Records Yet</Text>
-                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                      Greasing records will appear here once logged
+              {selectedCategory === 'inspections' && (
+                allInspections.length === 0 ? (
+                  <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                    <FileText size={48} color={colors.textSecondary} />
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Inspections</Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      Inspection reports will appear here
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.reportsList}>
-                    {companyGreasingInspections
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map((inspection) => {
-                        const checks = inspection.checks || [];
-                        const hasRedIssues = checks.some((c: any) => c.status === 'C');
-                        const hasYellowIssues = !hasRedIssues && checks.some((c: any) => c.status === 'B');
-                        const isAllGreen = !hasRedIssues && !hasYellowIssues;
-                        const borderColor = hasRedIssues ? '#ef4444' : hasYellowIssues ? '#f59e0b' : isAllGreen ? '#10b981' : colors.border;
+                  <View style={styles.listContainer}>
+                    {allInspections.map((inspection) => {
+                      const checks = 'checks' in inspection ? inspection.checks : [];
+                      const hasIssues = checks.some((c: any) => 
+                        c.status === 'C' || c.status === '✗' || c.status === false || c.status === 'B'
+                      );
+                      const isFixed = 'isFixed' in inspection && inspection.isFixed;
 
-                        return (
-                          <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: borderColor }]}>
-                            <View style={styles.reportCardContent}>
-                              <View style={styles.reportHeader}>
-                                <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
-                                  <Droplet size={20} color="#06b6d4" />
-                                </View>
-                                <View style={styles.reportInfo}>
-                                  <Text style={[styles.reportTitle, { color: colors.text }]}>Greasing Inspection</Text>
-                                  <View style={styles.reportMeta}>
-                                    <User size={14} color={colors.textSecondary} />
-                                    <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                      {inspection.employeeName}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </View>
-
-                              <View style={styles.reportDetails}>
-                                <View style={styles.reportDetail}>
-                                  <Calendar size={16} color={colors.textSecondary} />
-                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                    {formatDate(inspection.createdAt)}
-                                  </Text>
-                                </View>
-                                <View style={styles.reportDetail}>
-                                  <Clock size={16} color={colors.textSecondary} />
-                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                    {formatTime(inspection.createdAt)}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.equipmentName}</Text>
-                              </View>
-
-                              {inspection.projectId && (
-                                <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                  <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Project:</Text>
-                                  <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getProjectName(inspection.projectId)}</Text>
-                                </View>
-                              )}
-
-                              {inspection.greasingDuration && (
-                                <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                  <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Duration:</Text>
-                                  <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.greasingDuration} min</Text>
-                                </View>
-                              )}
+                      return (
+                        <TouchableOpacity
+                          key={inspection.id}
+                          style={[styles.reportCard, { backgroundColor: colors.card }]}
+                          activeOpacity={0.7}
+                          onPress={() => router.push({
+                            pathname: '/inspection-detail',
+                            params: { id: inspection.id, type: inspection.type },
+                          })}
+                        >
+                          <View style={styles.reportCardHeader}>
+                            <View style={styles.reportCardInfo}>
+                              <Text style={[styles.reportCardTitle, { color: colors.text }]}>
+                                {inspection.type === 'plant' ? 'Plant Inspection' :
+                                 inspection.type === 'quickhitch' ? 'Quick Hitch' :
+                                 inspection.type === 'vehicle' ? 'Vehicle Inspection' : 'Bucket Change'}
+                              </Text>
+                              <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]}>
+                                {getInspectedItemName(inspection)}
+                              </Text>
                             </View>
-                            {(user?.role === 'company' || user?.role === 'administrator') && deleteGreasingInspection && (
-                              <View style={styles.reportActions}>
-                                <TouchableOpacity
-                                  style={[styles.actionButton, styles.deleteButton]}
-                                  onPress={() => {
-                                    Alert.alert(
-                                      'Delete Inspection',
-                                      'Are you sure you want to delete this greasing inspection?',
-                                      [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        {
-                                          text: 'Delete',
-                                          style: 'destructive',
-                                          onPress: async () => {
-                                            try {
-                                              await deleteGreasingInspection(inspection.id);
-                                              Alert.alert('Success', 'Greasing inspection deleted');
-                                            } catch (error) {
-                                              console.error('Error deleting greasing inspection:', error);
-                                              Alert.alert('Error', 'Failed to delete greasing inspection');
-                                            }
-                                          },
-                                        },
-                                      ]
-                                    );
-                                  }}
-                                >
-                                  <Trash2 size={16} color="#dc2626" />
-                                </TouchableOpacity>
+                            {hasIssues && (
+                              <View style={[styles.statusBadge, { backgroundColor: isFixed ? '#dcfce7' : '#fee2e2' }]}>
+                                <Text style={[styles.statusBadgeText, { color: isFixed ? '#16a34a' : '#dc2626' }]}>
+                                  {isFixed ? 'Fixed' : 'Issue'}
+                                </Text>
                               </View>
                             )}
                           </View>
-                        );
-                      })}
-                  </View>
-                )
-              ) : selectedTab === 'inspections' && filteredInspections.length === 0 ? (
-                <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                  <FileText size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Reports Yet</Text>
-                  <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                    {selectedProject === 'all'
-                      ? 'Inspection reports will appear here once employees submit them'
-                      : 'No inspections found for this project'}
-                  </Text>
-                </View>
-              ) : selectedTab === 'inspections' ? (
-                <View style={styles.reportsList}>
-                  {filteredInspections.map((inspection) => {
-                    const checks = 'checks' in inspection ? inspection.checks : [];
-                    const hasRedIssues = checks.some((c: any) => 
-                      c.status === 'C' || c.status === '✗' || c.status === false
-                    );
-                    const hasYellowIssues = !hasRedIssues && checks.some((c: any) => c.status === 'B');
-                    const isAllGreen = !hasRedIssues && !hasYellowIssues;
-                    const isFixed = 'isFixed' in inspection && inspection.isFixed;
-
-                    const borderColor = hasRedIssues ? '#ef4444' : hasYellowIssues ? '#f59e0b' : isAllGreen ? '#10b981' : colors.border;
-
-                    return (
-                    <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: borderColor }]}>
-                      <TouchableOpacity
-                        style={styles.reportCardContent}
-                        activeOpacity={0.7}
-                        onPress={() => router.push({
-                          pathname: '/inspection-detail',
-                          params: { id: inspection.id, type: inspection.type },
-                        })}
-                      >
-                        <View style={styles.reportHeader}>
-                          <View
-                            style={[
-                              styles.reportIcon,
-                              {
-                                backgroundColor:
-                                  inspection.type === 'plant'
-                                    ? '#dbeafe'
-                                    : inspection.type === 'quickhitch'
-                                    ? '#ccfbf1'
-                                    : inspection.type === 'vehicle'
-                                    ? '#fef3c7'
-                                    : '#fce7f3',
-                              },
-                            ]}
-                          >
-                            <FileText
-                              size={20}
-                              color={
-                                inspection.type === 'plant'
-                                  ? '#1e40af'
-                                  : inspection.type === 'quickhitch'
-                                  ? '#0d9488'
-                                  : inspection.type === 'vehicle'
-                                  ? '#f59e0b'
-                                  : '#ec4899'
-                              }
-                            />
-                          </View>
-                          <View style={styles.reportInfo}>
-                            <Text style={[styles.reportTitle, { color: colors.text }]}>
-                              {inspection.type === 'plant'
-                                ? 'Plant Daily Inspection'
-                                : inspection.type === 'quickhitch'
-                                ? 'Quick Hitch Inspection'
-                                : inspection.type === 'vehicle'
-                                ? 'Vehicle Inspection'
-                                : 'Bucket Change Check'}
-                            </Text>
-                            <View style={styles.reportMeta}>
+                          <View style={styles.reportCardMeta}>
+                            <View style={styles.metaItem}>
                               <User size={14} color={colors.textSecondary} />
-                              <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                {'employeeName' in inspection
-                                  ? inspection.employeeName
-                                  : inspection.operatorName}
+                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                {'employeeName' in inspection ? inspection.employeeName : inspection.operatorName}
+                              </Text>
+                            </View>
+                            <View style={styles.metaItem}>
+                              <Calendar size={14} color={colors.textSecondary} />
+                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                {formatDate(inspection.createdAt)}
                               </Text>
                             </View>
                           </View>
-                          <ChevronRight size={20} color={colors.textSecondary} />
-                        </View>
-
-                      <View style={styles.reportDetails}>
-                        <View style={styles.reportDetail}>
-                          <Calendar size={16} color={colors.textSecondary} />
-                          <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                            {formatDate(inspection.createdAt)}
-                          </Text>
-                        </View>
-                        <View style={styles.reportDetail}>
-                          <Clock size={16} color={colors.textSecondary} />
-                          <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                            {formatTime(inspection.createdAt)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                        <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Inspected Item:</Text>
-                        <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getInspectedItemName(inspection)}</Text>
-                      </View>
-
-                      {inspection.projectId && (
-                        <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                          <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Project:</Text>
-                          <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getProjectName(inspection.projectId)}</Text>
-                        </View>
-                      )}
-
-                      {isFixed && (
-                        <View style={[styles.fixedBadge, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
-                          <CheckCircle size={14} color="#16a34a" />
-                          <Text style={styles.fixedBadgeText}>Fixed by {'fixedBy' in inspection ? inspection.fixedBy : 'Unknown'}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-
-                    <View style={styles.reportActions}>
-                      {(hasRedIssues || hasYellowIssues) && !isFixed && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && (
-                        <TouchableOpacity
-                          style={[styles.actionButton, styles.fixButton]}
-                          onPress={() => handleMarkFixed(inspection.id, inspection.type)}
-                        >
-                          <CheckCircle size={16} color="#16a34a" />
-                          <Text style={styles.fixButtonText}>Mark Fixed</Text>
                         </TouchableOpacity>
-                      )}
-                      {(user?.role === 'company' || user?.role === 'administrator') && (
-                        <TouchableOpacity
-                          style={[styles.actionButton, styles.deleteButton]}
-                          onPress={() => handleDeleteInspection(inspection.id, inspection.type)}
-                        >
-                          <Trash2 size={16} color="#dc2626" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                      );
+                    })}
                   </View>
-                    );
-                  })}
-                </View>
-              ) : selectedTab === 'interventions' ? (
+                )
+              )}
+
+              {selectedCategory === 'interventions' && (
                 positiveInterventions.length === 0 ? (
-                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                  <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                     <AlertTriangle size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Interventions Yet</Text>
-                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                      Positive interventions will appear here once employees submit them
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Interventions</Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      Positive interventions will appear here
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.reportsList}>
-                    {filteredInterventions.map((intervention) => (
+                  <View style={styles.listContainer}>
+                    {positiveInterventions.map((intervention) => (
                       <TouchableOpacity
                         key={intervention.id}
                         style={[styles.reportCard, { backgroundColor: colors.card }]}
@@ -926,377 +391,106 @@ export default function ReportsScreen() {
                           params: { id: intervention.id },
                         })}
                       >
-                        <View style={styles.reportCardContent}>
-                          <View style={styles.reportHeader}>
-                            <View style={[styles.reportIcon, { backgroundColor: '#dcfce7' }]}>
-                              <AlertTriangle size={20} color="#10b981" />
-                            </View>
-                            <View style={styles.reportInfo}>
-                              <Text style={[styles.reportTitle, { color: colors.text }]}>Positive Intervention</Text>
-                              <View style={styles.reportMeta}>
-                                <User size={14} color={colors.textSecondary} />
-                                <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                  {intervention.employeeName}
-                                </Text>
-                              </View>
-                            </View>
-                            <ChevronRight size={20} color={colors.textSecondary} />
-                          </View>
-
-                          <View style={styles.reportDetails}>
-                            <View style={styles.reportDetail}>
-                              <Calendar size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatDate(intervention.createdAt)}
-                              </Text>
-                            </View>
-                            <View style={styles.reportDetail}>
-                              <Clock size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatTime(intervention.createdAt)}
-                              </Text>
-                            </View>
-                          </View>
-
-                          <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                            <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Hazard:</Text>
-                            <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={2}>
+                        <View style={styles.reportCardHeader}>
+                          <View style={styles.reportCardInfo}>
+                            <Text style={[styles.reportCardTitle, { color: colors.text }]}>Positive Intervention</Text>
+                            <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
                               {intervention.hazardDescription}
                             </Text>
                           </View>
-
-                          <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                            <View
-                              style={[
-                                styles.severityBadge,
-                                {
-                                  backgroundColor:
-                                    intervention.severity === 'high'
-                                      ? '#fee2e2'
-                                      : intervention.severity === 'medium'
-                                      ? '#fef3c7'
-                                      : '#dcfce7',
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.severityBadgeText,
-                                  {
-                                    color:
-                                      intervention.severity === 'high'
-                                        ? '#dc2626'
-                                        : intervention.severity === 'medium'
-                                        ? '#f59e0b'
-                                        : '#16a34a',
-                                  },
-                                ]}
-                              >
-                                {intervention.severity.toUpperCase()} SEVERITY
-                              </Text>
-                            </View>
+                          <View style={[styles.statusBadge, { 
+                            backgroundColor: intervention.severity === 'high' ? '#fee2e2' : 
+                                           intervention.severity === 'medium' ? '#fef3c7' : '#dcfce7' 
+                          }]}>
+                            <Text style={[styles.statusBadgeText, { 
+                              color: intervention.severity === 'high' ? '#dc2626' : 
+                                     intervention.severity === 'medium' ? '#f59e0b' : '#16a34a' 
+                            }]}>
+                              {intervention.severity}
+                            </Text>
                           </View>
-
-                          {intervention.pictures && intervention.pictures.length > 0 && (
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photos:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>
-                                {intervention.pictures.length} image{intervention.pictures.length !== 1 ? 's' : ''}
-                              </Text>
-                            </View>
-                          )}
+                        </View>
+                        <View style={styles.reportCardMeta}>
+                          <View style={styles.metaItem}>
+                            <User size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                              {intervention.employeeName}
+                            </Text>
+                          </View>
+                          <View style={styles.metaItem}>
+                            <Calendar size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                              {formatDate(intervention.createdAt)}
+                            </Text>
+                          </View>
                         </View>
                       </TouchableOpacity>
                     ))}
                   </View>
                 )
-              ) : selectedTab === 'testing' ? (
-                companyAirTestingInspections.length === 0 ? (
-                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                    <Wind size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Air Testing Records Yet</Text>
-                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                      Air testing records will appear here once logged
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    <View style={[styles.filterSection, { backgroundColor: colors.card }]}>
-                      <View style={styles.filterHeader}>
-                        <Filter size={18} color="#06b6d4" />
-                        <Text style={[styles.filterTitle, { color: colors.text }]}>Filter by Pipe Run</Text>
-                      </View>
-                      <TextInput
-                        style={[styles.pipeRunInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                        value={selectedPipeRun}
-                        onChangeText={setSelectedPipeRun}
-                        placeholder="Enter pipe run to filter..."
-                        placeholderTextColor={colors.textSecondary}
-                      />
-                    </View>
-                    <View style={styles.reportsList}>
-                    {companyAirTestingInspections
-                      .filter(inspection => {
-                        if (selectedPipeRun && !inspection.pipeRun.toLowerCase().includes(selectedPipeRun.toLowerCase())) {
-                          return false;
-                        }
-                        return isDateInRange(inspection.createdAt);
-                      })
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map((inspection) => {
-                        const projectName = inspection.projectId ? getProjectName(inspection.projectId) : undefined;
-                        
-                        return (
-                        <View key={inspection.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: '#06b6d4' }]}>
-                          <View style={styles.reportCardContent}>
-                            <View style={styles.reportHeader}>
-                              <View style={[styles.reportIcon, { backgroundColor: '#cffafe' }]}>
-                                <Wind size={20} color="#06b6d4" />
-                              </View>
-                              <View style={styles.reportInfo}>
-                                <Text style={[styles.reportTitle, { color: colors.text }]}>Air Testing</Text>
-                                <View style={styles.reportMeta}>
-                                  <User size={14} color={colors.textSecondary} />
-                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                    {inspection.employeeName}
-                                  </Text>
-                                </View>
-                              </View>
-                            </View>
+              )}
 
-                            <View style={styles.reportDetails}>
-                              <View style={styles.reportDetail}>
-                                <Calendar size={16} color={colors.textSecondary} />
-                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                  {formatDate(inspection.createdAt)}
-                                </Text>
-                              </View>
-                              <View style={styles.reportDetail}>
-                                <Clock size={16} color={colors.textSecondary} />
-                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                  {formatTime(inspection.createdAt)}
-                                </Text>
-                              </View>
-                            </View>
-
-                            {inspection.projectId && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Project:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{getProjectName(inspection.projectId)}</Text>
-                              </View>
-                            )}
-
-                            {inspection.section && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Section:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.section}</Text>
-                              </View>
-                            )}
-
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Run:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeRun}</Text>
-                            </View>
-
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Joint:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeJoint}</Text>
-                            </View>
-
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Pipe Size:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.pipeSize}</Text>
-                            </View>
-
-                            {inspection.notes && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Notes:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{inspection.notes}</Text>
-                              </View>
-                            )}
-
-                            {((inspection.startImage || inspection.finishImage || (inspection.additionalImages && inspection.additionalImages.length > 0))) && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photos:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>
-                                  {[inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean).length} image{[inspection.startImage, inspection.finishImage, ...(inspection.additionalImages || [])].filter(Boolean).length !== 1 ? 's' : ''}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <View style={styles.reportActions}>
-                            <TouchableOpacity
-                              style={[styles.actionButton, styles.downloadButton]}
-                              onPress={async () => {
-                                try {
-                                  await generateAirTestingInspectionPDF(inspection, company!.name, projectName);
-                                } catch (error) {
-                                  console.error('Error downloading air testing PDF:', error);
-                                  Alert.alert('Error', 'Failed to download PDF');
-                                }
-                              }}
-                            >
-                              <Download size={16} color="#1e40af" />
-                              <Text style={styles.downloadButtonText}>PDF</Text>
-                            </TouchableOpacity>
-                            {(user?.role === 'company' || user?.role === 'administrator') && deleteAirTestingInspection && (
-                              <TouchableOpacity
-                                style={[styles.actionButton, styles.deleteButton]}
-                                onPress={() => {
-                                  Alert.alert(
-                                    'Delete Air Testing',
-                                    'Are you sure you want to delete this air testing record?',
-                                    [
-                                      { text: 'Cancel', style: 'cancel' },
-                                      {
-                                        text: 'Delete',
-                                        style: 'destructive',
-                                        onPress: async () => {
-                                          try {
-                                            await deleteAirTestingInspection(inspection.id);
-                                            Alert.alert('Success', 'Air testing record deleted');
-                                          } catch (error) {
-                                            console.error('Error deleting air testing:', error);
-                                            Alert.alert('Error', 'Failed to delete air testing record');
-                                          }
-                                        },
-                                      },
-                                    ]
-                                  );
-                                }}
-                              >
-                                <Trash2 size={16} color="#dc2626" />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        </View>
-                        );
-                      })}
-                    </View>
-                  </>
-                )
-              ) : selectedTab === 'equipment-reports' ? (
-                companyEquipmentReports.length === 0 ? (
-                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+              {selectedCategory === 'equipment-reports' && (
+                equipmentReports.length === 0 ? (
+                  <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                     <ClipboardList size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Equipment Reports Yet</Text>
-                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                      Equipment issue reports will appear here once submitted
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Equipment Reports</Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      Equipment reports will appear here
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.reportsList}>
-                    {companyEquipmentReports.map((report) => {
-                      const statusColor = report.status === 'open' ? '#ef4444' : report.status === 'fixed' ? '#10b981' : '#94a3b8';
-                      const statusText = report.status === 'open' ? 'Open' : report.status === 'fixed' ? 'Fixed' : 'Discarded';
+                  <View style={styles.listContainer}>
+                    {equipmentReports.map((report) => {
+                      const statusColor = report.status === 'open' ? '#ef4444' : 
+                                        report.status === 'fixed' ? '#10b981' : '#94a3b8';
+                      const statusBg = report.status === 'open' ? '#fee2e2' : 
+                                      report.status === 'fixed' ? '#dcfce7' : '#f1f5f9';
                       
                       return (
-                        <View key={report.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: statusColor }]}>
-                          <View style={styles.reportCardContent}>
-                            <View style={styles.reportHeader}>
-                              <View style={[styles.reportIcon, { backgroundColor: '#f3e8ff' }]}>
-                                <ClipboardList size={20} color="#8b5cf6" />
-                              </View>
-                              <View style={styles.reportInfo}>
-                                <Text style={[styles.reportTitle, { color: colors.text }]}>Equipment Report</Text>
-                                <View style={styles.reportMeta}>
-                                  <User size={14} color={colors.textSecondary} />
-                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                    {report.reportedBy}
-                                  </Text>
-                                </View>
-                              </View>
-                              <View style={[styles.severityBadge, { backgroundColor: statusColor === '#ef4444' ? '#fee2e2' : statusColor === '#10b981' ? '#dcfce7' : '#f1f5f9' }]}>
-                                <Text style={[styles.severityBadgeText, { color: statusColor }]}>
-                                  {statusText.toUpperCase()}
-                                </Text>
-                              </View>
+                        <View key={report.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
+                          <View style={styles.reportCardHeader}>
+                            <View style={styles.reportCardInfo}>
+                              <Text style={[styles.reportCardTitle, { color: colors.text }]}>{report.equipmentName || 'Equipment Report'}</Text>
+                              <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {report.issueTitle || 'No issue title'}
+                              </Text>
                             </View>
-
-                            <View style={styles.reportDetails}>
-                              <View style={styles.reportDetail}>
-                                <Calendar size={16} color={colors.textSecondary} />
-                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                  {formatDate(report.createdAt)}
-                                </Text>
-                              </View>
-                              <View style={styles.reportDetail}>
-                                <Clock size={16} color={colors.textSecondary} />
-                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                  {formatTime(report.createdAt)}
-                                </Text>
-                              </View>
+                            <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                              <Text style={[styles.statusBadgeText, { color: statusColor }]}>
+                                {report.status}
+                              </Text>
                             </View>
-
-                            {report.equipmentName && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment Name:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{report.equipmentName}</Text>
-                              </View>
-                            )}
-
-                            {report.equipmentId && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment ID:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{report.equipmentId}</Text>
-                              </View>
-                            )}
-
-                            {report.issueTitle && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Issue:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={2}>{report.issueTitle}</Text>
-                              </View>
-                            )}
-
-                            {report.description && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Description:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={3}>{report.description}</Text>
-                              </View>
-                            )}
-
-                            {report.photo && (
-                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photo:</Text>
-                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>Attached</Text>
-                              </View>
-                            )}
-
-                            {report.status === 'fixed' && report.fixedBy && (
-                              <View style={[styles.fixedBadge, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
-                                <CheckCircle size={14} color="#16a34a" />
-                                <Text style={styles.fixedBadgeText}>Fixed by {report.fixedBy}</Text>
-                              </View>
-                            )}
-
-                            {report.status === 'discarded' && report.discardedBy && (
-                              <View style={[styles.fixedBadge, { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' }]}>
-                                <X size={14} color="#64748b" />
-                                <Text style={[styles.fixedBadgeText, { color: '#64748b' }]}>Discarded by {report.discardedBy}</Text>
-                              </View>
-                            )}
                           </View>
-
-                          <View style={styles.reportActions}>
-                            {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && markEquipmentReportFixed && (
+                          <View style={styles.reportCardMeta}>
+                            <View style={styles.metaItem}>
+                              <User size={14} color={colors.textSecondary} />
+                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                {report.reportedBy}
+                              </Text>
+                            </View>
+                            <View style={styles.metaItem}>
+                              <Calendar size={14} color={colors.textSecondary} />
+                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                {formatDate(report.createdAt)}
+                              </Text>
+                            </View>
+                          </View>
+                          {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && (
+                            <View style={styles.reportCardActions}>
                               <TouchableOpacity
-                                style={[styles.actionButton, styles.fixButton]}
+                                style={[styles.actionBtn, { backgroundColor: '#dcfce7' }]}
                                 onPress={() => {
                                   Alert.prompt(
                                     'Mark as Fixed',
-                                    'Add optional notes about the fix',
+                                    'Add optional notes',
                                     [
                                       { text: 'Cancel', style: 'cancel' },
                                       {
-                                        text: 'Mark Fixed',
+                                        text: 'Fixed',
                                         onPress: async (notes) => {
-                                          try {
+                                          if (markEquipmentReportFixed) {
                                             await markEquipmentReportFixed(report.id, notes);
-                                            Alert.alert('Success', 'Report marked as fixed');
-                                          } catch (error) {
-                                            console.error('Error marking report as fixed:', error);
-                                            Alert.alert('Error', 'Failed to mark as fixed');
                                           }
                                         },
                                       },
@@ -1306,28 +500,21 @@ export default function ReportsScreen() {
                                 }}
                               >
                                 <CheckCircle size={16} color="#16a34a" />
-                                <Text style={styles.fixButtonText}>Mark Fixed</Text>
+                                <Text style={[styles.actionBtnText, { color: '#16a34a' }]}>Fixed</Text>
                               </TouchableOpacity>
-                            )}
-                            {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && markEquipmentReportDiscarded && (
                               <TouchableOpacity
-                                style={[styles.actionButton, { backgroundColor: '#f1f5f9', paddingHorizontal: 12 }]}
+                                style={[styles.actionBtn, { backgroundColor: '#f1f5f9' }]}
                                 onPress={() => {
                                   Alert.prompt(
                                     'Discard Report',
-                                    'Add optional reason for discarding',
+                                    'Add optional reason',
                                     [
                                       { text: 'Cancel', style: 'cancel' },
                                       {
                                         text: 'Discard',
-                                        style: 'destructive',
                                         onPress: async (notes) => {
-                                          try {
+                                          if (markEquipmentReportDiscarded) {
                                             await markEquipmentReportDiscarded(report.id, notes);
-                                            Alert.alert('Success', 'Report discarded');
-                                          } catch (error) {
-                                            console.error('Error discarding report:', error);
-                                            Alert.alert('Error', 'Failed to discard report');
                                           }
                                         },
                                       },
@@ -1338,95 +525,11 @@ export default function ReportsScreen() {
                               >
                                 <X size={16} color="#64748b" />
                               </TouchableOpacity>
-                            )}
-                            {(user?.role === 'company' || user?.role === 'administrator') && deleteEquipmentReport && (
-                              <TouchableOpacity
-                                style={[styles.actionButton, styles.deleteButton]}
-                                onPress={() => {
-                                  Alert.alert(
-                                    'Delete Report',
-                                    'Are you sure you want to delete this equipment report?',
-                                    [
-                                      { text: 'Cancel', style: 'cancel' },
-                                      {
-                                        text: 'Delete',
-                                        style: 'destructive',
-                                        onPress: async () => {
-                                          try {
-                                            await deleteEquipmentReport(report.id);
-                                            Alert.alert('Success', 'Report deleted');
-                                          } catch (error) {
-                                            console.error('Error deleting report:', error);
-                                            Alert.alert('Error', 'Failed to delete report');
-                                          }
-                                        },
-                                      },
-                                    ]
-                                  );
-                                }}
-                              >
-                                <Trash2 size={16} color="#dc2626" />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )
-              ) : (
-                fixLogs.length === 0 ? (
-                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                    <Wrench size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Fixes Yet</Text>
-                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                      Fixed inspection logs will appear here
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.reportsList}>
-                    {fixLogs.map((log) => (
-                      <View key={log.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
-                        <View style={styles.reportCardContent}>
-                          <View style={styles.reportHeader}>
-                            <View style={[styles.reportIcon, { backgroundColor: '#fef3c7' }]}>
-                              <Wrench size={20} color="#f59e0b" />
-                            </View>
-                            <View style={styles.reportInfo}>
-                              <Text style={[styles.reportTitle, { color: colors.text }]}>Issue Fixed</Text>
-                              <View style={styles.reportMeta}>
-                                <User size={14} color={colors.textSecondary} />
-                                <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
-                                  {log.fixedBy}
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
-
-                          <View style={styles.reportDetails}>
-                            <View style={styles.reportDetail}>
-                              <Calendar size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatDate(log.fixedAt)}
-                              </Text>
-                            </View>
-                            <View style={styles.reportDetail}>
-                              <Clock size={16} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatTime(log.fixedAt)}
-                              </Text>
-                            </View>
-                          </View>
-
-                          {log.notes && (
-                            <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
-                              <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Notes:</Text>
-                              <Text style={[styles.reportExtraValue, { color: colors.text }]}>{log.notes}</Text>
                             </View>
                           )}
                         </View>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 )
               )}
@@ -1434,66 +537,55 @@ export default function ReportsScreen() {
           )
         ) : mainTab === 'mychecks' ? (
           <>
-            <View style={styles.statsContainer}>
+            <View style={styles.statsGrid}>
               <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{myAllInspections.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Inspections</Text>
+                <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
+                  <FileText size={20} color="#1e40af" />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>{myAllInspections.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>My Inspections</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{myPositiveInterventions.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Interventions</Text>
+                <View style={[styles.statIconContainer, { backgroundColor: '#dcfce7' }]}>
+                  <AlertTriangle size={20} color="#10b981" />
+                </View>
+                <Text style={[styles.statValue, { color: colors.text }]}>{myPositiveInterventions.length}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>My Interventions</Text>
               </View>
             </View>
 
-            {myAllItems.length === 0 ? (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <History size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Checks Yet</Text>
-                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                  Your completed inspections will appear here
+            {myAllInspections.length === 0 && myPositiveInterventions.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                <Activity size={48} color={colors.textSecondary} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Activity</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  Your completed checks will appear here
                 </Text>
               </View>
             ) : (
-              <View style={styles.reportsList}>
-                {myAllItems.map((item) => {
+              <View style={styles.listContainer}>
+                {[...myAllInspections.map(i => ({ ...i, itemType: 'inspection' as const })), ...myPositiveInterventions.map(i => ({ ...i, itemType: 'intervention' as const }))].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((item) => {
                   if (item.itemType === 'intervention') {
                     return (
                       <TouchableOpacity
                         key={item.id}
                         style={[styles.reportCard, { backgroundColor: colors.card }]}
-                        activeOpacity={0.7}
-                        onPress={() => router.push({
-                          pathname: '/intervention-detail',
-                          params: { id: item.id },
-                        })}
+                        onPress={() => router.push({ pathname: '/intervention-detail', params: { id: item.id } })}
                       >
-                        <View style={styles.reportCardContent}>
-                          <View style={styles.reportHeader}>
-                            <View style={[styles.reportIcon, { backgroundColor: '#dcfce7' }]}>
-                              <AlertTriangle size={20} color="#10b981" />
-                            </View>
-                            <View style={styles.reportInfo}>
-                              <Text style={[styles.reportTitle, { color: colors.text }]}>Positive Intervention</Text>
-                              <Text style={[styles.reportMetaText, { color: colors.textSecondary }]} numberOfLines={1}>
-                                {item.hazardDescription}
-                              </Text>
-                            </View>
-                            <ChevronRight size={20} color={colors.textSecondary} />
+                        <View style={styles.reportCardHeader}>
+                          <View style={styles.reportCardInfo}>
+                            <Text style={[styles.reportCardTitle, { color: colors.text }]}>Positive Intervention</Text>
+                            <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {item.hazardDescription}
+                            </Text>
                           </View>
-
-                          <View style={styles.reportDetails}>
-                            <View style={styles.reportDetail}>
-                              <Calendar size={14} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatDate(item.createdAt)}
-                              </Text>
-                            </View>
-                            <View style={styles.reportDetail}>
-                              <Clock size={14} color={colors.textSecondary} />
-                              <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                {formatTime(item.createdAt)}
-                              </Text>
-                            </View>
+                        </View>
+                        <View style={styles.reportCardMeta}>
+                          <View style={styles.metaItem}>
+                            <Calendar size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                              {formatDate(item.createdAt)}
+                            </Text>
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -1505,80 +597,29 @@ export default function ReportsScreen() {
                     <TouchableOpacity
                       key={inspection.id}
                       style={[styles.reportCard, { backgroundColor: colors.card }]}
-                      activeOpacity={0.7}
                       onPress={() => router.push({
                         pathname: '/inspection-detail',
                         params: { id: inspection.id, type: inspection.type },
                       })}
                     >
-                      <View style={styles.reportCardContent}>
-                        <View style={styles.reportHeader}>
-                          <View
-                            style={[
-                              styles.reportIcon,
-                              {
-                                backgroundColor:
-                                  inspection.type === 'plant'
-                                    ? '#dbeafe'
-                                    : inspection.type === 'quickhitch'
-                                    ? '#ccfbf1'
-                                    : inspection.type === 'vehicle'
-                                    ? '#fef3c7'
-                                    : '#fce7f3',
-                              },
-                            ]}
-                          >
-                            <FileText
-                              size={20}
-                              color={
-                                inspection.type === 'plant'
-                                  ? '#1e40af'
-                                  : inspection.type === 'quickhitch'
-                                  ? '#0d9488'
-                                  : inspection.type === 'vehicle'
-                                  ? '#f59e0b'
-                                  : '#ec4899'
-                              }
-                            />
-                          </View>
-                          <View style={styles.reportInfo}>
-                            <Text style={[styles.reportTitle, { color: colors.text }]}>{
-                              inspection.type === 'plant'
-                                ? 'Plant Daily Inspection'
-                                : inspection.type === 'quickhitch'
-                                ? 'Quick Hitch Inspection'
-                                : inspection.type === 'vehicle'
-                                ? 'Vehicle Inspection'
-                                : 'Bucket Change Check'
-                            }</Text>
-                            <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>{
-                              inspection.type === 'plant' && 'plantNumber' in inspection
-                                ? `Plant #${inspection.plantNumber}`
-                                : inspection.type === 'quickhitch' && 'quickHitchModel' in inspection
-                                ? inspection.quickHitchModel
-                                : inspection.type === 'vehicle' && 'vehicleRegistration' in inspection
-                                ? inspection.vehicleRegistration
-                                : inspection.type === 'bucketchange' && 'bucketType' in inspection
-                                ? inspection.bucketType
-                                : ''
-                            }</Text>
-                          </View>
-                          <ChevronRight size={20} color={colors.textSecondary} />
+                      <View style={styles.reportCardHeader}>
+                        <View style={styles.reportCardInfo}>
+                          <Text style={[styles.reportCardTitle, { color: colors.text }]}>
+                            {inspection.type === 'plant' ? 'Plant Inspection' :
+                             inspection.type === 'quickhitch' ? 'Quick Hitch' :
+                             inspection.type === 'vehicle' ? 'Vehicle' : 'Bucket Change'}
+                          </Text>
+                          <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]}>
+                            {getInspectedItemName(inspection)}
+                          </Text>
                         </View>
-
-                        <View style={styles.reportDetails}>
-                          <View style={styles.reportDetail}>
-                            <Calendar size={14} color={colors.textSecondary} />
-                            <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                              {formatDate(inspection.createdAt)}
-                            </Text>
-                          </View>
-                          <View style={styles.reportDetail}>
-                            <Clock size={14} color={colors.textSecondary} />
-                            <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                              {formatTime(inspection.createdAt)}
-                            </Text>
-                          </View>
+                      </View>
+                      <View style={styles.reportCardMeta}>
+                        <View style={styles.metaItem}>
+                          <Calendar size={14} color={colors.textSecondary} />
+                          <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                            {formatDate(inspection.createdAt)}
+                          </Text>
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -1591,281 +632,92 @@ export default function ReportsScreen() {
           <>
             {(() => {
               const myDrafts = user ? getDrafts(user.id) : [];
-              
-              const handleSubmitDraft = async (draftId: string) => {
-                Alert.alert(
-                  'Submit Draft',
-                  'Are you sure you want to submit this inspection to the company?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Submit',
-                      onPress: async () => {
-                        try {
-                          await submitDraft(draftId);
-                          Alert.alert('Success', 'Inspection submitted successfully');
-                        } catch (error) {
-                          console.error('Error submitting draft:', error);
-                          Alert.alert('Error', 'Failed to submit inspection. Please try again.');
-                        }
-                      },
-                    },
-                  ]
+
+              if (myDrafts.length === 0) {
+                return (
+                  <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                    <FilePlus size={48} color={colors.textSecondary} />
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Drafts</Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      Saved drafts will appear here
+                    </Text>
+                  </View>
                 );
-              };
-
-              const handleDeleteDraft = async (draftId: string) => {
-                Alert.alert(
-                  'Delete Draft',
-                  'Are you sure you want to delete this draft?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await deleteDraft(draftId);
-                        } catch (error) {
-                          console.error('Error deleting draft:', error);
-                          Alert.alert('Error', 'Failed to delete draft');
-                        }
-                      },
-                    },
-                  ]
-                );
-              };
-
-              const getDraftTitle = (draft: Draft) => {
-                switch (draft.type) {
-                  case 'plant': return 'Plant Inspection';
-                  case 'quickhitch': return 'Quick Hitch Inspection';
-                  case 'vehicle': return 'Vehicle Inspection';
-                  case 'bucketchange': return 'Bucket Change Inspection';
-                  case 'intervention': return 'Positive Intervention';
-                  case 'greasing': return 'Greasing Inspection';
-                  default: return 'Unknown Type';
-                }
-              };
-
-              const getDraftDetails = (draft: Draft) => {
-                const data = draft.data as any;
-                
-                if (draft.isWeeklyReport && data.days) {
-                  const completedDays = data.days.filter((d: any) => d.completed).length;
-                  return `Weekly Report - ${completedDays} day${completedDays !== 1 ? 's' : ''} completed`;
-                }
-                
-                switch (draft.type) {
-                  case 'plant': return data.plantNumber || 'No plant number';
-                  case 'quickhitch': return data.excavatorDetails || 'No machine details';
-                  case 'vehicle': return data.vehicleRegistration || 'No registration';
-                  case 'bucketchange': return data.bucketType || 'No bucket type';
-                  case 'intervention': return data.hazardDescription || 'No description';
-                  case 'greasing': return data.plantNumber || data.equipmentName || 'No equipment';
-                  default: return '';
-                }
-              };
-
-              const getDraftIcon = (type: DraftType) => {
-                switch (type) {
-                  case 'plant': return { color: '#1e40af', bg: '#dbeafe' };
-                  case 'quickhitch': return { color: '#0d9488', bg: '#ccfbf1' };
-                  case 'vehicle': return { color: '#f59e0b', bg: '#fef3c7' };
-                  case 'bucketchange': return { color: '#ec4899', bg: '#fce7f3' };
-                  case 'intervention': return { color: '#10b981', bg: '#dcfce7' };
-                  case 'greasing': return { color: '#06b6d4', bg: '#cffafe' };
-                  default: return { color: '#64748b', bg: '#f1f5f9' };
-                }
-              };
-
-              const handleDownloadWeeklyPDF = async (draft: Draft) => {
-                if (!company || !user || !draft.isWeeklyReport) return;
-                
-                try {
-                  const data = draft.data as any;
-                  const projectName = data.projectId ? company.projects.find(p => p.id === data.projectId)?.name : undefined;
-                  
-                  let inspectionType: 'plant' | 'vehicle' | 'quickhitch' | 'bucketchange';
-                  if (draft.type === 'plant') inspectionType = 'plant';
-                  else if (draft.type === 'vehicle') inspectionType = 'vehicle';
-                  else if (draft.type === 'quickhitch') inspectionType = 'quickhitch';
-                  else if (draft.type === 'bucketchange') inspectionType = 'bucketchange';
-                  else return;
-                  
-                  await generateWeeklyInspectionPDF(
-                    data,
-                    inspectionType,
-                    company.name,
-                    user.name,
-                    projectName
-                  );
-                } catch (error) {
-                  console.error('Error generating weekly PDF:', error);
-                  Alert.alert('Error', 'Failed to generate weekly PDF');
-                }
-              };
-
-              const handleEditDraft = (draft: Draft) => {
-                switch (draft.type) {
-                  case 'plant':
-                    router.push({
-                      pathname: '/plant-inspection',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                  case 'quickhitch':
-                    router.push({
-                      pathname: '/quick-hitch-inspection',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                  case 'vehicle':
-                    router.push({
-                      pathname: '/(tabs)/vehicle-inspection',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                  case 'bucketchange':
-                    router.push({
-                      pathname: '/bucket-change-inspection',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                  case 'intervention':
-                    router.push({
-                      pathname: '/positive-intervention',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                  case 'greasing':
-                    router.push({
-                      pathname: '/greasing-inspection',
-                      params: { draftId: draft.id },
-                    });
-                    break;
-                }
-              };
+              }
 
               return (
-                <>
-                  <View style={[styles.draftInfoCard, { backgroundColor: colors.card }]}>
-                    <FilePlus size={24} color={colors.primary} />
-                    <View style={styles.draftInfoContent}>
-                      <Text style={[styles.draftInfoTitle, { color: colors.text }]}>Draft Inspections</Text>
-                      <Text style={[styles.draftInfoText, { color: colors.textSecondary }]}>
-                        Save your inspections throughout the week and submit them all at once. Perfect for daily checks or weekly reports.
-                      </Text>
+                <View style={styles.listContainer}>
+                  {myDrafts.map((draft) => (
+                    <View key={draft.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
+                      <View style={styles.reportCardHeader}>
+                        <View style={styles.reportCardInfo}>
+                          <Text style={[styles.reportCardTitle, { color: colors.text }]}>
+                            {draft.type === 'plant' ? 'Plant Inspection' :
+                             draft.type === 'quickhitch' ? 'Quick Hitch' :
+                             draft.type === 'vehicle' ? 'Vehicle' :
+                             draft.type === 'bucketchange' ? 'Bucket Change' :
+                             draft.type === 'intervention' ? 'Intervention' : 'Draft'}
+                          </Text>
+                          <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]}>
+                            Draft saved {formatDate(draft.updatedAt)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.reportCardActions}>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, { backgroundColor: '#dbeafe', flex: 1 }]}
+                          onPress={() => {
+                            if (draft.type === 'plant') router.push({ pathname: '/plant-inspection', params: { draftId: draft.id } });
+                            else if (draft.type === 'quickhitch') router.push({ pathname: '/quick-hitch-inspection', params: { draftId: draft.id } });
+                            else if (draft.type === 'vehicle') router.push({ pathname: '/(tabs)/vehicle-inspection', params: { draftId: draft.id } });
+                            else if (draft.type === 'bucketchange') router.push({ pathname: '/bucket-change-inspection', params: { draftId: draft.id } });
+                            else if (draft.type === 'intervention') router.push({ pathname: '/positive-intervention', params: { draftId: draft.id } });
+                          }}
+                        >
+                          <Edit3 size={16} color="#1e40af" />
+                          <Text style={[styles.actionBtnText, { color: '#1e40af' }]}>Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, { backgroundColor: '#1e40af', flex: 1 }]}
+                          onPress={() => {
+                            Alert.alert(
+                              'Submit Draft',
+                              'Submit this inspection?',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Submit',
+                                  onPress: async () => {
+                                    await submitDraft(draft.id);
+                                    Alert.alert('Success', 'Submitted successfully');
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        >
+                          <Send size={16} color="#fff" />
+                          <Text style={[styles.actionBtnText, { color: '#fff' }]}>Submit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Draft',
+                              'Are you sure?',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Delete', style: 'destructive', onPress: () => deleteDraft(draft.id) },
+                              ]
+                            );
+                          }}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
-
-                  {myDrafts.length === 0 ? (
-                    <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                      <FilePlus size={48} color={colors.textSecondary} />
-                      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Drafts Yet</Text>
-                      <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                        Saved drafts will appear here. You can save inspections and submit them later.
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.reportsList}>
-                      {myDrafts.map((draft) => {
-                        const iconStyle = getDraftIcon(draft.type);
-                        return (
-                          <View key={draft.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
-                            <View style={styles.reportCardContent}>
-                              <View style={styles.reportHeader}>
-                                <View style={[styles.reportIcon, { backgroundColor: iconStyle.bg }]}>
-                                  <FileText size={20} color={iconStyle.color} />
-                                </View>
-                                <View style={styles.reportInfo}>
-                                  <Text style={[styles.reportTitle, { color: colors.text }]}>
-                                    {getDraftTitle(draft)}
-                                  </Text>
-                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]} numberOfLines={1}>
-                                    {getDraftDetails(draft)}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <View style={styles.reportDetails}>
-                                <View style={styles.reportDetail}>
-                                  <Calendar size={14} color={colors.textSecondary} />
-                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                    {formatDate(draft.updatedAt)}
-                                  </Text>
-                                </View>
-                                <View style={styles.reportDetail}>
-                                  <Clock size={14} color={colors.textSecondary} />
-                                  <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
-                                    {formatTime(draft.updatedAt)}
-                                  </Text>
-                                </View>
-                              </View>
-                            </View>
-
-                            <View style={styles.draftActions}>
-                              {draft.isWeeklyReport ? (
-                                <>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.editDraftButton]}
-                                    onPress={() => handleEditDraft(draft)}
-                                  >
-                                    <Edit3 size={16} color="#1e40af" />
-                                    <Text style={styles.editDraftButtonText}>Edit</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, { backgroundColor: '#f59e0b' }]}
-                                    onPress={() => handleDownloadWeeklyPDF(draft)}
-                                  >
-                                    <Download size={16} color="#ffffff" />
-                                    <Text style={[styles.submitDraftButtonText, { color: '#ffffff' }]}>PDF</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.submitDraftButton]}
-                                    onPress={() => handleSubmitDraft(draft.id)}
-                                  >
-                                    <Send size={16} color="#ffffff" />
-                                    <Text style={styles.submitDraftButtonText}>Submit</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.deleteDraftButton]}
-                                    onPress={() => handleDeleteDraft(draft.id)}
-                                  >
-                                    <Trash2 size={16} color="#dc2626" />
-                                  </TouchableOpacity>
-                                </>
-                              ) : (
-                                <>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.editDraftButton]}
-                                    onPress={() => handleEditDraft(draft)}
-                                  >
-                                    <Edit3 size={16} color="#1e40af" />
-                                    <Text style={styles.editDraftButtonText}>Edit</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.submitDraftButton]}
-                                    onPress={() => handleSubmitDraft(draft.id)}
-                                  >
-                                    <Send size={16} color="#ffffff" />
-                                    <Text style={styles.submitDraftButtonText}>Submit</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.draftActionButton, styles.deleteDraftButton]}
-                                    onPress={() => handleDeleteDraft(draft.id)}
-                                  >
-                                    <Trash2 size={16} color="#dc2626" />
-                                  </TouchableOpacity>
-                                </>
-                              )}
-                            </View>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </>
+                  ))}
+                </View>
               );
             })()}
           </>
@@ -1879,451 +731,106 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  headerLeft: {
-    flex: 1,
+  headerTop: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 15,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 8,
   },
-  iconButton: {
+  headerButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 12,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabBar: {
+    flexDirection: 'row' as const,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  tabItemActive: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#64748b',
-  },
-  statsContainer: {
-    flexDirection: 'row' as const,
-    gap: 12,
-    marginBottom: 20,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    minHeight: 80,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: '#1e40af',
-    marginBottom: 4,
-    lineHeight: 32,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#64748b',
-    textAlign: 'center' as const,
-    fontWeight: '600' as const,
-    lineHeight: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: '#64748b',
-    textAlign: 'center' as const,
-    lineHeight: 22,
-  },
-  emptyState: {
-    borderRadius: 16,
-    padding: 40,
-    alignItems: 'center' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    marginVertical: 8,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center' as const,
-    lineHeight: 20,
-  },
-  reportsList: {
-    gap: 12,
-  },
-  reportCard: {
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    overflow: 'hidden' as const,
-    marginBottom: 4,
-  },
-  reportCardContent: {
-    padding: 18,
-  },
-  reportHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reportIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginRight: 14,
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  reportMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  reportMetaText: {
-    fontSize: 13,
-    color: '#64748b',
-  },
-  reportDetails: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
-  },
-  reportDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  reportDetailText: {
-    fontSize: 13,
-    color: '#64748b',
-  },
-  reportExtra: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  reportExtraLabel: {
-    fontSize: 13,
-    color: '#64748b',
-  },
-  reportExtraValue: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#1e293b',
-  },
-  filterSection: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  filterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  filterTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#1e293b',
-  },
-  filterButtons: {
-    gap: 8,
-    paddingRight: 8,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  filterButtonActive: {
-    backgroundColor: '#1e40af',
-    borderColor: '#1e40af',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#64748b',
-  },
-  filterButtonTextActive: {
-    color: '#ffffff',
-  },
-  reportActions: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 8,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  fixButton: {
-    backgroundColor: '#dcfce7',
-    flex: 1,
-  },
-  fixButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#16a34a',
-  },
-  deleteButton: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 12,
-  },
-  fixedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  fixedBadgeText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#16a34a',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  tabActive: {
-    backgroundColor: 'rgba(30, 64, 175, 0.1)',
-  },
   tabText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
-  tabTextActive: {
-    color: '#1e40af',
-  },
-  mainTabsContainer: {
-    flexDirection: 'row',
+  dateFilterCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
     borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
-  mainTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 8,
+  dateFilterHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
   },
-  mainTabActive: {
-    backgroundColor: 'rgba(30, 64, 175, 0.1)',
-  },
-  mainTabText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  mainTabTextActive: {
-    color: '#1e40af',
-  },
-  severityBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  severityBadgeText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-  },
-  chartSection: {
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-  },
-  chartSubtitle: {
-    fontSize: 13,
-    marginBottom: 20,
-  },
-  chartContainer: {
-    gap: 16,
-  },
-  chartRow: {
-    gap: 8,
-  },
-  chartLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  chartRank: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    width: 28,
-  },
-  chartLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    flex: 1,
-  },
-  chartBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  chartBar: {
-    height: 32,
-    borderRadius: 6,
-    minWidth: 40,
-  },
-  chartValue: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    minWidth: 32,
-  },
-  dateSearchCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  dateSearchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  dateSearchTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dateSearchTitleText: {
+  dateFilterTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  dateInputsContainer: {
-    flexDirection: 'row',
+  dateInputRow: {
+    flexDirection: 'row' as const,
     gap: 12,
   },
   dateInputWrapper: {
     flex: 1,
   },
-  dateLabel: {
+  inputLabel: {
     fontSize: 12,
     fontWeight: '600' as const,
     marginBottom: 6,
@@ -2335,130 +842,183 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
     marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center' as const,
   },
   clearButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
   },
-  draftInfoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingTop: 12,
+  },
+  statsGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: 100,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
-    gap: 12,
+    alignItems: 'center' as const,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
+  categoryBar: {
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  categoryScroll: {
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  categoryChip: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  categoryChipActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
-  draftInfoContent: {
-    flex: 1,
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
-  draftInfoTitle: {
-    fontSize: 15,
+  listContainer: {
+    gap: 12,
+  },
+  reportCard: {
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  reportCardHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    marginBottom: 12,
+  },
+  reportCardInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  reportCardTitle: {
+    fontSize: 16,
     fontWeight: '600' as const,
     marginBottom: 4,
   },
-  draftInfoText: {
+  reportCardSubtitle: {
+    fontSize: 14,
+  },
+  reportCardMeta: {
+    flexDirection: 'row' as const,
+    gap: 16,
+  },
+  metaItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+  },
+  metaText: {
     fontSize: 13,
-    lineHeight: 18,
   },
-  draftActions: {
-    flexDirection: 'row',
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+  },
+  reportCardActions: {
+    flexDirection: 'row' as const,
     gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
   },
-  draftActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  actionBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  editDraftButton: {
-    backgroundColor: '#dbeafe',
-    flex: 1,
-  },
-  editDraftButtonText: {
+  actionBtnText: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#1e40af',
   },
-  submitDraftButton: {
-    backgroundColor: '#1e40af',
-    flex: 1,
+  emptyCard: {
+    borderRadius: 16,
+    padding: 48,
+    alignItems: 'center' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  submitDraftButtonText: {
-    fontSize: 13,
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '600' as const,
-    color: '#ffffff',
-  },
-  deleteDraftButton: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 12,
-  },
-  greasingDownloadCard: {
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed' as const,
-    alignItems: 'center',
-  },
-  greasingDownloadHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    marginTop: 16,
     marginBottom: 8,
   },
-  greasingDownloadTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  greasingDownloadSubtext: {
-    fontSize: 13,
-    textAlign: 'center' as const,
-    marginBottom: 16,
-  },
-  greasingDownloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  greasingDownloadButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#ffffff',
-  },
-  pipeRunInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+  emptyText: {
     fontSize: 14,
-  },
-  downloadButton: {
-    backgroundColor: '#dbeafe',
-    flex: 1,
-  },
-  downloadButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#1e40af',
+    textAlign: 'center' as const,
+    lineHeight: 20,
   },
 });
