@@ -606,7 +606,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const getCompanyUsers = useCallback(() => {
     if (!company) return [];
-    return users.filter(u => u.companyId === company.id);
+    return users.filter(u => {
+      if (u.companyIds && u.companyIds.length > 0) {
+        return u.companyIds.includes(company.id);
+      }
+      return u.companyId === company.id;
+    });
   }, [company, users]);
 
   const changeUserRole = useCallback(async (userId: string, newRole: 'administrator' | 'management' | 'supervisor' | 'mechanic' | 'employee' | 'apprentice' | 'viewer') => {

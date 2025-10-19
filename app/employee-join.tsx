@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EmployeeJoinScreen() {
-  const { joinCompany } = useApp();
+  const { joinCompany, user } = useApp();
   
   const colors = {
     background: '#0f172a',
@@ -28,41 +28,27 @@ export default function EmployeeJoinScreen() {
     primary: '#3b82f6',
   };
   const router = useRouter();
-  const [employeeName, setEmployeeName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [companyCode, setCompanyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [joinedCompany, setJoinedCompany] = useState<string | null>(null);
 
   const handleJoin = async () => {
-    if (!employeeName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !companyCode.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!companyCode.trim()) {
+      Alert.alert('Error', 'Please enter a company code');
       return;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to join a company');
       return;
     }
 
     setIsLoading(true);
     try {
-      const company = await joinCompany(companyCode.trim().toUpperCase(), employeeName.trim(), email.trim(), password.trim(), undefined);
+      const company = await joinCompany(companyCode.trim().toUpperCase(), user.name, user.email, user.password, user.profilePicture);
       setJoinedCompany(company.name);
-    } catch (error) {
-      Alert.alert('Error', 'Invalid company code. Please check and try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Invalid company code. Please check and try again.');
       console.error('Join error:', error);
     } finally {
       setIsLoading(false);
@@ -85,13 +71,12 @@ export default function EmployeeJoinScreen() {
 
           <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              You can now start submitting daily inspection checklists. All reports will be sent to
-              your company.
+              All your existing data has been preserved. You can now work with {joinedCompany} while keeping access to your previous company.
             </Text>
           </View>
 
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>Start Inspecting</Text>
+            <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -113,66 +98,11 @@ export default function EmployeeJoinScreen() {
             <View style={styles.iconContainer}>
               <Users size={32} color="#0d9488" />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Join Company</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter your details to get started</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Join Another Company</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter company code to join as {user?.name}</Text>
           </View>
 
           <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Your Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                placeholder="Enter your full name"
-                placeholderTextColor="#94a3b8"
-                value={employeeName}
-                onChangeText={setEmployeeName}
-                autoCapitalize="words"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                placeholder="your.email@example.com"
-                placeholderTextColor="#94a3b8"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                placeholder="Enter password (min 6 characters)"
-                placeholderTextColor="#94a3b8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                placeholder="Re-enter password"
-                placeholderTextColor="#94a3b8"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
-            </View>
-
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.text }]}>Company Code</Text>
               <View style={styles.inputWithIcon}>
@@ -194,12 +124,12 @@ export default function EmployeeJoinScreen() {
             </View>
 
             <View style={styles.featureCard}>
-              <Text style={styles.featureTitle}>As an employee, you can:</Text>
+              <Text style={styles.featureTitle}>Your existing data will be preserved:</Text>
               <Text style={styles.featureText}>
-                • Fill out daily inspection checklists{'\n'}
-                • Submit reports to your company{'\n'}
-                • Track your inspection history{'\n'}
-                • Access checklists anytime, anywhere
+                • All certifications and training records{'\n'}
+                • Tickets and reminders{'\n'}
+                • Personal profile and settings{'\n'}
+                • You&apos;ll remain in both companies&apos; teams
               </Text>
             </View>
 
