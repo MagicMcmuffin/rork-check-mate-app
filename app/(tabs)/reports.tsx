@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, ClipboardList, BarChart3, Activity } from 'lucide-react-native';
+import { Draft, DraftType, EquipmentReport } from '@/types';
+import { Calendar, FileText, User, Clock, ChevronRight, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, ClipboardList, BarChart3, Activity, Eye, XCircle } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,6 +26,8 @@ export default function ReportsScreen() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedEquipmentReport, setSelectedEquipmentReport] = useState<EquipmentReport | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'fixed' | 'discarded'>('all');
 
   const appContext = useApp();
   
@@ -227,7 +229,7 @@ export default function ReportsScreen() {
                     <AlertTriangle size={20} color="#10b981" />
                   </View>
                   <Text style={[styles.statValue, { color: colors.text }]}>{positiveInterventions.length}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Interventions</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>P I's</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: colors.card }]}>
                   <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
@@ -269,7 +271,7 @@ export default function ReportsScreen() {
                   >
                     <AlertTriangle size={16} color={selectedCategory === 'interventions' ? '#fff' : colors.textSecondary} />
                     <Text style={[styles.categoryChipText, { color: selectedCategory === 'interventions' ? '#fff' : colors.textSecondary }]}>
-                      Interventions
+                      P I's
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -374,7 +376,7 @@ export default function ReportsScreen() {
                 positiveInterventions.length === 0 ? (
                   <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
                     <AlertTriangle size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Interventions</Text>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No P I's</Text>
                     <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                       Positive interventions will appear here
                     </Text>
@@ -431,107 +433,94 @@ export default function ReportsScreen() {
               )}
 
               {selectedCategory === 'equipment-reports' && (
-                equipmentReports.length === 0 ? (
-                  <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
-                    <ClipboardList size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Equipment Reports</Text>
-                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                      Equipment reports will appear here
-                    </Text>
+                <>
+                  <View style={[styles.filterBar, { backgroundColor: colors.card }]}>
+                    <TouchableOpacity
+                      style={[styles.filterChip, statusFilter === 'all' && [styles.filterChipActive, { backgroundColor: colors.primary }]]}
+                      onPress={() => setStatusFilter('all')}
+                    >
+                      <Text style={[styles.filterChipText, { color: statusFilter === 'all' ? '#fff' : colors.textSecondary }]}>All</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.filterChip, statusFilter === 'open' && [styles.filterChipActive, { backgroundColor: '#ef4444' }]]}
+                      onPress={() => setStatusFilter('open')}
+                    >
+                      <Text style={[styles.filterChipText, { color: statusFilter === 'open' ? '#fff' : colors.textSecondary }]}>Open</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.filterChip, statusFilter === 'fixed' && [styles.filterChipActive, { backgroundColor: '#10b981' }]]}
+                      onPress={() => setStatusFilter('fixed')}
+                    >
+                      <Text style={[styles.filterChipText, { color: statusFilter === 'fixed' ? '#fff' : colors.textSecondary }]}>Fixed</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.filterChip, statusFilter === 'discarded' && [styles.filterChipActive, { backgroundColor: '#94a3b8' }]]}
+                      onPress={() => setStatusFilter('discarded')}
+                    >
+                      <Text style={[styles.filterChipText, { color: statusFilter === 'discarded' ? '#fff' : colors.textSecondary }]}>Discarded</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <View style={styles.listContainer}>
-                    {equipmentReports.map((report) => {
-                      const statusColor = report.status === 'open' ? '#ef4444' : 
-                                        report.status === 'fixed' ? '#10b981' : '#94a3b8';
-                      const statusBg = report.status === 'open' ? '#fee2e2' : 
-                                      report.status === 'fixed' ? '#dcfce7' : '#f1f5f9';
-                      
-                      return (
-                        <View key={report.id} style={[styles.reportCard, { backgroundColor: colors.card }]}>
-                          <View style={styles.reportCardHeader}>
-                            <View style={styles.reportCardInfo}>
-                              <Text style={[styles.reportCardTitle, { color: colors.text }]}>{report.equipmentName || 'Equipment Report'}</Text>
-                              <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                                {report.issueTitle || 'No issue title'}
-                              </Text>
-                            </View>
-                            <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-                              <Text style={[styles.statusBadgeText, { color: statusColor }]}>
-                                {report.status}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.reportCardMeta}>
-                            <View style={styles.metaItem}>
-                              <User size={14} color={colors.textSecondary} />
-                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                                {report.reportedBy}
-                              </Text>
-                            </View>
-                            <View style={styles.metaItem}>
-                              <Calendar size={14} color={colors.textSecondary} />
-                              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                                {formatDate(report.createdAt)}
-                              </Text>
-                            </View>
-                          </View>
-                          {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && (
-                            <View style={styles.reportCardActions}>
-                              <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#dcfce7' }]}
-                                onPress={() => {
-                                  Alert.prompt(
-                                    'Mark as Fixed',
-                                    'Add optional notes',
-                                    [
-                                      { text: 'Cancel', style: 'cancel' },
-                                      {
-                                        text: 'Fixed',
-                                        onPress: async (notes) => {
-                                          if (markEquipmentReportFixed) {
-                                            await markEquipmentReportFixed(report.id, notes);
-                                          }
-                                        },
-                                      },
-                                    ],
-                                    'plain-text'
-                                  );
-                                }}
-                              >
-                                <CheckCircle size={16} color="#16a34a" />
-                                <Text style={[styles.actionBtnText, { color: '#16a34a' }]}>Fixed</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#f1f5f9' }]}
-                                onPress={() => {
-                                  Alert.prompt(
-                                    'Discard Report',
-                                    'Add optional reason',
-                                    [
-                                      { text: 'Cancel', style: 'cancel' },
-                                      {
-                                        text: 'Discard',
-                                        onPress: async (notes) => {
-                                          if (markEquipmentReportDiscarded) {
-                                            await markEquipmentReportDiscarded(report.id, notes);
-                                          }
-                                        },
-                                      },
-                                    ],
-                                    'plain-text'
-                                  );
-                                }}
-                              >
-                                <X size={16} color="#64748b" />
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                )
+                  {(() => {
+                    const filteredReports = statusFilter === 'all' ? equipmentReports : equipmentReports.filter(r => r.status === statusFilter);
+                    return filteredReports.length === 0 ? (
+                      <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                        <ClipboardList size={48} color={colors.textSecondary} />
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No Equipment Reports</Text>
+                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                          {statusFilter === 'all' ? 'Equipment reports will appear here' : `No ${statusFilter} reports found`}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.listContainer}>
+                        {filteredReports.map((report) => {
+                          const statusColor = report.status === 'open' ? '#ef4444' : 
+                                            report.status === 'fixed' ? '#10b981' : '#94a3b8';
+                          const statusBg = report.status === 'open' ? '#fee2e2' : 
+                                          report.status === 'fixed' ? '#dcfce7' : '#f1f5f9';
+                          
+                          return (
+                            <TouchableOpacity
+                              key={report.id}
+                              style={[styles.reportCard, { backgroundColor: colors.card }]}
+                              onPress={() => setSelectedEquipmentReport(report)}
+                            >
+                              <View style={styles.reportCardHeader}>
+                                <View style={styles.reportCardInfo}>
+                                  <Text style={[styles.reportCardTitle, { color: colors.text }]}>{report.equipmentName || 'Equipment Report'}</Text>
+                                  <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                                    {report.issueTitle || 'No issue title'}
+                                  </Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                  <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                                    <Text style={[styles.statusBadgeText, { color: statusColor }]}>
+                                      {report.status}
+                                    </Text>
+                                  </View>
+                                  <Eye size={16} color={colors.textSecondary} />
+                                </View>
+                              </View>
+                              <View style={styles.reportCardMeta}>
+                                <View style={styles.metaItem}>
+                                  <User size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                    {report.reportedBy}
+                                  </Text>
+                                </View>
+                                <View style={styles.metaItem}>
+                                  <Calendar size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                                    {formatDate(report.createdAt)}
+                                  </Text>
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    );
+                  })()}
+                </>
               )}
             </>
           )
@@ -550,7 +539,7 @@ export default function ReportsScreen() {
                   <AlertTriangle size={20} color="#10b981" />
                 </View>
                 <Text style={[styles.statValue, { color: colors.text }]}>{myPositiveInterventions.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>My Interventions</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>My P I's</Text>
               </View>
             </View>
 
@@ -723,6 +712,173 @@ export default function ReportsScreen() {
           </>
         )}
       </ScrollView>
+
+      {selectedEquipmentReport && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Equipment Report</Text>
+                <TouchableOpacity onPress={() => setSelectedEquipmentReport(null)}>
+                  <X size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.detailCard, { backgroundColor: colors.card }]}>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Equipment</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.equipmentName || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Equipment ID</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.equipmentId || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Issue</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.issueTitle || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Description</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.description || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Status</Text>
+                  <View style={[styles.statusBadge, { 
+                    backgroundColor: selectedEquipmentReport.status === 'open' ? '#fee2e2' : 
+                                   selectedEquipmentReport.status === 'fixed' ? '#dcfce7' : '#f1f5f9' 
+                  }]}>
+                    <Text style={[styles.statusBadgeText, { 
+                      color: selectedEquipmentReport.status === 'open' ? '#ef4444' : 
+                            selectedEquipmentReport.status === 'fixed' ? '#10b981' : '#94a3b8' 
+                    }]}>
+                      {selectedEquipmentReport.status}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Reported By</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.reportedBy}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Reported At</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(selectedEquipmentReport.reportedAt)}</Text>
+                </View>
+                {selectedEquipmentReport.fixedBy && (
+                  <>
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fixed By</Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.fixedBy}</Text>
+                    </View>
+                    {selectedEquipmentReport.fixNotes && (
+                      <View style={styles.detailRow}>
+                        <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fix Notes</Text>
+                        <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.fixNotes}</Text>
+                      </View>
+                    )}
+                  </>
+                )}
+                {selectedEquipmentReport.discardedBy && (
+                  <>
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Discarded By</Text>
+                      <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.discardedBy}</Text>
+                    </View>
+                    {selectedEquipmentReport.discardNotes && (
+                      <View style={styles.detailRow}>
+                        <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Discard Reason</Text>
+                        <Text style={[styles.detailValue, { color: colors.text }]}>{selectedEquipmentReport.discardNotes}</Text>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+
+              {selectedEquipmentReport.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && (
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalActionBtn, { backgroundColor: '#10b981' }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Mark as Fixed',
+                        'Add optional notes',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Fixed',
+                            onPress: async (notes) => {
+                              if (markEquipmentReportFixed) {
+                                await markEquipmentReportFixed(selectedEquipmentReport.id, notes);
+                                setSelectedEquipmentReport(null);
+                              }
+                            },
+                          },
+                        ],
+                        'plain-text'
+                      );
+                    }}
+                  >
+                    <CheckCircle size={20} color="#fff" />
+                    <Text style={[styles.modalActionBtnText, { color: '#fff' }]}>Mark as Fixed</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalActionBtn, { backgroundColor: '#94a3b8' }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Discard Report',
+                        'Add optional reason',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Discard',
+                            onPress: async (notes) => {
+                              if (markEquipmentReportDiscarded) {
+                                await markEquipmentReportDiscarded(selectedEquipmentReport.id, notes);
+                                setSelectedEquipmentReport(null);
+                              }
+                            },
+                          },
+                        ],
+                        'plain-text'
+                      );
+                    }}
+                  >
+                    <XCircle size={20} color="#fff" />
+                    <Text style={[styles.modalActionBtnText, { color: '#fff' }]}>Discard</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {(selectedEquipmentReport.status === 'fixed' || selectedEquipmentReport.status === 'discarded') && (user?.role === 'administrator' || user?.role === 'management') && (
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { backgroundColor: '#ef4444', marginTop: 12 }]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Delete Report',
+                      'Are you sure? This cannot be undone.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: async () => {
+                            if (deleteEquipmentReport) {
+                              await deleteEquipmentReport(selectedEquipmentReport.id);
+                              setSelectedEquipmentReport(null);
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Trash2 size={20} color="#fff" />
+                  <Text style={[styles.modalActionBtnText, { color: '#fff' }]}>Delete Report</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1020,5 +1176,108 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
     lineHeight: 20,
+  },
+  filterBar: {
+    flexDirection: 'row' as const,
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  filterChipActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  modalOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '90%',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+  },
+  detailCard: {
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    flex: 2,
+    textAlign: 'right' as const,
+  },
+  modalActions: {
+    gap: 12,
+  },
+  modalActionBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalActionBtnText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });
