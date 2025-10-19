@@ -471,3 +471,34 @@ export interface PlantItem {
   createdAt: string;
   updatedAt: string;
 }
+
+export type EquipmentReportStatus = 'open' | 'fixed' | 'discarded';
+
+export interface EquipmentReportAction {
+  id: string;
+  action: 'created' | 'fixed' | 'discarded';
+  performedBy: string;
+  performedAt: string;
+  notes?: string;
+}
+
+export interface EquipmentReport {
+  id: string;
+  companyId: string;
+  equipmentId: string;
+  issueTitle: string;
+  description: string;
+  photo?: string;
+  status: EquipmentReportStatus;
+  reportedBy: string;
+  reportedAt: string;
+  fixedBy?: string;
+  fixedAt?: string;
+  fixNotes?: string;
+  discardedBy?: string;
+  discardedAt?: string;
+  discardNotes?: string;
+  actionLog: EquipmentReportAction[];
+  createdAt: string;
+  updatedAt: string;
+}

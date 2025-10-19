@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter, Stack } from 'expo-router';
-import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench, FlaskConical, X } from 'lucide-react-native';
+import { ClipboardList, Building2, User, Copy, Building, Bell, CheckCircle, AlertTriangle, Trash2, Settings as SettingsIcon, Megaphone, ChevronRight, BookOpen, History, ChevronDown, ChevronUp, Car, Wrench, FlaskConical, X, FileWarning } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -513,6 +513,21 @@ export default function InspectionsScreen() {
                 <View style={styles.subItemContent}>
                   <Text style={[styles.subItemTitle, { color: colors.text }]}>Air Testing</Text>
                   <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Record pipework air tests with evidence</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.subItemCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push('/equipment-report')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.subItemIcon, { backgroundColor: '#fef3c7' }]}>
+                  <FileWarning size={20} color="#f59e0b" />
+                </View>
+                <View style={styles.subItemContent}>
+                  <Text style={[styles.subItemTitle, { color: colors.text }]}>Equipment Reports</Text>
+                  <Text style={[styles.subItemDescription, { color: colors.textSecondary }]}>Report equipment issues and track fixes</Text>
                 </View>
                 <ChevronRight size={18} color={colors.textSecondary} />
               </TouchableOpacity>
