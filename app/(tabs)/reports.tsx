@@ -427,25 +427,34 @@ export default function ReportsScreen() {
                             <Text style={[styles.chartTitle, { color: colors.text }]}>Leading Projects (Top 5)</Text>
                             <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Projects with most P I's</Text>
                             <View style={styles.chartBars}>
-                              {sortedProjects.map((project, index) => (
-                                <View key={project.projectId} style={styles.barRow}>
-                                  <Text style={[styles.barLabel, { color: colors.text }]} numberOfLines={1}>
-                                    {index + 1}. {project.projectName}
-                                  </Text>
-                                  <View style={styles.barContainer}>
-                                    <View 
-                                      style={[
-                                        styles.bar, 
-                                        { 
-                                          width: `${(project.count / maxCount) * 100}%`,
-                                          backgroundColor: '#10b981'
-                                        }
-                                      ]} 
-                                    />
-                                    <Text style={[styles.barCount, { color: colors.text }]}>{project.count}</Text>
+                              {sortedProjects.map((project, index) => {
+                                const getBarColor = (position: number) => {
+                                  if (position === 0) return '#10b981';
+                                  if (position === 1) return '#3b82f6';
+                                  if (position === 2) return '#eab308';
+                                  return '#94a3b8';
+                                };
+
+                                return (
+                                  <View key={project.projectId} style={styles.barRow}>
+                                    <Text style={[styles.barLabel, { color: colors.text }]} numberOfLines={1}>
+                                      {index + 1}. {project.projectName}
+                                    </Text>
+                                    <View style={styles.barContainer}>
+                                      <View 
+                                        style={[
+                                          styles.bar, 
+                                          { 
+                                            width: `${(project.count / maxCount) * 100}%`,
+                                            backgroundColor: getBarColor(index)
+                                          }
+                                        ]} 
+                                      />
+                                      <Text style={[styles.barCount, { color: colors.text }]}>{project.count}</Text>
+                                    </View>
                                   </View>
-                                </View>
-                              ))}
+                                );
+                              })}
                             </View>
                           </View>
                         )}
