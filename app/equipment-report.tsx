@@ -20,7 +20,8 @@ import * as ImagePicker from 'expo-image-picker';
 export default function EquipmentReportScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { user, company } = useApp();
+  const appContext = useApp();
+  const { user, company, submitEquipmentReport } = appContext || {};
   
   const [equipmentId, setEquipmentId] = useState('');
   const [issueTitle, setIssueTitle] = useState('');
@@ -75,14 +76,22 @@ export default function EquipmentReportScreen() {
       return;
     }
 
+    if (!submitEquipmentReport) {
+      Alert.alert('Error', 'Unable to submit report');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      console.log('Equipment Report Submitted:', {
-        equipmentId,
-        issueTitle,
-        description,
-        hasPhoto: !!photo,
+      await submitEquipmentReport({
+        companyId: company.id,
+        equipmentId: equipmentId.trim(),
+        issueTitle: issueTitle.trim(),
+        description: description.trim(),
+        photo,
+        reportedBy: user.name,
+        reportedAt: new Date().toISOString(),
       });
 
       Alert.alert('Success', 'Equipment report submitted successfully', [
