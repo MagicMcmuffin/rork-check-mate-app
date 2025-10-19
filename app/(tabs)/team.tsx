@@ -349,6 +349,83 @@ export default function TeamScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
+            <Briefcase size={20} color="#7c3aed" />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
+            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#3b2a5f' : '#ede9fe' }]}>
+              <Text style={[styles.badgeText, { color: '#6b21a8' }]}>{management.length}</Text>
+            </View>
+          </View>
+          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Manage projects, equipment, and reports</Text>
+
+          {management.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>No management members yet</Text>
+            </View>
+          ) : (
+            management.map((member) => (
+              <View key={member.id} style={[styles.userCard, { backgroundColor: colors.card }]}>
+                <View style={styles.userInfo}>
+                  {member.profilePicture ? (
+                    <Image source={{ uri: member.profilePicture }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#3b2a5f' : '#ede9fe' }]}>
+                      <Briefcase size={20} color="#7c3aed" />
+                    </View>
+                  )}
+                  <View style={styles.userDetails}>
+                    <View style={styles.userNameRow}>
+                      <Text style={[styles.userName, { color: colors.text }]}>{member.name}</Text>
+                      {member.id === user?.id && (
+                        <View style={[styles.ownerBadge, { backgroundColor: '#f0fdf4' }]}>
+                          <Text style={[styles.ownerBadgeText, { color: '#15803d' }]}>You</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${member.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {canSendMessages && member.email && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(member.id, member.name, member.email)}
+                    >
+                      <MessageSquare size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(member.id, member.name, member.role)}
+                      >
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      </TouchableOpacity>
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(member.id, member.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Users size={20} color="#16a34a" />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Site Supervisors</Text>
             <View style={[styles.badge, { backgroundColor: isDarkMode ? '#14532d' : '#dcfce7' }]}>
@@ -412,83 +489,6 @@ export default function TeamScreen() {
                         <TouchableOpacity
                           style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
                           onPress={() => handleRemoveEmployee(supervisor.id, supervisor.name)}
-                        >
-                          <Trash2 size={16} color="#dc2626" />
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Briefcase size={20} color="#7c3aed" />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
-            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#3b2a5f' : '#ede9fe' }]}>
-              <Text style={[styles.badgeText, { color: '#6b21a8' }]}>{management.length}</Text>
-            </View>
-          </View>
-          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Can view reports and manage projects</Text>
-
-          {management.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>No management members yet</Text>
-            </View>
-          ) : (
-            management.map((member) => (
-              <View key={member.id} style={[styles.userCard, { backgroundColor: colors.card }]}>
-                <View style={styles.userInfo}>
-                  {member.profilePicture ? (
-                    <Image source={{ uri: member.profilePicture }} style={styles.userAvatar} />
-                  ) : (
-                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#3b2a5f' : '#ede9fe' }]}>
-                      <Briefcase size={20} color="#7c3aed" />
-                    </View>
-                  )}
-                  <View style={styles.userDetails}>
-                    <View style={styles.userNameRow}>
-                      <Text style={[styles.userName, { color: colors.text }]}>{member.name}</Text>
-                      {member.id === user?.id && (
-                        <View style={[styles.ownerBadge, { backgroundColor: '#f0fdf4' }]}>
-                          <Text style={[styles.ownerBadgeText, { color: '#15803d' }]}>You</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.actionButtons}>
-                  {isAdmin && (
-                    <TouchableOpacity
-                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => router.push(`/employee-detail?employeeId=${member.id}`)}
-                    >
-                      <Eye size={16} color="#3b82f6" />
-                    </TouchableOpacity>
-                  )}
-                  {canSendMessages && member.email && (
-                    <TouchableOpacity
-                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                      onPress={() => handleOpenMessageModal(member.id, member.name, member.email)}
-                    >
-                      <MessageSquare size={16} color="#3b82f6" />
-                    </TouchableOpacity>
-                  )}
-                  {isAdmin && (
-                    <>
-                      <TouchableOpacity
-                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
-                        onPress={() => handleChangeRole(member.id, member.name, member.role)}
-                      >
-                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
-                      </TouchableOpacity>
-                      {user?.role === 'company' && (
-                        <TouchableOpacity
-                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
-                          onPress={() => handleRemoveEmployee(member.id, member.name)}
                         >
                           <Trash2 size={16} color="#dc2626" />
                         </TouchableOpacity>
@@ -967,12 +967,10 @@ export default function TeamScreen() {
                 <View style={styles.roleOptionContent}>
                   <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Management</Text>
                   <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
-                    Can view reports and manage projects
+                    Manage projects, equipment, and reports
                   </Text>
                 </View>
               </TouchableOpacity>
-
-
 
               <TouchableOpacity
                 style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
