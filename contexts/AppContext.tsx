@@ -343,6 +343,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const allUsers: User[] = usersData ? JSON.parse(usersData) : [];
     console.log('📊 Total users in database:', allUsers.length);
 
+    if (allUsers.length === 0) {
+      throw new Error('No users found. Please register first.');
+    }
+
     const foundUser = allUsers.find((u: User) => 
       u.email.trim().toLowerCase() === trimmedEmail && 
       u.password.trim() === trimmedPassword
@@ -355,25 +359,24 @@ export const [AppProvider, useApp] = createContextHook(() => {
       
       if (emailMatch) {
         console.error('❌ Email found but password mismatch');
-        console.error('Expected password length:', emailMatch.password?.trim().length);
-        console.error('Provided password length:', trimmedPassword.length);
+        throw new Error('Invalid password');
       } else {
         console.error('❌ Email not found in database');
-        console.error('Available emails:', allUsers.map(u => u.email.trim().toLowerCase()).join(', '));
+        throw new Error('Email not found');
       }
-      throw new Error('Invalid email or password');
     }
 
     console.log('✅ User found:', foundUser.email);
 
     const companiesData = await AsyncStorage.getItem(STORAGE_KEYS.COMPANIES);
     const allCompanies: Company[] = companiesData ? JSON.parse(companiesData) : [];
-    const foundCompany = allCompanies.find((c: Company) => c.id === foundUser.companyId);
+    
+    const companyId = foundUser.currentCompanyId || foundUser.companyId;
+    const foundCompany = allCompanies.find((c: Company) => c.id === companyId);
 
     if (!foundCompany) {
-      console.error('❌ Company not found for user:', foundUser.companyId);
-      console.error('Available companies:', allCompanies.map(c => ({ id: c.id, name: c.name })));
-      throw new Error('Company not found');
+      console.error('❌ Company not found for user:', companyId);
+      throw new Error('Company not found. Please contact support.');
     }
 
     console.log('✅ Company found:', foundCompany.name);
