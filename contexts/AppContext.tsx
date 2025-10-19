@@ -267,10 +267,11 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const companiesData = await AsyncStorage.getItem(STORAGE_KEYS.COMPANIES);
     const allCompanies = companiesData ? JSON.parse(companiesData) : [];
     
-    const foundCompany = allCompanies.find((c: Company) => c.code === code);
+    const normalizedCode = code.trim().toUpperCase();
+    const foundCompany = allCompanies.find((c: Company) => c.code?.trim().toUpperCase() === normalizedCode);
     if (!foundCompany) {
-      console.log('Available companies:', allCompanies);
-      console.log('Searching for code:', code);
+      console.log('🔍 Searching for code:', normalizedCode);
+      console.log('📊 Available companies:', allCompanies.map((c: Company) => ({ name: c.name, code: c.code })));
       throw new Error('Invalid company code');
     }
 
