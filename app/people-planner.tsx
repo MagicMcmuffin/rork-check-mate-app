@@ -37,6 +37,27 @@ export default function PeoplePlannerScreen() {
     return projects.filter(p => p.assignedEmployeeIds?.includes(employeeId));
   };
 
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'administrator':
+        return '#2563eb';
+      case 'management':
+        return '#9333ea';
+      case 'supervisor':
+        return '#10b981';
+      case 'mechanic':
+        return '#f97316';
+      case 'employee':
+        return '#14b8a6';
+      case 'apprentice':
+        return '#0ea5e9';
+      case 'viewer':
+        return '#64748b';
+      default:
+        return colors.primary;
+    }
+  };
+
   const handleAssignEmployee = async (employeeId: string, projectId: string) => {
     try {
       const project = projects.find(p => p.id === projectId);
@@ -198,8 +219,8 @@ export default function PeoplePlannerScreen() {
                           key={employee.id}
                           style={[styles.assignedChip, { backgroundColor: colors.background }]}
                         >
-                          <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                            <Text style={[styles.avatarText, { color: colors.primary }]}>
+                          <View style={[styles.avatar, { backgroundColor: getRoleColor(employee.role) + '20' }]}>
+                            <Text style={[styles.avatarText, { color: getRoleColor(employee.role) }]}>
                               {employee.name.charAt(0).toUpperCase()}
                             </Text>
                           </View>
@@ -244,8 +265,8 @@ export default function PeoplePlannerScreen() {
                   style={[styles.employeeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
                   <View style={styles.employeeHeader}>
-                    <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                      <Text style={[styles.avatarText, { color: colors.primary }]}>
+                    <View style={[styles.avatar, { backgroundColor: getRoleColor(employee.role) + '20' }]}>
+                      <Text style={[styles.avatarText, { color: getRoleColor(employee.role) }]}>
                         {employee.name.charAt(0).toUpperCase()}
                       </Text>
                     </View>
@@ -338,8 +359,8 @@ export default function PeoplePlannerScreen() {
                         }
                       }}
                     >
-                      <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                        <Text style={[styles.avatarText, { color: colors.primary }]}>
+                      <View style={[styles.avatar, { backgroundColor: getRoleColor(employee.role) + '20' }]}>
+                        <Text style={[styles.avatarText, { color: getRoleColor(employee.role) }]}>
                           {employee.name.charAt(0).toUpperCase()}
                         </Text>
                       </View>
