@@ -847,7 +847,7 @@ export default function ReportsScreen() {
                 </View>
               )}
 
-              {(selectedEquipmentReport.status === 'fixed' || selectedEquipmentReport.status === 'discarded') && (user?.role === 'administrator' || user?.role === 'management') && (
+              {(selectedEquipmentReport.status === 'fixed' || selectedEquipmentReport.status === 'discarded') && (user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic') && (
                 <TouchableOpacity
                   style={[styles.modalActionBtn, { backgroundColor: '#ef4444', marginTop: 12 }]}
                   onPress={() => {
