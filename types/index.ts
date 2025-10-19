@@ -1,4 +1,4 @@
-export type UserRole = 'company' | 'administrator' | 'management' | 'mechanic' | 'apprentice' | 'employee';
+export type UserRole = 'company' | 'administrator' | 'management' | 'supervisor' | 'mechanic' | 'employee' | 'apprentice' | 'viewer';
 
 export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'S' | 'Su';
 

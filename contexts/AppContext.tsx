@@ -603,7 +603,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     return users.filter(u => u.companyId === company.id);
   }, [company, users]);
 
-  const changeUserRole = useCallback(async (userId: string, newRole: 'administrator' | 'management' | 'mechanic' | 'apprentice' | 'employee') => {
+  const changeUserRole = useCallback(async (userId: string, newRole: 'administrator' | 'management' | 'supervisor' | 'mechanic' | 'employee' | 'apprentice' | 'viewer') => {
     const updatedUsers = users.map(u => 
       u.id === userId ? { ...u, role: newRole } : u
     );
