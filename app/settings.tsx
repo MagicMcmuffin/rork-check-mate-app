@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Star, Database, FileText } from 'lucide-react-native';
+import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Database, FileText } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Linking, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
@@ -290,25 +290,6 @@ export default function SettingsScreen() {
                   <Text style={[styles.settingLabel, { color: colors.text }]}>Roles & Permissions</Text>
                   <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
                     Manage user roles and access levels
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={() => router.push('/settings-featured-companies' as any)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#5f4a1e' : '#fef3c7' }]}>
-                  <Star size={20} color="#f59e0b" />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={[styles.settingLabel, { color: colors.text }]}>Featured Companies</Text>
-                  <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-                    Manage companies using CheckMate
                   </Text>
                 </View>
               </View>
