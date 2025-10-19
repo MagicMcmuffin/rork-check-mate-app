@@ -102,7 +102,7 @@ export default function OnboardingScreen() {
           onPress={() => router.push('/login')}
           activeOpacity={0.7}
         >
-          <LogIn size={24} color="#8b5cf6" />
+          <LogIn size={24} color="#93c5fd" />
           <Text style={styles.loginText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
   loginCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#1e3a8a',
     borderRadius: 12,
     padding: 18,
     flexDirection: 'row' as const,
@@ -225,12 +225,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     borderWidth: 2,
-    borderColor: '#8b5cf6',
+    borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   loginText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#8b5cf6',
+    color: '#93c5fd',
   },
   adBanner: {
     backgroundColor: '#1e3a8a',
