@@ -375,51 +375,75 @@ export default function ReportsScreen() {
 
               {selectedCategory === 'interventions' && (
                 <>
-                  <View style={[styles.filterBar, { backgroundColor: colors.card }]}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                      <TouchableOpacity
-                        style={[styles.filterChip, projectFilter === 'all' && [styles.filterChipActive, { backgroundColor: colors.primary }]]}
-                        onPress={() => setProjectFilter('all')}
-                      >
-                        <Text style={[styles.filterChipText, { color: projectFilter === 'all' ? '#fff' : colors.textSecondary }]}>All Projects</Text>
-                      </TouchableOpacity>
-                      {company?.projects?.map(project => (
+                  {company && company.projects.length > 0 && (
+                    <View style={[styles.filterBar, { backgroundColor: colors.card }]}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                         <TouchableOpacity
-                          key={project.id}
-                          style={[styles.filterChip, projectFilter === project.id && [styles.filterChipActive, { backgroundColor: '#10b981' }]]}
-                          onPress={() => setProjectFilter(project.id)}
+                          style={[styles.filterChip, projectFilter === 'all' && [styles.filterChipActive, { backgroundColor: colors.primary }]]}
+                          onPress={() => setProjectFilter('all')}
                         >
-                          <Text style={[styles.filterChipText, { color: projectFilter === project.id ? '#fff' : colors.textSecondary }]}>{project.name}</Text>
+                          <Text style={[styles.filterChipText, { color: projectFilter === 'all' ? '#fff' : colors.textSecondary }]}>All Projects</Text>
                         </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
+                        {company.projects.map(project => (
+                          <TouchableOpacity
+                            key={project.id}
+                            style={[styles.filterChip, projectFilter === project.id && [styles.filterChipActive, { backgroundColor: colors.primary }]]}
+                            onPress={() => setProjectFilter(project.id)}
+                          >
+                            <Text style={[styles.filterChipText, { color: projectFilter === project.id ? '#fff' : colors.textSecondary }]}>{project.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
 
                   {(() => {
                     const filteredInterventions = projectFilter === 'all' 
                       ? positiveInterventions 
                       : positiveInterventions.filter(i => i.projectId === projectFilter);
 
-                    const projectStats = company?.projects?.map(project => ({
-                      name: project.name,
-                      count: positiveInterventions.filter(i => i.projectId === project.id).length
-                    })).sort((a, b) => b.count - a.count).slice(0, 5) || [];
+                    const projectCounts = positiveInterventions.reduce((acc, intervention) => {
+                      if (intervention.projectId) {
+                        acc[intervention.projectId] = (acc[intervention.projectId] || 0) + 1;
+                      }
+                      return acc;
+                    }, {} as Record<string, number>);
 
-                    const maxCount = projectStats.length > 0 ? Math.max(...projectStats.map(s => s.count)) : 0;
+                    const sortedProjects = Object.entries(projectCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5)
+                      .map(([projectId, count]) => ({
+                        projectId,
+                        count,
+                        projectName: company?.projects.find(p => p.id === projectId)?.name || 'Unknown Project'
+                      }));
+
+                    const maxCount = sortedProjects.length > 0 ? sortedProjects[0].count : 1;
 
                     return (
                       <>
-                        {projectStats.length > 0 && projectFilter === 'all' && (
-                          <View style={[styles.graphCard, { backgroundColor: colors.card }]}>
-                            <Text style={[styles.graphTitle, { color: colors.text }]}>Leading Projects</Text>
-                            <View style={styles.graphContainer}>
-                              {projectStats.map((stat, index) => (
-                                <View key={index} style={styles.graphRow}>
-                                  <Text style={[styles.graphLabel, { color: colors.textSecondary }]} numberOfLines={1}>{stat.name}</Text>
-                                  <View style={styles.graphBarContainer}>
-                                    <View style={[styles.graphBar, { width: maxCount > 0 ? `${(stat.count / maxCount) * 100}%` : '0%', backgroundColor: '#10b981' }]} />
+                        {sortedProjects.length > 0 && (
+                          <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
+                            <Text style={[styles.chartTitle, { color: colors.text }]}>Leading Projects (Top 5)</Text>
+                            <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>Projects with most P I's</Text>
+                            <View style={styles.chartBars}>
+                              {sortedProjects.map((project, index) => (
+                                <View key={project.projectId} style={styles.barRow}>
+                                  <Text style={[styles.barLabel, { color: colors.text }]} numberOfLines={1}>
+                                    {index + 1}. {project.projectName}
+                                  </Text>
+                                  <View style={styles.barContainer}>
+                                    <View 
+                                      style={[
+                                        styles.bar, 
+                                        { 
+                                          width: `${(project.count / maxCount) * 100}%`,
+                                          backgroundColor: '#10b981'
+                                        }
+                                      ]} 
+                                    />
+                                    <Text style={[styles.barCount, { color: colors.text }]}>{project.count}</Text>
                                   </View>
-                                  <Text style={[styles.graphValue, { color: colors.text }]}>{stat.count}</Text>
                                 </View>
                               ))}
                             </View>
@@ -431,64 +455,56 @@ export default function ReportsScreen() {
                             <AlertTriangle size={48} color={colors.textSecondary} />
                             <Text style={[styles.emptyTitle, { color: colors.text }]}>No P I's</Text>
                             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                              {projectFilter === 'all' ? 'Positive interventions will appear here' : 'No interventions for this project'}
+                              {projectFilter === 'all' ? 'Positive interventions will appear here' : 'No P I\'s found for this project'}
                             </Text>
                           </View>
                         ) : (
                           <View style={styles.listContainer}>
-                            {filteredInterventions.map((intervention) => {
-                              const project = company?.projects?.find(p => p.id === intervention.projectId);
-                              return (
-                                <TouchableOpacity
-                                  key={intervention.id}
-                                  style={[styles.reportCard, { backgroundColor: colors.card }]}
-                                  activeOpacity={0.7}
-                                  onPress={() => router.push({
-                                    pathname: '/intervention-detail',
-                                    params: { id: intervention.id },
-                                  })}
-                                >
-                                  <View style={styles.reportCardHeader}>
-                                    <View style={styles.reportCardInfo}>
-                                      <Text style={[styles.reportCardTitle, { color: colors.text }]}>Positive Intervention</Text>
-                                      <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                                        {intervention.hazardDescription}
-                                      </Text>
-                                      {project && (
-                                        <Text style={[styles.projectLabel, { color: colors.textSecondary }]} numberOfLines={1}>
-                                          {project.name}
-                                        </Text>
-                                      )}
-                                    </View>
-                                    <View style={[styles.statusBadge, { 
-                                      backgroundColor: intervention.severity === 'high' ? '#fee2e2' : 
-                                                     intervention.severity === 'medium' ? '#fef3c7' : '#dcfce7' 
-                                    }]}>
-                                      <Text style={[styles.statusBadgeText, { 
-                                        color: intervention.severity === 'high' ? '#dc2626' : 
-                                               intervention.severity === 'medium' ? '#f59e0b' : '#16a34a' 
-                                      }]}>
-                                        {intervention.severity}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                  <View style={styles.reportCardMeta}>
-                                    <View style={styles.metaItem}>
-                                      <User size={14} color={colors.textSecondary} />
-                                      <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                                        {intervention.employeeName}
-                                      </Text>
-                                    </View>
-                                    <View style={styles.metaItem}>
-                                      <Calendar size={14} color={colors.textSecondary} />
-                                      <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                                        {formatDate(intervention.createdAt)}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                </TouchableOpacity>
-                              );
-                            })}
+                            {filteredInterventions.map((intervention) => (
+                      <TouchableOpacity
+                        key={intervention.id}
+                        style={[styles.reportCard, { backgroundColor: colors.card }]}
+                        activeOpacity={0.7}
+                        onPress={() => router.push({
+                          pathname: '/intervention-detail',
+                          params: { id: intervention.id },
+                        })}
+                      >
+                        <View style={styles.reportCardHeader}>
+                          <View style={styles.reportCardInfo}>
+                            <Text style={[styles.reportCardTitle, { color: colors.text }]}>Positive Intervention</Text>
+                            <Text style={[styles.reportCardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {intervention.hazardDescription}
+                            </Text>
+                          </View>
+                          <View style={[styles.statusBadge, { 
+                            backgroundColor: intervention.severity === 'high' ? '#fee2e2' : 
+                                           intervention.severity === 'medium' ? '#fef3c7' : '#dcfce7' 
+                          }]}>
+                            <Text style={[styles.statusBadgeText, { 
+                              color: intervention.severity === 'high' ? '#dc2626' : 
+                                     intervention.severity === 'medium' ? '#f59e0b' : '#16a34a' 
+                            }]}>
+                              {intervention.severity}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.reportCardMeta}>
+                          <View style={styles.metaItem}>
+                            <User size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                              {intervention.employeeName}
+                            </Text>
+                          </View>
+                          <View style={styles.metaItem}>
+                            <Calendar size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                              {formatDate(intervention.createdAt)}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                            ))}
                           </View>
                         )}
                       </>
@@ -1355,53 +1371,49 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 100,
   },
-  projectLabel: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  graphCard: {
+  chartCard: {
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 2,
   },
-  graphTitle: {
+  chartTitle: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    fontSize: 13,
     marginBottom: 16,
   },
-  graphContainer: {
+  chartBars: {
     gap: 12,
   },
-  graphRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 12,
+  barRow: {
+    gap: 8,
   },
-  graphLabel: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    width: 80,
-  },
-  graphBarContainer: {
-    flex: 1,
-    height: 24,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 4,
-    overflow: 'hidden' as const,
-  },
-  graphBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  graphValue: {
+  barLabel: {
     fontSize: 13,
     fontWeight: '600' as const,
-    width: 30,
-    textAlign: 'right' as const,
+    marginBottom: 4,
+  },
+  barContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  bar: {
+    height: 24,
+    borderRadius: 4,
+    minWidth: 2,
+  },
+  barCount: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    minWidth: 24,
   },
 });
