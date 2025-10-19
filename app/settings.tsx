@@ -30,13 +30,13 @@ export default function SettingsScreen() {
   };
 
   const handleContactSupport = () => {
-    const email = 'checkmatesafty@gmail.com';
+    const email = 'checkmatesafety@outlook.com';
     const subject = 'CheckMate Support Request';
     const body = `Hello CheckMate Support,\n\nI need help with:\n\n\n\nUser: ${user?.name || 'Unknown'}\nCompany: ${company?.name || 'N/A'}`;
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
     Linking.openURL(mailtoUrl).catch(() => {
-      Alert.alert('Error', 'Unable to open email app. Please email us at checkmatesafty@gmail.com');
+      Alert.alert('Error', 'Unable to open email app. Please email us at checkmatesafety@outlook.com');
     });
   };
 

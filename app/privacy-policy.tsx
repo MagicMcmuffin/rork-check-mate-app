@@ -122,7 +122,7 @@ export default function PrivacyPolicyScreen() {
           <Text style={[styles.paragraph, { color: colors.text }]}>
             If you have questions or concerns about this Privacy Policy or our data practices, please contact us at:
           </Text>
-          <Text style={[styles.listItem, { color: colors.text }]}>• Email: checkmatesafty@gmail.com</Text>
+          <Text style={[styles.listItem, { color: colors.text }]}>• Email: checkmatesafety@outlook.com</Text>
           <Text style={[styles.listItem, { color: colors.text }]}>• Through the "Contact Support" option in the Settings menu</Text>
 
           <Text style={[styles.heading, { color: colors.text }]}>12. Compliance</Text>
