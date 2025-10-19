@@ -23,6 +23,7 @@ export default function EquipmentReportScreen() {
   const appContext = useApp();
   const { user, company, submitEquipmentReport } = appContext || {};
   
+  const [equipmentName, setEquipmentName] = useState('');
   const [equipmentId, setEquipmentId] = useState('');
   const [issueTitle, setIssueTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -56,21 +57,6 @@ export default function EquipmentReportScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!equipmentId.trim()) {
-      Alert.alert('Required Field', 'Please enter the Equipment ID');
-      return;
-    }
-
-    if (!issueTitle.trim()) {
-      Alert.alert('Required Field', 'Please enter an Issue Title');
-      return;
-    }
-
-    if (!description.trim()) {
-      Alert.alert('Required Field', 'Please enter a Description');
-      return;
-    }
-
     if (!user || !company) {
       Alert.alert('Error', 'User or company not found');
       return;
@@ -86,9 +72,10 @@ export default function EquipmentReportScreen() {
     try {
       await submitEquipmentReport({
         companyId: company.id,
-        equipmentId: equipmentId.trim(),
-        issueTitle: issueTitle.trim(),
-        description: description.trim(),
+        equipmentName: equipmentName.trim() || undefined,
+        equipmentId: equipmentId.trim() || undefined,
+        issueTitle: issueTitle.trim() || undefined,
+        description: description.trim() || undefined,
         photo,
         reportedBy: user.name,
         reportedAt: new Date().toISOString(),
@@ -97,7 +84,7 @@ export default function EquipmentReportScreen() {
       Alert.alert('Success', 'Equipment report submitted successfully', [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: () => router.push('/(tabs)/reports'),
         },
       ]);
     } catch (error) {
@@ -122,7 +109,7 @@ export default function EquipmentReportScreen() {
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           <AlertCircle size={20} color="#3b82f6" />
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Report any equipment issues here. All team members can submit reports, and authorized roles can manage them.
+            Report any equipment issues here. All fields are optional. Fill in as much detail as you can.
           </Text>
         </View>
 
@@ -130,7 +117,18 @@ export default function EquipmentReportScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Equipment Details</Text>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Equipment ID <Text style={styles.required}>*</Text></Text>
+            <Text style={[styles.label, { color: colors.text }]}>Equipment Name</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={equipmentName}
+              onChangeText={setEquipmentName}
+              placeholder="Enter equipment name"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.text }]}>Equipment ID</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={equipmentId}
@@ -141,7 +139,7 @@ export default function EquipmentReportScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Issue Title <Text style={styles.required}>*</Text></Text>
+            <Text style={[styles.label, { color: colors.text }]}>Issue</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={issueTitle}
@@ -152,7 +150,7 @@ export default function EquipmentReportScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Description <Text style={styles.required}>*</Text></Text>
+            <Text style={[styles.label, { color: colors.text }]}>Description</Text>
             <TextInput
               style={[styles.textarea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={description}

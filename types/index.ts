@@ -485,9 +485,10 @@ export interface EquipmentReportAction {
 export interface EquipmentReport {
   id: string;
   companyId: string;
-  equipmentId: string;
-  issueTitle: string;
-  description: string;
+  equipmentName?: string;
+  equipmentId?: string;
+  issueTitle?: string;
+  description?: string;
   photo?: string;
   status: EquipmentReportStatus;
   reportedBy: string;

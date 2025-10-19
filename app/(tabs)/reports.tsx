@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Draft, DraftType } from '@/types';
-import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, SlidersHorizontal, ArrowUpDown } from 'lucide-react-native';
+import { Calendar, FileText, User, Clock, ChevronRight, FolderOpen, Layers, Trash2, CheckCircle, AlertTriangle, Wrench, Filter, TrendingUp, History, Download, Search, X, FilePlus, Send, Edit3, Droplet, Wind, SlidersHorizontal, ArrowUpDown, ClipboardList } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,7 +22,7 @@ export default function ReportsScreen() {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<string | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'mychecks' | 'drafts'>('reports');
-  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'testing'>('inspections');
+  const [selectedTab, setSelectedTab] = useState<'inspections' | 'interventions' | 'fixes' | 'testing' | 'equipment-reports'>('inspections');
   const [selectedType, setSelectedType] = useState<'all' | 'plant' | 'quickhitch' | 'vehicle' | 'bucketchange' | 'greasing'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'fixed' | 'pending'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'low' | 'medium' | 'high'>('all');
@@ -66,6 +66,10 @@ export default function ReportsScreen() {
     deleteGreasingInspection,
     getCompanyAirTestingInspections,
     deleteAirTestingInspection,
+    getCompanyEquipmentReports,
+    markEquipmentReportFixed,
+    markEquipmentReportDiscarded,
+    deleteEquipmentReport,
   } = appContext;
   
   if (!deleteInspection || !markInspectionFixed) {
@@ -85,6 +89,7 @@ export default function ReportsScreen() {
   const companyGreasingRecords = company ? (greasingRecords || []).filter(r => r.companyId === company.id) : [];
   const companyGreasingInspections = getCompanyGreasingInspections ? getCompanyGreasingInspections() : [];
   const companyAirTestingInspections = getCompanyAirTestingInspections ? getCompanyAirTestingInspections() : [];
+  const companyEquipmentReports = getCompanyEquipmentReports ? getCompanyEquipmentReports() : [];
 
   const canViewReports = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management' || user?.role === 'mechanic' || user?.role === 'apprentice';
 
@@ -431,6 +436,10 @@ export default function ReportsScreen() {
                   <Text style={styles.statValue}>{companyAirTestingInspections.length}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Air Testing</Text>
                 </View>
+                <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+                  <Text style={styles.statValue}>{companyEquipmentReports.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Equipment Reports</Text>
+                </View>
               </ScrollView>
 
               <View style={[styles.tabsContainer, { backgroundColor: colors.card }]}>
@@ -461,6 +470,13 @@ export default function ReportsScreen() {
                 >
                   <Wind size={18} color={selectedTab === 'testing' ? '#06b6d4' : colors.textSecondary} />
                   <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'testing' && styles.tabTextActive]}>Testing</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, selectedTab === 'equipment-reports' && styles.tabActive]}
+                  onPress={() => setSelectedTab('equipment-reports')}
+                >
+                  <ClipboardList size={18} color={selectedTab === 'equipment-reports' ? '#8b5cf6' : colors.textSecondary} />
+                  <Text style={[styles.tabText, { color: colors.textSecondary }, selectedTab === 'equipment-reports' && styles.tabTextActive]}>Reports</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1158,6 +1174,205 @@ export default function ReportsScreen() {
                       })}
                     </View>
                   </>
+                )
+              ) : selectedTab === 'equipment-reports' ? (
+                companyEquipmentReports.length === 0 ? (
+                  <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                    <ClipboardList size={48} color={colors.textSecondary} />
+                    <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Equipment Reports Yet</Text>
+                    <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                      Equipment issue reports will appear here once submitted
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.reportsList}>
+                    {companyEquipmentReports.map((report) => {
+                      const statusColor = report.status === 'open' ? '#ef4444' : report.status === 'fixed' ? '#10b981' : '#94a3b8';
+                      const statusText = report.status === 'open' ? 'Open' : report.status === 'fixed' ? 'Fixed' : 'Discarded';
+                      
+                      return (
+                        <View key={report.id} style={[styles.reportCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: statusColor }]}>
+                          <View style={styles.reportCardContent}>
+                            <View style={styles.reportHeader}>
+                              <View style={[styles.reportIcon, { backgroundColor: '#f3e8ff' }]}>
+                                <ClipboardList size={20} color="#8b5cf6" />
+                              </View>
+                              <View style={styles.reportInfo}>
+                                <Text style={[styles.reportTitle, { color: colors.text }]}>Equipment Report</Text>
+                                <View style={styles.reportMeta}>
+                                  <User size={14} color={colors.textSecondary} />
+                                  <Text style={[styles.reportMetaText, { color: colors.textSecondary }]}>
+                                    {report.reportedBy}
+                                  </Text>
+                                </View>
+                              </View>
+                              <View style={[styles.severityBadge, { backgroundColor: statusColor === '#ef4444' ? '#fee2e2' : statusColor === '#10b981' ? '#dcfce7' : '#f1f5f9' }]}>
+                                <Text style={[styles.severityBadgeText, { color: statusColor }]}>
+                                  {statusText.toUpperCase()}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View style={styles.reportDetails}>
+                              <View style={styles.reportDetail}>
+                                <Calendar size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatDate(report.createdAt)}
+                                </Text>
+                              </View>
+                              <View style={styles.reportDetail}>
+                                <Clock size={16} color={colors.textSecondary} />
+                                <Text style={[styles.reportDetailText, { color: colors.textSecondary }]}>
+                                  {formatTime(report.createdAt)}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {report.equipmentName && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment Name:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{report.equipmentName}</Text>
+                              </View>
+                            )}
+
+                            {report.equipmentId && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Equipment ID:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>{report.equipmentId}</Text>
+                              </View>
+                            )}
+
+                            {report.issueTitle && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Issue:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={2}>{report.issueTitle}</Text>
+                              </View>
+                            )}
+
+                            {report.description && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Description:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]} numberOfLines={3}>{report.description}</Text>
+                              </View>
+                            )}
+
+                            {report.photo && (
+                              <View style={[styles.reportExtra, { borderTopColor: colors.border }]}>
+                                <Text style={[styles.reportExtraLabel, { color: colors.textSecondary }]}>Photo:</Text>
+                                <Text style={[styles.reportExtraValue, { color: colors.text }]}>Attached</Text>
+                              </View>
+                            )}
+
+                            {report.status === 'fixed' && report.fixedBy && (
+                              <View style={[styles.fixedBadge, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
+                                <CheckCircle size={14} color="#16a34a" />
+                                <Text style={styles.fixedBadgeText}>Fixed by {report.fixedBy}</Text>
+                              </View>
+                            )}
+
+                            {report.status === 'discarded' && report.discardedBy && (
+                              <View style={[styles.fixedBadge, { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' }]}>
+                                <X size={14} color="#64748b" />
+                                <Text style={[styles.fixedBadgeText, { color: '#64748b' }]}>Discarded by {report.discardedBy}</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <View style={styles.reportActions}>
+                            {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && markEquipmentReportFixed && (
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.fixButton]}
+                                onPress={() => {
+                                  Alert.prompt(
+                                    'Mark as Fixed',
+                                    'Add optional notes about the fix',
+                                    [
+                                      { text: 'Cancel', style: 'cancel' },
+                                      {
+                                        text: 'Mark Fixed',
+                                        onPress: async (notes) => {
+                                          try {
+                                            await markEquipmentReportFixed(report.id, notes);
+                                            Alert.alert('Success', 'Report marked as fixed');
+                                          } catch (error) {
+                                            console.error('Error marking report as fixed:', error);
+                                            Alert.alert('Error', 'Failed to mark as fixed');
+                                          }
+                                        },
+                                      },
+                                    ],
+                                    'plain-text'
+                                  );
+                                }}
+                              >
+                                <CheckCircle size={16} color="#16a34a" />
+                                <Text style={styles.fixButtonText}>Mark Fixed</Text>
+                              </TouchableOpacity>
+                            )}
+                            {report.status === 'open' && (user?.role === 'mechanic' || user?.role === 'administrator' || user?.role === 'management') && markEquipmentReportDiscarded && (
+                              <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: '#f1f5f9', paddingHorizontal: 12 }]}
+                                onPress={() => {
+                                  Alert.prompt(
+                                    'Discard Report',
+                                    'Add optional reason for discarding',
+                                    [
+                                      { text: 'Cancel', style: 'cancel' },
+                                      {
+                                        text: 'Discard',
+                                        style: 'destructive',
+                                        onPress: async (notes) => {
+                                          try {
+                                            await markEquipmentReportDiscarded(report.id, notes);
+                                            Alert.alert('Success', 'Report discarded');
+                                          } catch (error) {
+                                            console.error('Error discarding report:', error);
+                                            Alert.alert('Error', 'Failed to discard report');
+                                          }
+                                        },
+                                      },
+                                    ],
+                                    'plain-text'
+                                  );
+                                }}
+                              >
+                                <X size={16} color="#64748b" />
+                              </TouchableOpacity>
+                            )}
+                            {(user?.role === 'company' || user?.role === 'administrator') && deleteEquipmentReport && (
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.deleteButton]}
+                                onPress={() => {
+                                  Alert.alert(
+                                    'Delete Report',
+                                    'Are you sure you want to delete this equipment report?',
+                                    [
+                                      { text: 'Cancel', style: 'cancel' },
+                                      {
+                                        text: 'Delete',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                          try {
+                                            await deleteEquipmentReport(report.id);
+                                            Alert.alert('Success', 'Report deleted');
+                                          } catch (error) {
+                                            console.error('Error deleting report:', error);
+                                            Alert.alert('Error', 'Failed to delete report');
+                                          }
+                                        },
+                                      },
+                                    ]
+                                  );
+                                }}
+                              >
+                                <Trash2 size={16} color="#dc2626" />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
                 )
               ) : (
                 fixLogs.length === 0 ? (
