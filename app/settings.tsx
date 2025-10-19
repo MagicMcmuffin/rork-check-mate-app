@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Star, Database } from 'lucide-react-native';
+import { Shield, LogOut, Moon, Sun, ChevronRight, Mail, User, Bell, Image as ImageIcon, Upload, Trash2, Building2, Star, Database, FileText } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, Linking, Modal, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
@@ -338,6 +338,25 @@ export default function SettingsScreen() {
             </View>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => router.push('/privacy-policy' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e3a5f' : '#dbeafe' }]}>
+                <FileText size={20} color="#3b82f6" />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Privacy Policy</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  View our privacy policy
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -384,7 +403,7 @@ export default function SettingsScreen() {
 
         <View style={[styles.footer, { backgroundColor: colors.card }]}>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-            CheckMate v1.0.0
+            CheckMate v1.0.2
           </Text>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             © 2025 All rights reserved
