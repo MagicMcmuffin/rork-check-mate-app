@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal } fr
 import { Stack, useRouter } from 'expo-router';
 import { Calendar, CheckCircle, XCircle, Clock, Users, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { HolidayRequest } from '@/types';
 
 export default function HolidayManagementScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { 
     user, 
     getCompanyHolidayRequests, 
@@ -167,12 +169,12 @@ export default function HolidayManagementScreen() {
   const days = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: '#1e293b' },
-          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
           title: 'Holiday Management',
         }}
       />
@@ -180,8 +182,8 @@ export default function HolidayManagementScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <View style={styles.header}>
           <Calendar size={32} color="#ec4899" />
-          <Text style={styles.headerTitle}>Holiday Management</Text>
-          <Text style={styles.headerSubtitle}>Manage employee holiday requests</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Holiday Management</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Manage employee holiday requests</Text>
         </View>
 
         <View style={styles.viewModeToggle}>
@@ -204,51 +206,51 @@ export default function HolidayManagementScreen() {
         </View>
 
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Bell size={24} color="#f59e0b" />
-            <Text style={styles.statNumber}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Pending Requests</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{pendingCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pending Requests</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Users size={24} color="#3b82f6" />
-            <Text style={styles.statNumber}>{companyUsers.length}</Text>
-            <Text style={styles.statLabel}>Team Members</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{companyUsers.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Team Members</Text>
           </View>
         </View>
 
         {viewMode === 'calendar' ? (
           <View style={styles.section}>
             <View style={styles.calendarHeader}>
-              <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
-                <ChevronLeft size={24} color="#fff" />
+              <TouchableOpacity onPress={goToPreviousMonth} style={[styles.monthButton, { backgroundColor: colors.card }]}>
+                <ChevronLeft size={24} color={colors.text} />
               </TouchableOpacity>
-              <Text style={styles.monthTitle}>
+              <Text style={[styles.monthTitle, { color: colors.text }]}>
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </Text>
-              <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
-                <ChevronRight size={24} color="#fff" />
+              <TouchableOpacity onPress={goToNextMonth} style={[styles.monthButton, { backgroundColor: colors.card }]}>
+                <ChevronRight size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.calendarLegend}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#3b82f620' }]} />
-                <Text style={styles.legendText}>1 person</Text>
+                <View style={[styles.legendColor, { backgroundColor: '#3b82f620', borderColor: colors.border }]} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>1 person</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#f59e0b40' }]} />
-                <Text style={styles.legendText}>2 people</Text>
+                <View style={[styles.legendColor, { backgroundColor: '#f59e0b40', borderColor: colors.border }]} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>2 people</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#ef444460' }]} />
-                <Text style={styles.legendText}>3+ people</Text>
+                <View style={[styles.legendColor, { backgroundColor: '#ef444460', borderColor: colors.border }]} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>3+ people</Text>
               </View>
             </View>
 
-            <View style={styles.calendar}>
+            <View style={[styles.calendar, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.calendarDayNames}>
                 {dayNames.map((day) => (
-                  <Text key={day} style={styles.dayName}>{day}</Text>
+                  <Text key={day} style={[styles.dayName, { color: colors.textSecondary }]}>{day}</Text>
                 ))}
               </View>
               <View style={styles.calendarDays}>
@@ -267,6 +269,7 @@ export default function HolidayManagementScreen() {
                       <>
                         <Text style={[
                           styles.calendarDayText,
+                          { color: colors.text },
                           isToday(date) && styles.calendarDayTextToday,
                         ]}>
                           {date.getDate()}
@@ -285,12 +288,12 @@ export default function HolidayManagementScreen() {
           <>
             {upcomingHolidays.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Upcoming Holidays</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Upcoming Holidays</Text>
                 {upcomingHolidays.slice(0, 3).map((request) => (
-                  <View key={request.id} style={styles.upcomingCard}>
+                  <View key={request.id} style={[styles.upcomingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.upcomingHeader}>
-                      <Text style={styles.upcomingName}>{request.employeeName}</Text>
-                      <Text style={styles.upcomingDates}>
+                      <Text style={[styles.upcomingName, { color: colors.text }]}>{request.employeeName}</Text>
+                      <Text style={[styles.upcomingDates, { color: colors.textSecondary }]}>
                         {formatDate(request.startDate)} - {formatDate(request.endDate)}
                       </Text>
                     </View>
@@ -305,12 +308,14 @@ export default function HolidayManagementScreen() {
                   key={f}
                   style={[
                     styles.filterButton,
+                    { backgroundColor: colors.card, borderColor: colors.border },
                     filter === f && styles.filterButtonActive
                   ]}
                   onPress={() => setFilter(f as typeof filter)}
                 >
                   <Text style={[
                     styles.filterButtonText,
+                    { color: colors.textSecondary },
                     filter === f && styles.filterButtonTextActive
                   ]}>
                     {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -320,19 +325,19 @@ export default function HolidayManagementScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Holiday Requests</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Holiday Requests</Text>
               {requests.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Calendar size={48} color="#475569" />
-                  <Text style={styles.emptyText}>No requests found</Text>
+                <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Calendar size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No requests found</Text>
                 </View>
               ) : (
                 requests.map((request: HolidayRequest) => {
                   const StatusIcon = getStatusIcon(request.status);
                   return (
-                    <View key={request.id} style={styles.requestCard}>
+                    <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={styles.requestHeader}>
-                        <Text style={styles.requestName}>{request.employeeName}</Text>
+                        <Text style={[styles.requestName, { color: colors.text }]}>{request.employeeName}</Text>
                         <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(request.status)}20` }]}>
                           <StatusIcon size={16} color={getStatusColor(request.status)} />
                           <Text style={[styles.statusText, { color: getStatusColor(request.status) }]}>
@@ -341,15 +346,15 @@ export default function HolidayManagementScreen() {
                         </View>
                       </View>
                       <View style={styles.requestDates}>
-                        <Text style={styles.requestDate}>{formatDate(request.startDate)}</Text>
-                        <Text style={styles.requestDateSeparator}>→</Text>
-                        <Text style={styles.requestDate}>{formatDate(request.endDate)}</Text>
+                        <Text style={[styles.requestDate, { color: colors.text }]}>{formatDate(request.startDate)}</Text>
+                        <Text style={[styles.requestDateSeparator, { color: colors.textSecondary }]}>→</Text>
+                        <Text style={[styles.requestDate, { color: colors.text }]}>{formatDate(request.endDate)}</Text>
                       </View>
                       {request.reason && (
-                        <Text style={styles.requestReason}>{request.reason}</Text>
+                        <Text style={[styles.requestReason, { color: colors.textSecondary }]}>{request.reason}</Text>
                       )}
                       {request.reviewedBy && (
-                        <Text style={styles.reviewedBy}>
+                        <Text style={[styles.reviewedBy, { color: colors.textSecondary }]}>
                           Reviewed by {request.reviewedBy} on {formatDate(request.reviewedAt!)}
                         </Text>
                       )}
@@ -387,25 +392,25 @@ export default function HolidayManagementScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {selectedDate && formatDate(selectedDate.toISOString())}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={24} color="#fff" />
+                <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScrollView}>
-              <Text style={styles.modalSubtitle}>People off on this day:</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>People off on this day:</Text>
               {selectedDate && getHolidaysForDate(selectedDate).map((request) => (
-                <View key={request.id} style={styles.modalRequestCard}>
-                  <Text style={styles.modalEmployeeName}>{request.employeeName}</Text>
-                  <Text style={styles.modalDates}>
+                <View key={request.id} style={[styles.modalRequestCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[styles.modalEmployeeName, { color: colors.text }]}>{request.employeeName}</Text>
+                  <Text style={[styles.modalDates, { color: colors.textSecondary }]}>
                     {formatDate(request.startDate)} - {formatDate(request.endDate)}
                   </Text>
                   {request.reason && (
-                    <Text style={styles.modalReason}>{request.reason}</Text>
+                    <Text style={[styles.modalReason, { color: colors.textSecondary }]}>{request.reason}</Text>
                   )}
                 </View>
               ))}
@@ -420,7 +425,6 @@ export default function HolidayManagementScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
   },
   scrollView: {
     flex: 1,
@@ -435,12 +439,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold' as const,
-    color: '#fff',
     marginTop: 12,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#94a3b8',
     marginTop: 4,
   },
   statsGrid: {
@@ -450,23 +452,19 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   statNumber: {
     fontSize: 28,
     fontWeight: 'bold' as const,
-    color: '#fff',
     marginTop: 8,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#94a3b8',
     textAlign: 'center',
   },
   section: {
@@ -475,16 +473,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
-    color: '#fff',
     marginBottom: 16,
   },
   upcomingCard: {
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   upcomingHeader: {
     flexDirection: 'row',
@@ -494,11 +489,9 @@ const styles = StyleSheet.create({
   upcomingName: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#fff',
   },
   upcomingDates: {
     fontSize: 12,
-    color: '#94a3b8',
   },
   filterContainer: {
     flexDirection: 'row',
@@ -510,9 +503,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#1e293b',
     borderWidth: 1,
-    borderColor: '#334155',
     alignItems: 'center',
   },
   filterButtonActive: {
@@ -522,7 +513,6 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#94a3b8',
   },
   filterButtonTextActive: {
     color: '#fff',
@@ -530,25 +520,20 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
     borderStyle: 'dashed' as const,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#94a3b8',
     marginTop: 16,
   },
   requestCard: {
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   requestHeader: {
     flexDirection: 'row',
@@ -559,7 +544,6 @@ const styles = StyleSheet.create({
   requestName: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#fff',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -582,20 +566,16 @@ const styles = StyleSheet.create({
   requestDate: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#fff',
   },
   requestDateSeparator: {
     fontSize: 16,
-    color: '#64748b',
   },
   requestReason: {
     fontSize: 14,
-    color: '#94a3b8',
     marginTop: 8,
   },
   reviewedBy: {
     fontSize: 12,
-    color: '#64748b',
     marginTop: 8,
     fontStyle: 'italic' as const,
   },
@@ -634,9 +614,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#1e293b',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#334155',
     alignItems: 'center',
   },
   viewModeButtonActive: {
@@ -646,7 +625,6 @@ const styles = StyleSheet.create({
   viewModeButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#94a3b8',
   },
   viewModeButtonTextActive: {
     color: '#fff',
@@ -661,12 +639,10 @@ const styles = StyleSheet.create({
   monthButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#1e293b',
   },
   monthTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: '#fff',
   },
   calendarLegend: {
     flexDirection: 'row',
@@ -685,18 +661,14 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   legendText: {
     fontSize: 12,
-    color: '#94a3b8',
   },
   calendar: {
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   calendarDayNames: {
     flexDirection: 'row',
@@ -707,7 +679,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '600' as const,
-    color: '#94a3b8',
     paddingVertical: 8,
   },
   calendarDays: {
@@ -730,7 +701,6 @@ const styles = StyleSheet.create({
   calendarDayText: {
     fontSize: 14,
     fontWeight: '500' as const,
-    color: '#fff',
   },
   calendarDayTextToday: {
     color: '#ec4899',
@@ -752,12 +722,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1e293b',
     borderRadius: 16,
     width: '100%',
     maxHeight: '80%',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -765,12 +733,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: '#fff',
   },
   modalScrollView: {
     padding: 20,
@@ -778,31 +744,25 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: '#94a3b8',
     marginBottom: 16,
   },
   modalRequestCard: {
-    backgroundColor: '#0f172a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   modalEmployeeName: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#fff',
     marginBottom: 8,
   },
   modalDates: {
     fontSize: 14,
-    color: '#94a3b8',
     marginBottom: 4,
   },
   modalReason: {
     fontSize: 14,
-    color: '#94a3b8',
     fontStyle: 'italic' as const,
     marginTop: 8,
   },

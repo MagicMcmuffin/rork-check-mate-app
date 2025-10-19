@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Stack, useRouter } from 'expo-router';
 import { FileText, Bell, Award, BookOpen, Calendar } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MyPortalScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { user, tickets } = useApp();
 
   const userTickets = useMemo(() => {
@@ -67,21 +69,21 @@ export default function MyPortalScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: '#1e293b' },
-          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
           title: 'My Portal',
         }}
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.name || 'User'}</Text>
-          <Text style={styles.subtitle}>Manage your training and documents</Text>
+          <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Welcome back,</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User'}</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your training and documents</Text>
         </View>
 
         <View style={styles.grid}>
@@ -90,7 +92,7 @@ export default function MyPortalScreen() {
             return (
               <TouchableOpacity
                 key={option.id}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push(option.route)}
                 activeOpacity={0.7}
               >
@@ -103,8 +105,8 @@ export default function MyPortalScreen() {
                   <IconComponent size={28} color="#fff" />
                 </LinearGradient>
                 <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>{option.title}</Text>
-                  <Text style={styles.cardDescription}>{option.description}</Text>
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>{option.title}</Text>
+                  <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{option.description}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -112,17 +114,17 @@ export default function MyPortalScreen() {
         </View>
 
         <View style={styles.quickStats}>
-          <Text style={styles.quickStatsTitle}>Quick Stats</Text>
+          <Text style={[styles.quickStatsTitle, { color: colors.text }]}>Quick Stats</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={styles.statNumber}>{userTickets.length}</Text>
-              <Text style={styles.statLabel}>Active Tickets</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Active Tickets</Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.statNumber, expiringSoonCount > 0 && styles.statNumberWarning]}>
                 {expiringSoonCount}
               </Text>
-              <Text style={styles.statLabel}>Expiring Soon</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Expiring Soon</Text>
             </View>
           </View>
         </View>
@@ -134,7 +136,6 @@ export default function MyPortalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
   },
   scrollView: {
     flex: 1,
@@ -147,31 +148,26 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 16,
-    color: '#94a3b8',
     marginBottom: 4,
   },
   userName: {
     fontSize: 32,
     fontWeight: 'bold' as const,
-    color: '#fff',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748b',
   },
   grid: {
     gap: 16,
     marginBottom: 30,
   },
   card: {
-    backgroundColor: '#1e293b',
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   iconContainer: {
     width: 56,
@@ -187,12 +183,10 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
-    color: '#fff',
     marginBottom: 4,
   },
   cardDescription: {
     fontSize: 13,
-    color: '#94a3b8',
   },
   quickStats: {
     marginTop: 10,
@@ -200,7 +194,6 @@ const styles = StyleSheet.create({
   quickStatsTitle: {
     fontSize: 20,
     fontWeight: '600' as const,
-    color: '#fff',
     marginBottom: 16,
   },
   statsGrid: {
@@ -209,12 +202,10 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1e293b',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   statNumber: {
     fontSize: 32,
@@ -227,7 +218,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#94a3b8',
     textAlign: 'center',
   },
 });

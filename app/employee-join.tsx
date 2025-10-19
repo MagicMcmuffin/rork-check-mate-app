@@ -1,6 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Users, KeyRound, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft, Users, KeyRound, CheckCircle2, Mail, Lock, User } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EmployeeJoinScreen() {
-  const { joinCompany, user } = useApp();
+  const { joinCompany } = useApp();
   
   const colors = {
     background: '#0f172a',
@@ -28,24 +28,37 @@ export default function EmployeeJoinScreen() {
     primary: '#3b82f6',
   };
   const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [companyCode, setCompanyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [joinedCompany, setJoinedCompany] = useState<string | null>(null);
 
   const handleJoin = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter a password');
+      return;
+    }
+
     if (!companyCode.trim()) {
       Alert.alert('Error', 'Please enter a company code');
       return;
     }
 
-    if (!user) {
-      Alert.alert('Error', 'You must be logged in to join a company');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const company = await joinCompany(companyCode.trim().toUpperCase(), user.name, user.email, user.password, user.profilePicture);
+      const company = await joinCompany(companyCode.trim().toUpperCase(), name.trim(), email.trim(), password.trim());
       setJoinedCompany(company.name);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Invalid company code. Please check and try again.');
@@ -98,11 +111,60 @@ export default function EmployeeJoinScreen() {
             <View style={styles.iconContainer}>
               <Users size={32} color="#0d9488" />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Join Another Company</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter company code to join as {user?.name}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Join a Company</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter your details to join</Text>
           </View>
 
           <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Name</Text>
+              <View style={styles.inputWithIcon}>
+                <User size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Your full name"
+                  placeholderTextColor="#94a3b8"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+              <View style={styles.inputWithIcon}>
+                <Mail size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="your@email.com"
+                  placeholderTextColor="#94a3b8"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+              <View style={styles.inputWithIcon}>
+                <Lock size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Create a password"
+                  placeholderTextColor="#94a3b8"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.text }]}>Company Code</Text>
               <View style={styles.inputWithIcon}>
