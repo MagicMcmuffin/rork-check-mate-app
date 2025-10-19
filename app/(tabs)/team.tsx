@@ -100,16 +100,18 @@ export default function TeamScreen() {
 
   const admins = companyUsers.filter(u => u.role === 'company' || u.role === 'administrator');
   const management = companyUsers.filter(u => u.role === 'management');
+  const supervisors = companyUsers.filter(u => u.role === 'supervisor');
   const mechanics = companyUsers.filter(u => u.role === 'mechanic');
-  const apprentices = companyUsers.filter(u => u.role === 'apprentice');
   const employees = companyUsers.filter(u => u.role === 'employee');
+  const apprentices = companyUsers.filter(u => u.role === 'apprentice');
+  const viewers = companyUsers.filter(u => u.role === 'viewer');
 
   const handleChangeRole = (userId: string, userName: string, currentRole: UserRole) => {
     setSelectedUser({ id: userId, name: userName, currentRole });
     setShowRoleModal(true);
   };
 
-  const applyRoleChange = async (newRole: 'administrator' | 'management' | 'mechanic' | 'apprentice' | 'employee') => {
+  const applyRoleChange = async (newRole: 'administrator' | 'management' | 'supervisor' | 'mechanic' | 'employee' | 'apprentice' | 'viewer') => {
     if (!selectedUser) return;
 
     try {
@@ -128,9 +130,11 @@ export default function TeamScreen() {
       case 'company': return 'Owner';
       case 'administrator': return 'Administrator';
       case 'management': return 'Management';
+      case 'supervisor': return 'Site Supervisor';
       case 'mechanic': return 'Mechanic';
-      case 'apprentice': return 'Apprentice';
       case 'employee': return 'Employee';
+      case 'apprentice': return 'Apprentice';
+      case 'viewer': return 'Viewer / Auditor';
       default: return role;
     }
   };
@@ -140,9 +144,11 @@ export default function TeamScreen() {
       case 'company': return <Crown size={20} color="#1e40af" />;
       case 'administrator': return <Shield size={20} color="#1e40af" />;
       case 'management': return <Briefcase size={20} color="#7c3aed" />;
+      case 'supervisor': return <Users size={20} color="#16a34a" />;
       case 'mechanic': return <Wrench size={20} color="#ea580c" />;
-      case 'apprentice': return <GraduationCap size={20} color="#0891b2" />;
-      case 'employee': return <User size={20} color="#64748b" />;
+      case 'employee': return <User size={20} color="#0891b2" />;
+      case 'apprentice': return <GraduationCap size={20} color="#0ea5e9" />;
+      case 'viewer': return <Eye size={20} color="#64748b" />;
     }
   };
 
@@ -151,9 +157,11 @@ export default function TeamScreen() {
       case 'company': return { bg: '#fef3c7', text: '#92400e' };
       case 'administrator': return { bg: '#dbeafe', text: '#1e40af' };
       case 'management': return { bg: '#ede9fe', text: '#6b21a8' };
+      case 'supervisor': return { bg: '#dcfce7', text: '#16a34a' };
       case 'mechanic': return { bg: '#fed7aa', text: '#9a3412' };
-      case 'apprentice': return { bg: '#cffafe', text: '#155e75' };
-      case 'employee': return { bg: '#f1f5f9', text: '#475569' };
+      case 'employee': return { bg: '#cffafe', text: '#0891b2' };
+      case 'apprentice': return { bg: '#e0f2fe', text: '#0ea5e9' };
+      case 'viewer': return { bg: '#f1f5f9', text: '#64748b' };
     }
   };
 
@@ -337,6 +345,83 @@ export default function TeamScreen() {
               )}
             </View>
           ))}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Users size={20} color="#16a34a" />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Site Supervisors</Text>
+            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#14532d' : '#dcfce7' }]}>
+              <Text style={[styles.badgeText, { color: '#16a34a' }]}>{supervisors.length}</Text>
+            </View>
+          </View>
+          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Manage daily site inspections and close issues</Text>
+
+          {supervisors.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>No site supervisors yet</Text>
+            </View>
+          ) : (
+            supervisors.map((supervisor) => (
+              <View key={supervisor.id} style={[styles.userCard, { backgroundColor: colors.card }]}>
+                <View style={styles.userInfo}>
+                  {supervisor.profilePicture ? (
+                    <Image source={{ uri: supervisor.profilePicture }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#14532d' : '#dcfce7' }]}>
+                      <Users size={20} color="#16a34a" />
+                    </View>
+                  )}
+                  <View style={styles.userDetails}>
+                    <View style={styles.userNameRow}>
+                      <Text style={[styles.userName, { color: colors.text }]}>{supervisor.name}</Text>
+                      {supervisor.id === user?.id && (
+                        <View style={[styles.ownerBadge, { backgroundColor: '#f0fdf4' }]}>
+                          <Text style={[styles.ownerBadgeText, { color: '#15803d' }]}>You</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${supervisor.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {canSendMessages && supervisor.email && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(supervisor.id, supervisor.name, supervisor.email)}
+                    >
+                      <MessageSquare size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(supervisor.id, supervisor.name, supervisor.role)}
+                      >
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      </TouchableOpacity>
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(supervisor.id, supervisor.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         <View style={styles.section}>
@@ -572,13 +657,13 @@ export default function TeamScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <User size={20} color="#64748b" />
+            <User size={20} color="#0891b2" />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Employees</Text>
-            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
-              <Text style={[styles.badgeText, { color: '#64748b' }]}>{employees.length}</Text>
+            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#164e63' : '#cffafe' }]}>
+              <Text style={[styles.badgeText, { color: '#0891b2' }]}>{employees.length}</Text>
             </View>
           </View>
-          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Can submit inspections and view their own history</Text>
+          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Default role - can submit inspections and view their own history</Text>
 
           {employees.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
@@ -591,8 +676,8 @@ export default function TeamScreen() {
                   {employee.profilePicture ? (
                     <Image source={{ uri: employee.profilePicture }} style={styles.userAvatar} />
                   ) : (
-                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
-                      <User size={20} color="#64748b" />
+                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#164e63' : '#cffafe' }]}>
+                      <User size={20} color="#0891b2" />
                     </View>
                   )}
                   <View style={styles.userDetails}>
@@ -635,6 +720,83 @@ export default function TeamScreen() {
                         <TouchableOpacity
                           style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
                           onPress={() => handleRemoveEmployee(employee.id, employee.name)}
+                        >
+                          <Trash2 size={16} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Eye size={20} color="#64748b" />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Viewers / Auditors</Text>
+            <View style={[styles.badge, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+              <Text style={[styles.badgeText, { color: '#64748b' }]}>{viewers.length}</Text>
+            </View>
+          </View>
+          <Text style={[styles.roleDescription, { color: colors.textSecondary }]}>Read-only access to reports and certifications</Text>
+
+          {viewers.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>No viewers yet</Text>
+            </View>
+          ) : (
+            viewers.map((viewer) => (
+              <View key={viewer.id} style={[styles.userCard, { backgroundColor: colors.card }]}>
+                <View style={styles.userInfo}>
+                  {viewer.profilePicture ? (
+                    <Image source={{ uri: viewer.profilePicture }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                      <Eye size={20} color="#64748b" />
+                    </View>
+                  )}
+                  <View style={styles.userDetails}>
+                    <View style={styles.userNameRow}>
+                      <Text style={[styles.userName, { color: colors.text }]}>{viewer.name}</Text>
+                      {viewer.id === user?.id && (
+                        <View style={[styles.ownerBadge, { backgroundColor: '#f0fdf4' }]}>
+                          <Text style={[styles.ownerBadgeText, { color: '#15803d' }]}>You</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.actionButtons}>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => router.push(`/employee-detail?employeeId=${viewer.id}`)}
+                    >
+                      <Eye size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {canSendMessages && viewer.email && (
+                    <TouchableOpacity
+                      style={[styles.iconButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                      onPress={() => handleOpenMessageModal(viewer.id, viewer.name, viewer.email)}
+                    >
+                      <MessageSquare size={16} color="#3b82f6" />
+                    </TouchableOpacity>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.changeRoleButton, { backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff' }]}
+                        onPress={() => handleChangeRole(viewer.id, viewer.name, viewer.role)}
+                      >
+                        <Text style={styles.changeRoleButtonText}>Change Role</Text>
+                      </TouchableOpacity>
+                      {user?.role === 'company' && (
+                        <TouchableOpacity
+                          style={[styles.iconButton, { backgroundColor: '#fee2e2' }]}
+                          onPress={() => handleRemoveEmployee(viewer.id, viewer.name)}
                         >
                           <Trash2 size={16} color="#dc2626" />
                         </TouchableOpacity>
@@ -810,6 +972,23 @@ export default function TeamScreen() {
                 </View>
               </TouchableOpacity>
 
+
+
+              <TouchableOpacity
+                style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
+                onPress={() => applyRoleChange('supervisor')}
+              >
+                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#14532d' : '#dcfce7' }]}>
+                  <Users size={24} color="#16a34a" />
+                </View>
+                <View style={styles.roleOptionContent}>
+                  <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Site Supervisor</Text>
+                  <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
+                    Manage daily site inspections and close issues
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
                 onPress={() => applyRoleChange('mechanic')}
@@ -820,22 +999,7 @@ export default function TeamScreen() {
                 <View style={styles.roleOptionContent}>
                   <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Mechanic</Text>
                   <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
-                    Can view reports and inspection history
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
-                onPress={() => applyRoleChange('apprentice')}
-              >
-                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#164e63' : '#cffafe' }]}>
-                  <GraduationCap size={24} color="#0891b2" />
-                </View>
-                <View style={styles.roleOptionContent}>
-                  <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Apprentice</Text>
-                  <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
-                    Can view reports and inspection history
+                    View and manage assigned equipment
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -844,13 +1008,43 @@ export default function TeamScreen() {
                 style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
                 onPress={() => applyRoleChange('employee')}
               >
-                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
-                  <User size={24} color="#64748b" />
+                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#164e63' : '#cffafe' }]}>
+                  <User size={24} color="#0891b2" />
                 </View>
                 <View style={styles.roleOptionContent}>
                   <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Employee</Text>
                   <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
-                    Can submit inspections and view their own history
+                    Default role - can submit inspections and view own history
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
+                onPress={() => applyRoleChange('apprentice')}
+              >
+                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#075985' : '#e0f2fe' }]}>
+                  <GraduationCap size={24} color="#0ea5e9" />
+                </View>
+                <View style={styles.roleOptionContent}>
+                  <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Apprentice</Text>
+                  <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
+                    Limited access for training - requires supervisor review
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roleOption, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}
+                onPress={() => applyRoleChange('viewer')}
+              >
+                <View style={[styles.roleOptionIcon, { backgroundColor: isDarkMode ? '#334155' : '#f1f5f9' }]}>
+                  <Eye size={24} color="#64748b" />
+                </View>
+                <View style={styles.roleOptionContent}>
+                  <Text style={[styles.roleOptionTitle, { color: colors.text }]}>Viewer / Auditor</Text>
+                  <Text style={[styles.roleOptionDescription, { color: colors.textSecondary }]}>
+                    Read-only access to reports and certifications
                   </Text>
                 </View>
               </TouchableOpacity>
