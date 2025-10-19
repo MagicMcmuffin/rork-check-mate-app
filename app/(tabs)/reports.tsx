@@ -28,9 +28,6 @@ export default function ReportsScreen() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedEquipmentReport, setSelectedEquipmentReport] = useState<EquipmentReport | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'fixed' | 'discarded'>('all');
-  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
-  const [statusChangeAction, setStatusChangeAction] = useState<'fixed' | 'discarded' | null>(null);
-  const [statusChangeNotes, setStatusChangeNotes] = useState('');
 
   const appContext = useApp();
   
@@ -716,61 +713,6 @@ export default function ReportsScreen() {
         )}
       </ScrollView>
 
-      {statusChangeModalVisible && selectedEquipmentReport && (
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background, maxWidth: 400 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {statusChangeAction === 'fixed' ? 'Mark as Fixed' : 'Discard Report'}
-              </Text>
-              <TouchableOpacity onPress={() => setStatusChangeModalVisible(false)}>
-                <X size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.detailCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.label, { color: colors.text, marginBottom: 8 }]}>Notes (Optional)</Text>
-              <TextInput
-                style={[styles.textarea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                value={statusChangeNotes}
-                onChangeText={setStatusChangeNotes}
-                placeholder={statusChangeAction === 'fixed' ? 'Add fix notes...' : 'Add reason for discarding...'}
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalActionBtn, { backgroundColor: colors.border }]}
-                onPress={() => setStatusChangeModalVisible(false)}
-              >
-                <Text style={[styles.modalActionBtnText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalActionBtn, { backgroundColor: statusChangeAction === 'fixed' ? '#10b981' : '#94a3b8' }]}
-                onPress={async () => {
-                  if (statusChangeAction === 'fixed' && markEquipmentReportFixed) {
-                    await markEquipmentReportFixed(selectedEquipmentReport.id, statusChangeNotes || undefined);
-                  } else if (statusChangeAction === 'discarded' && markEquipmentReportDiscarded) {
-                    await markEquipmentReportDiscarded(selectedEquipmentReport.id, statusChangeNotes || undefined);
-                  }
-                  setStatusChangeModalVisible(false);
-                  setSelectedEquipmentReport(null);
-                  setStatusChangeNotes('');
-                }}
-              >
-                <Text style={[styles.modalActionBtnText, { color: '#fff' }]}>
-                  {statusChangeAction === 'fixed' ? 'Mark as Fixed' : 'Discard'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
       {selectedEquipmentReport && (
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
@@ -856,9 +798,22 @@ export default function ReportsScreen() {
                   <TouchableOpacity
                     style={[styles.modalActionBtn, { backgroundColor: '#10b981' }]}
                     onPress={() => {
-                      setStatusChangeAction('fixed');
-                      setStatusChangeNotes('');
-                      setStatusChangeModalVisible(true);
+                      Alert.alert(
+                        'Mark as Fixed',
+                        'Add fix notes (optional)',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Mark Fixed',
+                            onPress: async () => {
+                              if (markEquipmentReportFixed) {
+                                await markEquipmentReportFixed(selectedEquipmentReport.id);
+                                setSelectedEquipmentReport(null);
+                              }
+                            },
+                          },
+                        ]
+                      );
                     }}
                   >
                     <CheckCircle size={20} color="#fff" />
@@ -867,9 +822,23 @@ export default function ReportsScreen() {
                   <TouchableOpacity
                     style={[styles.modalActionBtn, { backgroundColor: '#94a3b8' }]}
                     onPress={() => {
-                      setStatusChangeAction('discarded');
-                      setStatusChangeNotes('');
-                      setStatusChangeModalVisible(true);
+                      Alert.alert(
+                        'Discard Report',
+                        'Are you sure you want to discard this report?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Discard',
+                            style: 'destructive',
+                            onPress: async () => {
+                              if (markEquipmentReportDiscarded) {
+                                await markEquipmentReportDiscarded(selectedEquipmentReport.id);
+                                setSelectedEquipmentReport(null);
+                              }
+                            },
+                          },
+                        ]
+                      );
                     }}
                   >
                     <XCircle size={20} color="#fff" />
