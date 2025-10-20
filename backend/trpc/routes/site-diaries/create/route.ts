@@ -40,6 +40,16 @@ export const createSiteDiaryProcedure = protectedProcedure
       throw new Error("Only supervisors and above can create site diaries");
     }
 
+    const equipmentUsedData = input.equipmentUsed && input.equipmentUsed.length > 0 
+      ? input.equipmentUsed 
+      : [];
+    const materialsData = input.materials && input.materials.length > 0
+      ? input.materials
+      : [];
+    const photosData = input.photos && input.photos.length > 0
+      ? input.photos
+      : [];
+
     const siteDiary = await prisma.siteDiary.create({
       data: {
         date: new Date(input.date),
@@ -56,9 +66,9 @@ export const createSiteDiaryProcedure = protectedProcedure
         safetyIssues: input.safetyIssues,
         visitors: input.visitors,
         workersOnSite: input.workersOnSite,
-        equipmentUsed: input.equipmentUsed || [],
-        materials: input.materials || [],
-        photos: input.photos || [],
+        equipmentUsed: equipmentUsedData,
+        materials: materialsData,
+        photos: photosData,
         notes: input.notes,
         status: input.status || "draft",
         sentTo: [],
@@ -66,11 +76,6 @@ export const createSiteDiaryProcedure = protectedProcedure
     });
 
     console.log("Site diary created:", siteDiary.id);
-    
-    const equipmentUsed = siteDiary.equipmentUsed as any;
-    const materials = siteDiary.materials as any;
-    const photos = siteDiary.photos;
-    const sentTo = siteDiary.sentTo;
 
     return {
       id: siteDiary.id,
@@ -88,13 +93,13 @@ export const createSiteDiaryProcedure = protectedProcedure
       safetyIssues: siteDiary.safetyIssues ?? undefined,
       visitors: siteDiary.visitors ?? undefined,
       workersOnSite: siteDiary.workersOnSite ?? undefined,
-      equipmentUsed: equipmentUsed as any,
-      materials: materials as any,
-      photos: photos as string[],
+      equipmentUsed: Array.isArray(siteDiary.equipmentUsed) ? siteDiary.equipmentUsed : [],
+      materials: Array.isArray(siteDiary.materials) ? siteDiary.materials : [],
+      photos: siteDiary.photos,
       notes: siteDiary.notes ?? undefined,
       status: siteDiary.status as "draft" | "completed",
       sentAt: siteDiary.sentAt ? siteDiary.sentAt.toISOString() : undefined,
-      sentTo: sentTo as string[],
+      sentTo: siteDiary.sentTo,
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };
