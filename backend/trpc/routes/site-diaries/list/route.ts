@@ -47,7 +47,7 @@ export const listSiteDiariesProcedure = protectedProcedure
 
     console.log("Site diaries fetched:", siteDiaries.length);
     
-    return siteDiaries.map((diary) => ({
+    return siteDiaries.map((diary: typeof siteDiaries[0]) => ({
       id: diary.id,
       date: diary.date.toISOString(),
       projectId: diary.projectId,
@@ -63,8 +63,8 @@ export const listSiteDiariesProcedure = protectedProcedure
       safetyIssues: diary.safetyIssues || undefined,
       visitors: diary.visitors || undefined,
       workersOnSite: diary.workersOnSite || undefined,
-      equipmentUsed: diary.equipmentUsed as { name: string; hours?: number }[],
-      materials: diary.materials as { name: string; quantity?: string; unit?: string }[],
+      equipmentUsed: Array.isArray(diary.equipmentUsed) ? diary.equipmentUsed : [],
+      materials: Array.isArray(diary.materials) ? diary.materials : [],
       photos: diary.photos || [],
       notes: diary.notes || undefined,
       status: diary.status as "draft" | "completed",
