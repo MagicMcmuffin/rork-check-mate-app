@@ -1,7 +1,7 @@
 /* eslint-disable @rork/linters/expo-router-enforce-safe-area-usage */
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { BookOpen, Plus, Eye, Trash2, Send } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
@@ -80,11 +80,11 @@ export default function SiteDiaryManagementScreen() {
   };
 
   const handleCreateNew = () => {
-    Alert.alert('Coming Soon', 'Site diary creation is under development');
+    router.push('/site-diary-create');
   };
 
   const handleView = (diaryId: string) => {
-    Alert.alert('Coming Soon', 'Site diary viewing is under development');
+    router.push(`/site-diary-detail?id=${diaryId}`);
   };
 
   return (
