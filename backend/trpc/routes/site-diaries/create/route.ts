@@ -68,11 +68,29 @@ export const createSiteDiaryProcedure = protectedProcedure
     console.log("Site diary created:", siteDiary.id);
     
     return {
-      ...siteDiary,
+      id: siteDiary.id,
       date: siteDiary.date.toISOString(),
-      createdAt: siteDiary.createdAt.toISOString(),
-      updatedAt: siteDiary.updatedAt.toISOString(),
+      projectId: siteDiary.projectId,
+      projectName: siteDiary.projectName,
+      supervisorName: siteDiary.supervisorName,
+      supervisorId: siteDiary.supervisorId,
+      companyId: siteDiary.companyId,
+      weather: siteDiary.weather,
+      temperature: siteDiary.temperature,
+      workDescription: siteDiary.workDescription,
+      progress: siteDiary.progress,
+      delays: siteDiary.delays,
+      safetyIssues: siteDiary.safetyIssues,
+      visitors: siteDiary.visitors,
+      workersOnSite: siteDiary.workersOnSite,
       equipmentUsed: siteDiary.equipmentUsed as { name: string; hours?: number }[],
       materials: siteDiary.materials as { name: string; quantity?: string; unit?: string }[],
+      photos: siteDiary.photos,
+      notes: siteDiary.notes,
+      status: siteDiary.status,
+      sentAt: siteDiary.sentAt?.toISOString() || null,
+      sentTo: siteDiary.sentTo,
+      createdAt: siteDiary.createdAt.toISOString(),
+      updatedAt: siteDiary.updatedAt.toISOString(),
     };
   });
