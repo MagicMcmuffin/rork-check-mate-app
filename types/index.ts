@@ -503,3 +503,41 @@ export interface EquipmentReport {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SiteDiaryEquipment {
+  name: string;
+  hours?: number;
+}
+
+export interface SiteDiaryMaterial {
+  name: string;
+  quantity?: string;
+  unit?: string;
+}
+
+export interface SiteDiary {
+  id: string;
+  companyId: string;
+  date: string;
+  projectId: string;
+  projectName: string;
+  supervisorId: string;
+  supervisorName: string;
+  weather?: string;
+  temperature?: string;
+  workDescription: string;
+  progress?: string;
+  delays?: string;
+  safetyIssues?: string;
+  visitors?: string;
+  workersOnSite?: number;
+  equipmentUsed: SiteDiaryEquipment[];
+  materials: SiteDiaryMaterial[];
+  photos: string[];
+  notes?: string;
+  status: 'draft' | 'completed';
+  sentAt?: string;
+  sentTo: string[];
+  createdAt: string;
+  updatedAt: string;
+}

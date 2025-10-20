@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users, BookOpen } from 'lucide-react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
@@ -716,6 +716,21 @@ export default function CompanyScreen() {
                 <View style={styles.sectionCardContent}>
                   <Text style={[styles.sectionCardTitle, { color: colors.text }]}>People Planner</Text>
                   <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Assign employees to projects</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {isCompanyOrManagement && (
+              <TouchableOpacity
+                style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push('/site-diary-management')}
+              >
+                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
+                  <BookOpen size={24} color={colors.primary} />
+                </View>
+                <View style={styles.sectionCardContent}>
+                  <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Site Diaries</Text>
+                  <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Daily site reports & logs</Text>
                 </View>
               </TouchableOpacity>
             )}

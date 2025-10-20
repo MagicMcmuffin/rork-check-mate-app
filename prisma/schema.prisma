@@ -37,6 +37,7 @@ model User {
   holidayRequests        HolidayRequest[]
   holidayNotifications   HolidayNotification[]
   equipmentReports       EquipmentReport[]
+  siteDiaries            SiteDiary[]
   
   @@index([email])
 }
@@ -75,6 +76,7 @@ model Company {
   plantCategories       PlantCategory[]
   plantItems            PlantItem[]
   equipmentReports      EquipmentReport[]
+  siteDiaries           SiteDiary[]
   
   @@index([code])
   @@index([ownerId])
@@ -521,4 +523,39 @@ model EquipmentReport {
   
   @@index([companyId])
   @@index([employeeId])
+}
+
+model SiteDiary {
+  id              String   @id @default(cuid())
+  date            DateTime
+  projectId       String
+  projectName     String
+  supervisorName  String
+  weather         String?
+  temperature     String?
+  workDescription String
+  progress        String?
+  delays          String?
+  safetyIssues    String?
+  visitors        String?
+  workersOnSite   Int?
+  equipmentUsed   Json     @default("[]")
+  materials       Json     @default("[]")
+  photos          String[]
+  notes           String?
+  status          String   @default("draft")
+  sentAt          DateTime?
+  sentTo          String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supervisorId    String
+  supervisor      User     @relation(fields: [supervisorId], references: [id])
+  
+  @@index([companyId])
+  @@index([supervisorId])
+  @@index([projectId])
+  @@index([date])
 }
