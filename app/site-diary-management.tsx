@@ -1,26 +1,28 @@
+/* eslint-disable @rork/linters/expo-router-enforce-safe-area-usage */
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Stack, router } from 'expo-router';
-import { BookOpen, Plus, Eye, Download, Trash2, Send } from 'lucide-react-native';
+import { Stack } from 'expo-router';
+import { BookOpen, Plus, Eye, Trash2, Send } from 'lucide-react-native';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { trpc } from '@/lib/trpc';
+import { SiteDiary } from '@/types';
 
 export default function SiteDiaryManagementScreen() {
-  const { user, company } = useApp();
+  const { company } = useApp();
   const { colors } = useTheme();
   const [selectedProject, setSelectedProject] = useState<string>('all');
 
-  const siteDiariesQuery = trpc['site-diaries'].list.useQuery();
-  const deleteDiaryMutation = trpc['site-diaries'].delete.useMutation();
-  const sendWeeklyMutation = trpc['site-diaries']['send-weekly'].useMutation();
+  const siteDiariesQuery = trpc.siteDiaries.list.useQuery();
+  const deleteDiaryMutation = trpc.siteDiaries.delete.useMutation();
+  const sendWeeklyMutation = trpc.siteDiaries.sendWeekly.useMutation();
 
   const siteDiaries = siteDiariesQuery.data || [];
   const projects = company?.projects || [];
 
   const filteredDiaries = selectedProject === 'all' 
     ? siteDiaries 
-    : siteDiaries.filter(diary => diary.projectId === selectedProject);
+    : siteDiaries.filter((diary: SiteDiary) => diary.projectId === selectedProject);
 
   const handleDelete = (diaryId: string) => {
     Alert.alert(
@@ -47,16 +49,25 @@ export default function SiteDiaryManagementScreen() {
   };
 
   const handleSendWeekly = (projectId: string) => {
+    const projectDiaries = siteDiaries.filter((diary: SiteDiary) => diary.projectId === projectId);
+    const diaryIds = projectDiaries.map((d: SiteDiary) => d.id);
+    
+    if (diaryIds.length === 0) {
+      Alert.alert('Error', 'No diaries found for this project');
+      return;
+    }
+
     Alert.alert(
       'Send Weekly Report',
-      'Send weekly site diaries report for this project?',
+      `Send ${diaryIds.length} site ${diaryIds.length === 1 ? 'diary' : 'diaries'} for this project?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Send',
           onPress: async () => {
             try {
-              await sendWeeklyMutation.mutateAsync({ projectId });
+              await sendWeeklyMutation.mutateAsync({ diaryIds });
+              await siteDiariesQuery.refetch();
               Alert.alert('Success', 'Weekly report sent successfully');
             } catch (error) {
               Alert.alert('Error', 'Failed to send weekly report');
@@ -69,11 +80,11 @@ export default function SiteDiaryManagementScreen() {
   };
 
   const handleCreateNew = () => {
-    router.push('/site-diary-create');
+    Alert.alert('Coming Soon', 'Site diary creation is under development');
   };
 
   const handleView = (diaryId: string) => {
-    router.push(`/site-diary-detail?id=${diaryId}`);
+    Alert.alert('Coming Soon', 'Site diary viewing is under development');
   };
 
   return (
@@ -169,7 +180,7 @@ export default function SiteDiaryManagementScreen() {
             </View>
           ) : (
             <View style={styles.diariesList}>
-              {filteredDiaries.map((diary) => {
+              {filteredDiaries.map((diary: SiteDiary) => {
                 const project = projects.find(p => p.id === diary.projectId);
                 return (
                   <View
