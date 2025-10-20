@@ -95,11 +95,11 @@ export const createSiteDiaryProcedure = protectedProcedure
       workersOnSite: siteDiary.workersOnSite ?? undefined,
       equipmentUsed: Array.isArray(siteDiary.equipmentUsed) ? siteDiary.equipmentUsed : [],
       materials: Array.isArray(siteDiary.materials) ? siteDiary.materials : [],
-      photos: siteDiary.photos,
+      photos: Array.isArray(siteDiary.photos) ? siteDiary.photos : [],
       notes: siteDiary.notes ?? undefined,
       status: siteDiary.status as "draft" | "completed",
       sentAt: siteDiary.sentAt ? siteDiary.sentAt.toISOString() : undefined,
-      sentTo: siteDiary.sentTo,
+      sentTo: Array.isArray(siteDiary.sentTo) ? siteDiary.sentTo : [],
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };
