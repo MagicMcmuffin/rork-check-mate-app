@@ -66,5 +66,10 @@ export const createSiteDiaryProcedure = protectedProcedure
     });
 
     console.log("Site diary created:", siteDiary.id);
-    return siteDiary;
+    
+    return {
+      ...siteDiary,
+      equipmentUsed: siteDiary.equipmentUsed as { name: string; hours?: number }[],
+      materials: siteDiary.materials as { name: string; quantity?: string; unit?: string }[],
+    };
   });
