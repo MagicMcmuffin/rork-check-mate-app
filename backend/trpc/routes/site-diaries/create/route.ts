@@ -69,6 +69,9 @@ export const createSiteDiaryProcedure = protectedProcedure
     
     return {
       ...siteDiary,
+      date: siteDiary.date.toISOString(),
+      createdAt: siteDiary.createdAt.toISOString(),
+      updatedAt: siteDiary.updatedAt.toISOString(),
       equipmentUsed: siteDiary.equipmentUsed as { name: string; hours?: number }[],
       materials: siteDiary.materials as { name: string; quantity?: string; unit?: string }[],
     };
