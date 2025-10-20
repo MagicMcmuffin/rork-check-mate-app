@@ -67,6 +67,11 @@ export const createSiteDiaryProcedure = protectedProcedure
 
     console.log("Site diary created:", siteDiary.id);
     
+    const equipmentUsed = siteDiary.equipmentUsed as any;
+    const materials = siteDiary.materials as any;
+    const photos = siteDiary.photos;
+    const sentTo = siteDiary.sentTo;
+
     return {
       id: siteDiary.id,
       date: siteDiary.date.toISOString(),
@@ -83,13 +88,13 @@ export const createSiteDiaryProcedure = protectedProcedure
       safetyIssues: siteDiary.safetyIssues || undefined,
       visitors: siteDiary.visitors || undefined,
       workersOnSite: siteDiary.workersOnSite || undefined,
-      equipmentUsed: Array.isArray(siteDiary.equipmentUsed) ? siteDiary.equipmentUsed : [],
-      materials: Array.isArray(siteDiary.materials) ? siteDiary.materials : [],
-      photos: siteDiary.photos || [],
+      equipmentUsed: Array.isArray(equipmentUsed) ? JSON.parse(JSON.stringify(equipmentUsed)) : [],
+      materials: Array.isArray(materials) ? JSON.parse(JSON.stringify(materials)) : [],
+      photos: Array.isArray(photos) ? [...photos] : [],
       notes: siteDiary.notes || undefined,
       status: siteDiary.status as "draft" | "completed",
       sentAt: siteDiary.sentAt?.toISOString() || undefined,
-      sentTo: siteDiary.sentTo || [],
+      sentTo: Array.isArray(sentTo) ? [...sentTo] : [],
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };
