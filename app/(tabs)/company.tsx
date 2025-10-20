@@ -655,8 +655,8 @@ export default function CompanyScreen() {
               style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push('/plant-management')}
             >
-              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                <Wrench size={24} color={colors.primary} />
+              <View style={[styles.sectionCardIcon, { backgroundColor: '#f59e0b' + '20' }]}>
+                <Wrench size={24} color="#f59e0b" />
               </View>
               <View style={styles.sectionCardContent}>
                 <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Plant & Vehicles</Text>
@@ -668,8 +668,8 @@ export default function CompanyScreen() {
               style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push('/equipment-management')}
             >
-              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                <Package size={24} color={colors.primary} />
+              <View style={[styles.sectionCardIcon, { backgroundColor: '#8b5cf6' + '20' }]}>
+                <Package size={24} color="#8b5cf6" />
               </View>
               <View style={styles.sectionCardContent}>
                 <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Equipment</Text>
@@ -681,8 +681,8 @@ export default function CompanyScreen() {
               style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push('/project-management')}
             >
-              <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                <Briefcase size={24} color={colors.primary} />
+              <View style={[styles.sectionCardIcon, { backgroundColor: '#10b981' + '20' }]}>
+                <Briefcase size={24} color="#10b981" />
               </View>
               <View style={styles.sectionCardContent}>
                 <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Projects</Text>
@@ -710,8 +710,8 @@ export default function CompanyScreen() {
                 style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push('/people-planner')}
               >
-                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <Users size={24} color={colors.primary} />
+                <View style={[styles.sectionCardIcon, { backgroundColor: '#06b6d4' + '20' }]}>
+                  <Users size={24} color="#06b6d4" />
                 </View>
                 <View style={styles.sectionCardContent}>
                   <Text style={[styles.sectionCardTitle, { color: colors.text }]}>People Planner</Text>
@@ -725,8 +725,8 @@ export default function CompanyScreen() {
                 style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push('/site-diary-management')}
               >
-                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <BookOpen size={24} color={colors.primary} />
+                <View style={[styles.sectionCardIcon, { backgroundColor: '#ef4444' + '20' }]}>
+                  <BookOpen size={24} color="#ef4444" />
                 </View>
                 <View style={styles.sectionCardContent}>
                   <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Site Diaries</Text>
