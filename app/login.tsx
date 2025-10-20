@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, LogIn, Mail, AlertCircle } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, LogIn, Mail } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -23,31 +23,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [userCount, setUserCount] = useState<number>(0);
-  const [debugEmails, setDebugEmails] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadUserInfo();
-  }, []);
 
-  const loadUserInfo = async () => {
-    try {
-      const usersData = await AsyncStorage.getItem('@checkmate_users');
-      if (usersData) {
-        const users = JSON.parse(usersData);
-        setUserCount(users.length);
-        setDebugEmails(users.map((u: any) => u.email));
-        console.log('📊 Users found:', users.length);
-        console.log('📧 Emails:', users.map((u: any) => u.email));
-      } else {
-        setUserCount(0);
-        setDebugEmails([]);
-        console.log('⚠️ No users found in storage');
-      }
-    } catch (error) {
-      console.error('Error loading user info:', error);
-    }
-  };
+
 
   const handleResetData = () => {
     Alert.alert(
@@ -62,8 +40,6 @@ export default function LoginScreen() {
             try {
               await AsyncStorage.clear();
               Alert.alert('Success', 'All data has been cleared. You can now register a new account.');
-              setUserCount(0);
-              setDebugEmails([]);
             } catch (error) {
               Alert.alert('Error', 'Failed to reset data');
               console.error('Reset error:', error);
@@ -93,7 +69,6 @@ export default function LoginScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password. Please try again.';
       Alert.alert('Login Failed', errorMessage);
       console.error('Login error:', error);
-      await loadUserInfo();
     } finally {
       setIsLoading(false);
     }
@@ -122,26 +97,7 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>Sign in to your account</Text>
           </View>
 
-          {userCount === 0 && (
-            <View style={styles.warningCard}>
-              <AlertCircle size={20} color="#f59e0b" />
-              <View style={styles.warningContent}>
-                <Text style={styles.warningTitle}>No Users Found</Text>
-                <Text style={styles.warningText}>
-                  There are no registered users. Please register a company or join as an employee first.
-                </Text>
-              </View>
-            </View>
-          )}
 
-          {userCount > 0 && (
-            <View style={styles.infoCard}>
-              <Text style={styles.infoText}>Users in database: {userCount}</Text>
-              {debugEmails.length > 0 && (
-                <Text style={styles.infoSubtext}>Registered emails: {debugEmails.join(', ')}</Text>
-              )}
-            </View>
-          )}
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
@@ -310,48 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
-  },
-  warningCard: {
-    backgroundColor: '#451a03',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row' as const,
-    gap: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-  },
-  warningContent: {
-    flex: 1,
-  },
-  warningTitle: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#fbbf24',
-    marginBottom: 4,
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#fde68a',
-    lineHeight: 20,
-  },
-  infoCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginBottom: 4,
-  },
-  infoSubtext: {
-    fontSize: 12,
-    color: '#64748b',
-    lineHeight: 18,
   },
   resetButton: {
     marginTop: 16,
