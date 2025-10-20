@@ -695,8 +695,8 @@ export default function CompanyScreen() {
                 style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push('/holiday-management')}
               >
-                <View style={[styles.sectionCardIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <Calendar size={24} color={colors.primary} />
+                <View style={[styles.sectionCardIcon, { backgroundColor: '#ec4899' + '20' }]}>
+                  <Calendar size={24} color="#ec4899" />
                 </View>
                 <View style={styles.sectionCardContent}>
                   <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Holidays</Text>
