@@ -10,24 +10,28 @@ const getBaseUrl = () => {
   const rorkApiUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   
   if (rorkApiUrl && rorkApiUrl !== '') {
+    console.log('[tRPC] Using EXPO_PUBLIC_RORK_API_BASE_URL:', rorkApiUrl);
     return rorkApiUrl;
   }
   
   if (typeof window !== 'undefined') {
+    console.log('[tRPC] Using window.location.origin:', window.location.origin);
     return window.location.origin;
   }
   
+  console.log('[tRPC] No base URL found, using empty string');
   return '';
 };
 
 const getTRPCUrl = () => {
   const baseUrl = getBaseUrl();
   if (!baseUrl) {
-    console.log('[tRPC] Using default localhost URL');
-    return 'http://localhost:8788/api/trpc';
+    const fallbackUrl = 'http://localhost:8788/api/trpc';
+    console.log('[tRPC] No base URL, using fallback:', fallbackUrl);
+    return fallbackUrl;
   }
   const url = `${baseUrl}/api/trpc`;
-  console.log('[tRPC] Using URL:', url);
+  console.log('[tRPC] Final tRPC URL:', url);
   return url;
 };
 
