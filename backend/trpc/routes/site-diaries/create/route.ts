@@ -40,16 +40,6 @@ export const createSiteDiaryProcedure = protectedProcedure
       throw new Error("Only supervisors and above can create site diaries");
     }
 
-    const equipmentUsedData = input.equipmentUsed && input.equipmentUsed.length > 0 
-      ? input.equipmentUsed 
-      : [];
-    const materialsData = input.materials && input.materials.length > 0
-      ? input.materials
-      : [];
-    const photosData = input.photos && input.photos.length > 0
-      ? input.photos
-      : [];
-
     const siteDiary = await prisma.siteDiary.create({
       data: {
         date: new Date(input.date),
@@ -66,9 +56,9 @@ export const createSiteDiaryProcedure = protectedProcedure
         safetyIssues: input.safetyIssues || null,
         visitors: input.visitors || null,
         workersOnSite: input.workersOnSite || null,
-        equipmentUsed: equipmentUsedData,
-        materials: materialsData,
-        photos: photosData,
+        equipmentUsed: input.equipmentUsed || [],
+        materials: input.materials || [],
+        photos: input.photos || [],
         notes: input.notes || null,
         status: input.status || "draft",
         sentTo: [],
