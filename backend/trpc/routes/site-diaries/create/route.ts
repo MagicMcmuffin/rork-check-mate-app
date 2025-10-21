@@ -56,8 +56,8 @@ export const createSiteDiaryProcedure = protectedProcedure
         safetyIssues: input.safetyIssues || null,
         visitors: input.visitors || null,
         workersOnSite: input.workersOnSite || null,
-        equipmentUsed: input.equipmentUsed || [],
-        materials: input.materials || [],
+        equipmentUsed: JSON.stringify(input.equipmentUsed || []),
+        materials: JSON.stringify(input.materials || []),
         photos: input.photos || [],
         notes: input.notes || null,
         status: input.status || "draft",
@@ -68,10 +68,30 @@ export const createSiteDiaryProcedure = protectedProcedure
 
     console.log("Site diary created:", siteDiary.id);
 
-    const equipmentUsed = siteDiary.equipmentUsed as any;
-    const materials = siteDiary.materials as any;
-    const photos = siteDiary.photos;
-    const sentTo = siteDiary.sentTo;
+    let equipmentUsed: any[] = [];
+    let materials: any[] = [];
+    
+    try {
+      if (typeof siteDiary.equipmentUsed === 'string') {
+        equipmentUsed = JSON.parse(siteDiary.equipmentUsed);
+      } else if (Array.isArray(siteDiary.equipmentUsed)) {
+        equipmentUsed = siteDiary.equipmentUsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse equipmentUsed:', e);
+      equipmentUsed = [];
+    }
+
+    try {
+      if (typeof siteDiary.materials === 'string') {
+        materials = JSON.parse(siteDiary.materials);
+      } else if (Array.isArray(siteDiary.materials)) {
+        materials = siteDiary.materials;
+      }
+    } catch (e) {
+      console.error('Failed to parse materials:', e);
+      materials = [];
+    }
 
     return {
       id: siteDiary.id,
@@ -89,13 +109,13 @@ export const createSiteDiaryProcedure = protectedProcedure
       safetyIssues: siteDiary.safetyIssues ?? undefined,
       visitors: siteDiary.visitors ?? undefined,
       workersOnSite: siteDiary.workersOnSite ?? undefined,
-      equipmentUsed: Array.isArray(equipmentUsed) ? equipmentUsed : [],
-      materials: Array.isArray(materials) ? materials : [],
-      photos: Array.isArray(photos) ? photos : [],
+      equipmentUsed,
+      materials,
+      photos: Array.isArray(siteDiary.photos) ? siteDiary.photos : [],
       notes: siteDiary.notes ?? undefined,
       status: siteDiary.status as "draft" | "completed",
       sentAt: siteDiary.sentAt?.toISOString() ?? undefined,
-      sentTo: Array.isArray(sentTo) ? sentTo : [],
+      sentTo: Array.isArray(siteDiary.sentTo) ? siteDiary.sentTo : [],
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };
