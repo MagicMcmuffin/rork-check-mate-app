@@ -50,10 +50,21 @@ export default function SiteDiaryCreateScreen() {
   const { colors } = useTheme();
 
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
+  
+  const getDateForDay = (dayIndex: number): string => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1));
+    const targetDate = new Date(monday);
+    targetDate.setDate(monday.getDate() + dayIndex);
+    return targetDate.toISOString().split('T')[0];
+  };
+
   const [weeklyData, setWeeklyData] = useState<DayData[]>(
-    DAYS_OF_WEEK.map(d => ({
+    DAYS_OF_WEEK.map((d, index) => ({
       day: d.day,
-      date: new Date().toISOString().split('T')[0],
+      date: getDateForDay(index),
       projectId: '',
       weather: '',
       temperature: '',
@@ -145,8 +156,8 @@ export default function SiteDiaryCreateScreen() {
 
   const handleDayChange = (day: DayOfWeek) => {
     updateCurrentDayData();
-    loadDayData(day);
     setSelectedDay(day);
+    loadDayData(day);
   };
 
   const handleAddEquipment = () => {
@@ -267,12 +278,12 @@ export default function SiteDiaryCreateScreen() {
 
       Alert.alert(
         'Success',
-        `${completedDays.length} site ${completedDays.length === 1 ? 'diary' : 'diaries'} submitted successfully`,
+        `${completedDays.length} site ${completedDays.length === 1 ? 'diary' : 'diaries'} created successfully`,
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error) {
       console.error('Create site diary error:', error);
-      Alert.alert('Error', 'Failed to create site diary');
+      Alert.alert('Error', 'Failed to create site diary. Please try again.');
     }
   };
 

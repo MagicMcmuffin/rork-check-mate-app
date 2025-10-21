@@ -56,8 +56,8 @@ export const createSiteDiaryProcedure = protectedProcedure
         safetyIssues: input.safetyIssues || null,
         visitors: input.visitors || null,
         workersOnSite: input.workersOnSite || null,
-        equipmentUsed: JSON.stringify(input.equipmentUsed || []),
-        materials: JSON.stringify(input.materials || []),
+        equipmentUsed: input.equipmentUsed || [],
+        materials: input.materials || [],
         photos: input.photos || [],
         notes: input.notes || null,
         status: input.status || "draft",
@@ -68,31 +68,6 @@ export const createSiteDiaryProcedure = protectedProcedure
 
     console.log("Site diary created:", siteDiary.id);
 
-    let equipmentUsed: any[] = [];
-    let materials: any[] = [];
-    
-    try {
-      if (typeof siteDiary.equipmentUsed === 'string') {
-        equipmentUsed = JSON.parse(siteDiary.equipmentUsed);
-      } else if (Array.isArray(siteDiary.equipmentUsed)) {
-        equipmentUsed = siteDiary.equipmentUsed;
-      }
-    } catch (e) {
-      console.error('Failed to parse equipmentUsed:', e);
-      equipmentUsed = [];
-    }
-
-    try {
-      if (typeof siteDiary.materials === 'string') {
-        materials = JSON.parse(siteDiary.materials);
-      } else if (Array.isArray(siteDiary.materials)) {
-        materials = siteDiary.materials;
-      }
-    } catch (e) {
-      console.error('Failed to parse materials:', e);
-      materials = [];
-    }
-
     return {
       id: siteDiary.id,
       date: siteDiary.date.toISOString(),
@@ -101,21 +76,21 @@ export const createSiteDiaryProcedure = protectedProcedure
       supervisorName: siteDiary.supervisorName,
       supervisorId: siteDiary.supervisorId,
       companyId: siteDiary.companyId,
-      weather: siteDiary.weather ?? undefined,
-      temperature: siteDiary.temperature ?? undefined,
+      weather: siteDiary.weather || undefined,
+      temperature: siteDiary.temperature || undefined,
       workDescription: siteDiary.workDescription,
-      progress: siteDiary.progress ?? undefined,
-      delays: siteDiary.delays ?? undefined,
-      safetyIssues: siteDiary.safetyIssues ?? undefined,
-      visitors: siteDiary.visitors ?? undefined,
-      workersOnSite: siteDiary.workersOnSite ?? undefined,
-      equipmentUsed,
-      materials,
-      photos: Array.isArray(siteDiary.photos) ? siteDiary.photos : [],
-      notes: siteDiary.notes ?? undefined,
+      progress: siteDiary.progress || undefined,
+      delays: siteDiary.delays || undefined,
+      safetyIssues: siteDiary.safetyIssues || undefined,
+      visitors: siteDiary.visitors || undefined,
+      workersOnSite: siteDiary.workersOnSite || undefined,
+      equipmentUsed: (siteDiary.equipmentUsed as any) || [],
+      materials: (siteDiary.materials as any) || [],
+      photos: siteDiary.photos || [],
+      notes: siteDiary.notes || undefined,
       status: siteDiary.status as "draft" | "completed",
-      sentAt: siteDiary.sentAt?.toISOString() ?? undefined,
-      sentTo: Array.isArray(siteDiary.sentTo) ? siteDiary.sentTo : [],
+      sentAt: siteDiary.sentAt?.toISOString() || undefined,
+      sentTo: siteDiary.sentTo || [],
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };

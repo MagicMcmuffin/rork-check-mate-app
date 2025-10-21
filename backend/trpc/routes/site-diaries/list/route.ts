@@ -47,37 +47,30 @@ export const listSiteDiariesProcedure = protectedProcedure
 
     console.log("Site diaries fetched:", siteDiaries.length);
     
-    return siteDiaries.map((diary: typeof siteDiaries[0]) => {
-      const equipmentUsed = diary.equipmentUsed as any;
-      const materials = diary.materials as any;
-      const photos = diary.photos;
-      const sentTo = diary.sentTo;
-
-      return {
-        id: diary.id,
-        date: diary.date.toISOString(),
-        projectId: diary.projectId,
-        projectName: diary.projectName,
-        supervisorName: diary.supervisorName,
-        supervisorId: diary.supervisorId,
-        companyId: diary.companyId,
-        weather: diary.weather ?? undefined,
-        temperature: diary.temperature ?? undefined,
-        workDescription: diary.workDescription,
-        progress: diary.progress ?? undefined,
-        delays: diary.delays ?? undefined,
-        safetyIssues: diary.safetyIssues ?? undefined,
-        visitors: diary.visitors ?? undefined,
-        workersOnSite: diary.workersOnSite ?? undefined,
-        equipmentUsed: Array.isArray(equipmentUsed) ? equipmentUsed : [],
-        materials: Array.isArray(materials) ? materials : [],
-        photos: Array.isArray(photos) ? photos : [],
-        notes: diary.notes ?? undefined,
-        status: diary.status as "draft" | "completed",
-        sentAt: diary.sentAt?.toISOString() ?? undefined,
-        sentTo: Array.isArray(sentTo) ? sentTo : [],
-        createdAt: diary.createdAt.toISOString(),
-        updatedAt: diary.updatedAt.toISOString(),
-      };
-    });
+    return siteDiaries.map((diary: (typeof siteDiaries)[0]) => ({
+      id: diary.id,
+      date: diary.date.toISOString(),
+      projectId: diary.projectId,
+      projectName: diary.projectName,
+      supervisorName: diary.supervisorName,
+      supervisorId: diary.supervisorId,
+      companyId: diary.companyId,
+      weather: diary.weather || undefined,
+      temperature: diary.temperature || undefined,
+      workDescription: diary.workDescription,
+      progress: diary.progress || undefined,
+      delays: diary.delays || undefined,
+      safetyIssues: diary.safetyIssues || undefined,
+      visitors: diary.visitors || undefined,
+      workersOnSite: diary.workersOnSite || undefined,
+      equipmentUsed: (diary.equipmentUsed as any) || [],
+      materials: (diary.materials as any) || [],
+      photos: diary.photos || [],
+      notes: diary.notes || undefined,
+      status: diary.status as "draft" | "completed",
+      sentAt: diary.sentAt?.toISOString() || undefined,
+      sentTo: diary.sentTo || [],
+      createdAt: diary.createdAt.toISOString(),
+      updatedAt: diary.updatedAt.toISOString(),
+    }));
   });

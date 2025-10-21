@@ -58,18 +58,18 @@ export const updateSiteDiaryProcedure = protectedProcedure
     if (input.date) updateData.date = new Date(input.date);
     if (input.projectId) updateData.projectId = input.projectId;
     if (input.projectName) updateData.projectName = input.projectName;
-    if (input.weather !== undefined) updateData.weather = input.weather;
-    if (input.temperature !== undefined) updateData.temperature = input.temperature;
+    if (input.weather !== undefined) updateData.weather = input.weather || null;
+    if (input.temperature !== undefined) updateData.temperature = input.temperature || null;
     if (input.workDescription) updateData.workDescription = input.workDescription;
-    if (input.progress !== undefined) updateData.progress = input.progress;
-    if (input.delays !== undefined) updateData.delays = input.delays;
-    if (input.safetyIssues !== undefined) updateData.safetyIssues = input.safetyIssues;
-    if (input.visitors !== undefined) updateData.visitors = input.visitors;
+    if (input.progress !== undefined) updateData.progress = input.progress || null;
+    if (input.delays !== undefined) updateData.delays = input.delays || null;
+    if (input.safetyIssues !== undefined) updateData.safetyIssues = input.safetyIssues || null;
+    if (input.visitors !== undefined) updateData.visitors = input.visitors || null;
     if (input.workersOnSite !== undefined) updateData.workersOnSite = input.workersOnSite;
     if (input.equipmentUsed) updateData.equipmentUsed = input.equipmentUsed;
     if (input.materials) updateData.materials = input.materials;
     if (input.photos) updateData.photos = input.photos;
-    if (input.notes !== undefined) updateData.notes = input.notes;
+    if (input.notes !== undefined) updateData.notes = input.notes || null;
     if (input.status) updateData.status = input.status;
 
     const siteDiary = await prisma.siteDiary.update({
@@ -78,11 +78,6 @@ export const updateSiteDiaryProcedure = protectedProcedure
     });
 
     console.log("Site diary updated:", siteDiary.id);
-    
-    const equipmentUsed = siteDiary.equipmentUsed as any;
-    const materials = siteDiary.materials as any;
-    const photos = siteDiary.photos;
-    const sentTo = siteDiary.sentTo;
 
     return {
       id: siteDiary.id,
@@ -92,21 +87,21 @@ export const updateSiteDiaryProcedure = protectedProcedure
       supervisorName: siteDiary.supervisorName,
       supervisorId: siteDiary.supervisorId,
       companyId: siteDiary.companyId,
-      weather: siteDiary.weather ?? undefined,
-      temperature: siteDiary.temperature ?? undefined,
+      weather: siteDiary.weather || undefined,
+      temperature: siteDiary.temperature || undefined,
       workDescription: siteDiary.workDescription,
-      progress: siteDiary.progress ?? undefined,
-      delays: siteDiary.delays ?? undefined,
-      safetyIssues: siteDiary.safetyIssues ?? undefined,
-      visitors: siteDiary.visitors ?? undefined,
-      workersOnSite: siteDiary.workersOnSite ?? undefined,
-      equipmentUsed: Array.isArray(equipmentUsed) ? equipmentUsed : [],
-      materials: Array.isArray(materials) ? materials : [],
-      photos: Array.isArray(photos) ? photos : [],
-      notes: siteDiary.notes ?? undefined,
+      progress: siteDiary.progress || undefined,
+      delays: siteDiary.delays || undefined,
+      safetyIssues: siteDiary.safetyIssues || undefined,
+      visitors: siteDiary.visitors || undefined,
+      workersOnSite: siteDiary.workersOnSite || undefined,
+      equipmentUsed: (siteDiary.equipmentUsed as any) || [],
+      materials: (siteDiary.materials as any) || [],
+      photos: siteDiary.photos || [],
+      notes: siteDiary.notes || undefined,
       status: siteDiary.status as "draft" | "completed",
-      sentAt: siteDiary.sentAt?.toISOString() ?? undefined,
-      sentTo: Array.isArray(sentTo) ? sentTo : [],
+      sentAt: siteDiary.sentAt?.toISOString() || undefined,
+      sentTo: siteDiary.sentTo || [],
       createdAt: siteDiary.createdAt.toISOString(),
       updatedAt: siteDiary.updatedAt.toISOString(),
     };
