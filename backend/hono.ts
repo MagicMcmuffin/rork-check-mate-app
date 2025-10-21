@@ -16,8 +16,12 @@ app.use(
   })
 );
 
-app.get("/", (c) => {
+app.get("/api", (c) => {
   return c.json({ status: "ok", message: "API is running" });
+});
+
+app.notFound((c) => {
+  return c.json({ error: "Not found" }, 404);
 });
 
 export default app;
