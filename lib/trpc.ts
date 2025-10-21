@@ -67,12 +67,10 @@ const createCustomFetch = () => {
           errorBody = 'Failed to parse error response';
         }
         
-        console.error('[tRPC] Error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          contentType,
-          body: errorBody.substring(0, 1000),
-        });
+        console.error('[tRPC] Error response:');
+        console.error('[tRPC] Status:', response.status, response.statusText);
+        console.error('[tRPC] Content-Type:', contentType);
+        console.error('[tRPC] Body:', errorBody.substring(0, 1000));
       }
       
       return response;

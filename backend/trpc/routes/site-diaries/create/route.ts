@@ -31,7 +31,10 @@ export const createSiteDiaryProcedure = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
+    console.log("[SiteDiary Create] Starting mutation");
+    
     if (!ctx.user) {
+      console.error("[SiteDiary Create] No user in context");
       throw new Error("Unauthorized");
     }
 
@@ -40,16 +43,19 @@ export const createSiteDiaryProcedure = protectedProcedure
     console.log("[SiteDiary Create] Input project:", input.projectId, input.projectName);
 
     if (!ctx.user.currentCompanyId) {
+      console.error("[SiteDiary Create] No company selected");
       throw new Error("No company selected");
     }
 
     const userRole = ctx.user.role;
     if (!["supervisor", "management", "administrator", "company"].includes(userRole)) {
+      console.error("[SiteDiary Create] Insufficient permissions:", userRole);
       throw new Error("Only supervisors and above can create site diaries");
     }
 
     try {
-
+      console.log("[SiteDiary Create] Creating in database");
+      
       const siteDiary = await prisma.siteDiary.create({
         data: {
           date: new Date(input.date),
@@ -75,6 +81,7 @@ export const createSiteDiaryProcedure = protectedProcedure
       });
       
       console.log("[SiteDiary Create] Success:", siteDiary.id);
+      console.log("[SiteDiary Create] Building response object");
 
       const response = {
         id: siteDiary.id,
@@ -104,9 +111,13 @@ export const createSiteDiaryProcedure = protectedProcedure
       };
       
       console.log("[SiteDiary Create] Returning response with id:", response.id);
+      console.log("[SiteDiary Create] Response keys:", Object.keys(response));
       return response;
     } catch (error) {
-      console.error("[SiteDiary Create] Database error:", error);
+      console.error("[SiteDiary Create] Database error:");
+      console.error("[SiteDiary Create] Error name:", error instanceof Error ? error.name : typeof error);
+      console.error("[SiteDiary Create] Error message:", error instanceof Error ? error.message : String(error));
+      console.error("[SiteDiary Create] Error stack:", error instanceof Error ? error.stack : 'No stack');
       const errorMessage = error instanceof Error ? error.message : "Failed to create site diary";
       throw new Error(errorMessage);
     }
