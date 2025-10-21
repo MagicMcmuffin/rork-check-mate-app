@@ -7,20 +7,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
-  const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || process.env.EXPO_PUBLIC_TOOLKIT_URL;
+  const rorkApiUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   
-  if (!baseUrl || baseUrl === '') {
-    console.warn('⚠️ Backend not deployed - email features disabled');
-    return '';
+  if (rorkApiUrl && rorkApiUrl !== '') {
+    return rorkApiUrl;
   }
   
-  return baseUrl;
+  return '';
 };
 
 const getTRPCUrl = () => {
   const baseUrl = getBaseUrl();
   if (!baseUrl) {
-    return 'http://localhost:3000/api/trpc';
+    throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_RORK_API_BASE_URL in your .env file.');
   }
   return `${baseUrl}/api/trpc`;
 };
@@ -29,7 +28,7 @@ const createCustomFetch = () => {
   return async (url: RequestInfo | URL, options?: RequestInit) => {
     const baseUrl = getBaseUrl();
     if (!baseUrl) {
-      throw new Error('Backend URL not configured');
+      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_RORK_API_BASE_URL in your .env file.');
     }
     
     const token = await AsyncStorage.getItem('@checkmate_auth_token');
