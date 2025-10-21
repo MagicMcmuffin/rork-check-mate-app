@@ -77,30 +77,5 @@ export const createSiteDiaryProcedure = protectedProcedure
 
     console.log("Site diary created:", siteDiary.id);
 
-    return {
-      id: siteDiary.id,
-      date: siteDiary.date.toISOString(),
-      projectId: siteDiary.projectId,
-      projectName: siteDiary.projectName,
-      supervisorName: siteDiary.supervisorName,
-      supervisorId: siteDiary.supervisorId,
-      companyId: siteDiary.companyId,
-      weather: siteDiary.weather || null,
-      temperature: siteDiary.temperature || null,
-      workDescription: siteDiary.workDescription,
-      progress: siteDiary.progress || null,
-      delays: siteDiary.delays || null,
-      safetyIssues: siteDiary.safetyIssues || null,
-      visitors: siteDiary.visitors || null,
-      workersOnSite: siteDiary.workersOnSite || null,
-      equipmentUsed: JSON.parse(JSON.stringify(siteDiary.equipmentUsed || [])),
-      materials: JSON.parse(JSON.stringify(siteDiary.materials || [])),
-      photos: siteDiary.photos || [],
-      notes: siteDiary.notes || null,
-      status: siteDiary.status as "draft" | "completed",
-      sentAt: siteDiary.sentAt ? siteDiary.sentAt.toISOString() : null,
-      sentTo: siteDiary.sentTo || [],
-      createdAt: siteDiary.createdAt.toISOString(),
-      updatedAt: siteDiary.updatedAt.toISOString(),
-    };
+    return siteDiary;
   });

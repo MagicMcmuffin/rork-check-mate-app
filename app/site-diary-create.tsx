@@ -2,7 +2,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack, router } from 'expo-router';
-import { BookOpen, Plus, X } from 'lucide-react-native';
+import { BookOpen, Plus, X, Calendar, CheckCircle2 } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -15,24 +15,77 @@ import {
 } from 'react-native';
 import { trpc } from '@/lib/trpc';
 
+type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'S' | 'Su';
+
+const DAYS_OF_WEEK: { day: DayOfWeek; label: string }[] = [
+  { day: 'M', label: 'Mon' },
+  { day: 'T', label: 'Tue' },
+  { day: 'W', label: 'Wed' },
+  { day: 'Th', label: 'Thu' },
+  { day: 'F', label: 'Fri' },
+  { day: 'S', label: 'Sat' },
+  { day: 'Su', label: 'Sun' },
+];
+
+type DayData = {
+  day: DayOfWeek;
+  date: string;
+  projectId: string;
+  weather: string;
+  temperature: string;
+  workDescription: string;
+  progress: string;
+  delays: string;
+  safetyIssues: string;
+  visitors: string;
+  workersOnSite: string;
+  notes: string;
+  equipmentList: { name: string; hours?: number }[];
+  materialsList: { name: string; quantity?: string; unit?: string }[];
+  completed: boolean;
+};
+
 export default function SiteDiaryCreateScreen() {
   const { company } = useApp();
   const { colors } = useTheme();
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [projectId, setProjectId] = useState('');
-  const [weather, setWeather] = useState('');
-  const [temperature, setTemperature] = useState('');
-  const [workDescription, setWorkDescription] = useState('');
-  const [progress, setProgress] = useState('');
-  const [delays, setDelays] = useState('');
-  const [safetyIssues, setSafetyIssues] = useState('');
-  const [visitors, setVisitors] = useState('');
-  const [workersOnSite, setWorkersOnSite] = useState('');
-  const [notes, setNotes] = useState('');
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>('M');
+  const [weeklyData, setWeeklyData] = useState<DayData[]>(
+    DAYS_OF_WEEK.map(d => ({
+      day: d.day,
+      date: new Date().toISOString().split('T')[0],
+      projectId: '',
+      weather: '',
+      temperature: '',
+      workDescription: '',
+      progress: '',
+      delays: '',
+      safetyIssues: '',
+      visitors: '',
+      workersOnSite: '',
+      notes: '',
+      equipmentList: [],
+      materialsList: [],
+      completed: false,
+    }))
+  );
 
-  const [equipmentList, setEquipmentList] = useState<{ name: string; hours?: number }[]>([]);
-  const [materialsList, setMaterialsList] = useState<{ name: string; quantity?: string; unit?: string }[]>([]);
+  const currentDayData = weeklyData.find(d => d.day === selectedDay)!;
+
+  const [date, setDate] = useState(currentDayData.date);
+  const [projectId, setProjectId] = useState(currentDayData.projectId);
+  const [weather, setWeather] = useState(currentDayData.weather);
+  const [temperature, setTemperature] = useState(currentDayData.temperature);
+  const [workDescription, setWorkDescription] = useState(currentDayData.workDescription);
+  const [progress, setProgress] = useState(currentDayData.progress);
+  const [delays, setDelays] = useState(currentDayData.delays);
+  const [safetyIssues, setSafetyIssues] = useState(currentDayData.safetyIssues);
+  const [visitors, setVisitors] = useState(currentDayData.visitors);
+  const [workersOnSite, setWorkersOnSite] = useState(currentDayData.workersOnSite);
+  const [notes, setNotes] = useState(currentDayData.notes);
+
+  const [equipmentList, setEquipmentList] = useState<{ name: string; hours?: number }[]>(currentDayData.equipmentList);
+  const [materialsList, setMaterialsList] = useState<{ name: string; quantity?: string; unit?: string }[]>(currentDayData.materialsList);
   
   const [newEquipmentName, setNewEquipmentName] = useState('');
   const [newEquipmentHours, setNewEquipmentHours] = useState('');
@@ -42,6 +95,54 @@ export default function SiteDiaryCreateScreen() {
 
   const createMutation = trpc.siteDiaries.create.useMutation();
   const projects = company?.projects || [];
+
+  const updateCurrentDayData = () => {
+    setWeeklyData(prev => prev.map(d => {
+      if (d.day === selectedDay) {
+        return {
+          ...d,
+          date,
+          projectId,
+          weather,
+          temperature,
+          workDescription,
+          progress,
+          delays,
+          safetyIssues,
+          visitors,
+          workersOnSite,
+          notes,
+          equipmentList,
+          materialsList,
+          completed: workDescription.trim().length > 0 && projectId.length > 0,
+        };
+      }
+      return d;
+    }));
+  };
+
+  const loadDayData = (day: DayOfWeek) => {
+    const dayData = weeklyData.find(d => d.day === day)!;
+    setDate(dayData.date);
+    setProjectId(dayData.projectId);
+    setWeather(dayData.weather);
+    setTemperature(dayData.temperature);
+    setWorkDescription(dayData.workDescription);
+    setProgress(dayData.progress);
+    setDelays(dayData.delays);
+    setSafetyIssues(dayData.safetyIssues);
+    setVisitors(dayData.visitors);
+    setWorkersOnSite(dayData.workersOnSite);
+    setNotes(dayData.notes);
+    setEquipmentList(dayData.equipmentList);
+    setMaterialsList(dayData.materialsList);
+  };
+
+  const handleDayChange = (day: DayOfWeek) => {
+    updateCurrentDayData();
+    loadDayData(day);
+    setSelectedDay(day);
+  };
 
   const handleAddEquipment = () => {
     if (!newEquipmentName.trim()) {
@@ -87,7 +188,7 @@ export default function SiteDiaryCreateScreen() {
     setMaterialsList(materialsList.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (submitStatus: 'draft' | 'completed') => {
+  const handleSaveDay = () => {
     if (!projectId) {
       Alert.alert('Error', 'Please select a project');
       return;
@@ -98,34 +199,70 @@ export default function SiteDiaryCreateScreen() {
       return;
     }
 
-    const project = projects.find(p => p.id === projectId);
-    if (!project) {
-      Alert.alert('Error', 'Invalid project selected');
+    updateCurrentDayData();
+    Alert.alert('Success', `${DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label} saved successfully!`);
+  };
+
+  const handleSubmit = async (submitStatus: 'draft' | 'completed') => {
+    updateCurrentDayData();
+    
+    const updatedWeeklyData = weeklyData.map(d => {
+      if (d.day === selectedDay) {
+        return {
+          ...d,
+          date,
+          projectId,
+          weather,
+          temperature,
+          workDescription,
+          progress,
+          delays,
+          safetyIssues,
+          visitors,
+          workersOnSite,
+          notes,
+          equipmentList,
+          materialsList,
+          completed: workDescription.trim().length > 0 && projectId.length > 0,
+        };
+      }
+      return d;
+    });
+    
+    const completedDays = updatedWeeklyData.filter(d => d.completed && d.workDescription.trim() && d.projectId);
+    
+    if (completedDays.length === 0) {
+      Alert.alert('Error', 'Please complete at least one day before submitting');
       return;
     }
 
     try {
-      await createMutation.mutateAsync({
-        date,
-        projectId,
-        projectName: project.name,
-        weather: weather || undefined,
-        temperature: temperature || undefined,
-        workDescription,
-        progress: progress || undefined,
-        delays: delays || undefined,
-        safetyIssues: safetyIssues || undefined,
-        visitors: visitors || undefined,
-        workersOnSite: workersOnSite ? Number(workersOnSite) : undefined,
-        equipmentUsed: equipmentList.length > 0 ? equipmentList : undefined,
-        materials: materialsList.length > 0 ? materialsList : undefined,
-        notes: notes || undefined,
-        status: submitStatus,
-      });
+      for (const dayData of completedDays) {
+        const project = projects.find(p => p.id === dayData.projectId);
+        if (!project) continue;
+
+        await createMutation.mutateAsync({
+          date: dayData.date,
+          projectId: dayData.projectId,
+          projectName: project.name,
+          weather: dayData.weather || undefined,
+          temperature: dayData.temperature || undefined,
+          workDescription: dayData.workDescription,
+          progress: dayData.progress || undefined,
+          delays: dayData.delays || undefined,
+          safetyIssues: dayData.safetyIssues || undefined,
+          visitors: dayData.visitors || undefined,
+          workersOnSite: dayData.workersOnSite ? Number(dayData.workersOnSite) : undefined,
+          equipmentUsed: dayData.equipmentList.length > 0 ? dayData.equipmentList : undefined,
+          materials: dayData.materialsList.length > 0 ? dayData.materialsList : undefined,
+          notes: dayData.notes || undefined,
+          status: submitStatus,
+        });
+      }
 
       Alert.alert(
         'Success',
-        `Site diary ${submitStatus === 'draft' ? 'saved as draft' : 'created'} successfully`,
+        `${completedDays.length} site ${completedDays.length === 1 ? 'diary' : 'diaries'} submitted successfully`,
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error) {
@@ -155,15 +292,58 @@ export default function SiteDiaryCreateScreen() {
           <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
             <BookOpen size={28} color={colors.primary} />
           </View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Site Diary</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Weekly Site Diary</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Document daily site activities
+            Document daily site activities for each day
           </Text>
+        </View>
+
+        <View style={[styles.daySelector, { backgroundColor: colors.card }]}>
+          <View style={styles.daySelectorHeader}>
+            <Calendar size={18} color={colors.primary} />
+            <Text style={[styles.daySelectorTitle, { color: colors.text }]}>Select Day</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayButtons}>
+            {DAYS_OF_WEEK.map(({ day, label }) => {
+              const dayData = weeklyData.find(d => d.day === day)!;
+              const isCompleted = dayData.completed;
+              const isSelected = selectedDay === day;
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    isSelected && [styles.dayButtonActive, { backgroundColor: colors.primary }],
+                    isCompleted && !isSelected && [styles.dayButtonCompleted, { backgroundColor: '#10b981', borderColor: '#10b981' }],
+                  ]}
+                  onPress={() => handleDayChange(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayButtonText,
+                      { color: colors.text },
+                      (isSelected || isCompleted) && styles.dayButtonTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                  {isCompleted && !isSelected && (
+                    <View style={styles.completedBadge}>
+                      <CheckCircle2 size={14} color="#ffffff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={styles.content}>
           <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Basic Information</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Basic Information for {DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label}
+            </Text>
 
             <View style={styles.formGroup}>
               <Text style={[styles.label, { color: colors.text }]}>Date</Text>
@@ -561,13 +741,13 @@ export default function SiteDiaryCreateScreen() {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                { backgroundColor: colors.card, borderColor: colors.primary },
               ]}
-              onPress={() => handleSubmit('draft')}
+              onPress={handleSaveDay}
               disabled={createMutation.isPending}
             >
-              <Text style={[styles.actionButtonTextSecondary, { color: colors.text }]}>
-                Save as Draft
+              <Text style={[styles.actionButtonTextSecondary, { color: colors.primary }]}>
+                Save {DAYS_OF_WEEK.find(d => d.day === selectedDay)?.label}
               </Text>
             </TouchableOpacity>
 
@@ -577,7 +757,7 @@ export default function SiteDiaryCreateScreen() {
               disabled={createMutation.isPending}
             >
               <Text style={styles.actionButtonText}>
-                {createMutation.isPending ? 'Creating...' : 'Create Diary'}
+                {createMutation.isPending ? 'Submitting...' : 'Submit Week'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -618,6 +798,55 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
+  },
+  daySelector: {
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  daySelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  daySelectorTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  dayButtons: {
+    gap: 8,
+  },
+  dayButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    minWidth: 60,
+    alignItems: 'center',
+    position: 'relative' as const,
+  },
+  dayButtonActive: {
+    borderWidth: 2,
+  },
+  dayButtonCompleted: {
+    borderWidth: 2,
+  },
+  dayButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  dayButtonTextActive: {
+    color: '#ffffff',
+  },
+  completedBadge: {
+    position: 'absolute' as const,
+    top: -6,
+    right: -6,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 2,
   },
   content: {
     paddingHorizontal: 16,
