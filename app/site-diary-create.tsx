@@ -107,7 +107,11 @@ export default function SiteDiaryCreateScreen() {
   const utils = trpc.useUtils();
   const createMutation = trpc.siteDiaries.create.useMutation({
     onSuccess: () => {
+      console.log('[SiteDiary] Create success, invalidating list');
       utils.siteDiaries.list.invalidate();
+    },
+    onError: (error) => {
+      console.error('[SiteDiary] Create error:', error);
     },
   });
   const projects = company?.projects || [];
@@ -253,11 +257,18 @@ export default function SiteDiaryCreateScreen() {
     }
 
     try {
+      console.log('[SiteDiary] Submitting', completedDays.length, 'diaries');
+      
       for (const dayData of completedDays) {
         const project = projects.find(p => p.id === dayData.projectId);
-        if (!project) continue;
+        if (!project) {
+          console.warn('[SiteDiary] Project not found:', dayData.projectId);
+          continue;
+        }
 
-        await createMutation.mutateAsync({
+        console.log('[SiteDiary] Creating diary for', dayData.date, project.name);
+
+        const result = await createMutation.mutateAsync({
           date: dayData.date,
           projectId: dayData.projectId,
           projectName: project.name,
@@ -274,6 +285,8 @@ export default function SiteDiaryCreateScreen() {
           notes: dayData.notes || undefined,
           status: submitStatus,
         });
+        
+        console.log('[SiteDiary] Created diary:', result.id);
       }
 
       Alert.alert(
@@ -283,7 +296,8 @@ export default function SiteDiaryCreateScreen() {
       );
     } catch (error) {
       console.error('Create site diary error:', error);
-      Alert.alert('Error', 'Failed to create site diary. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create site diary';
+      Alert.alert('Error', errorMessage + '. Please try again.');
     }
   };
 

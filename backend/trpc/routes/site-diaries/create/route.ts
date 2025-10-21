@@ -31,65 +31,56 @@ export const createSiteDiaryProcedure = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
-    if (!ctx.user) {
-      throw new Error("Unauthorized");
+    try {
+      if (!ctx.user) {
+        throw new Error("Unauthorized");
+      }
+
+      console.log("[SiteDiary Create] User:", ctx.user.id, ctx.user.name);
+      console.log("[SiteDiary Create] Company:", ctx.user.currentCompanyId);
+      console.log("[SiteDiary Create] Input:", JSON.stringify(input, null, 2));
+
+      if (!ctx.user.currentCompanyId) {
+        throw new Error("No company selected");
+      }
+
+      const userRole = ctx.user.role;
+      if (!["supervisor", "management", "administrator", "company"].includes(userRole)) {
+        throw new Error("Only supervisors and above can create site diaries");
+      }
+
+      const siteDiary = await prisma.siteDiary.create({
+        data: {
+          date: new Date(input.date),
+          projectId: input.projectId,
+          projectName: input.projectName,
+          supervisorName: ctx.user.name,
+          supervisorId: ctx.user.id,
+          companyId: ctx.user.currentCompanyId,
+          weather: input.weather || null,
+          temperature: input.temperature || null,
+          workDescription: input.workDescription,
+          progress: input.progress || null,
+          delays: input.delays || null,
+          safetyIssues: input.safetyIssues || null,
+          visitors: input.visitors || null,
+          workersOnSite: input.workersOnSite || null,
+          equipmentUsed: input.equipmentUsed || [],
+          materials: input.materials || [],
+          photos: input.photos || [],
+          notes: input.notes || null,
+          status: input.status || "draft",
+        },
+      });
+
+      console.log("[SiteDiary Create] Success:", siteDiary.id);
+
+      return {
+        success: true,
+        id: siteDiary.id,
+      };
+    } catch (error) {
+      console.error("[SiteDiary Create] Error:", error);
+      throw error;
     }
-
-    const userRole = ctx.user.role;
-    if (!["supervisor", "management", "administrator", "company"].includes(userRole)) {
-      throw new Error("Only supervisors and above can create site diaries");
-    }
-
-    const siteDiary = await prisma.siteDiary.create({
-      data: {
-        date: new Date(input.date),
-        projectId: input.projectId,
-        projectName: input.projectName,
-        supervisorName: ctx.user.name,
-        supervisorId: ctx.user.id,
-        companyId: ctx.user.currentCompanyId!,
-        weather: input.weather,
-        temperature: input.temperature,
-        workDescription: input.workDescription,
-        progress: input.progress,
-        delays: input.delays,
-        safetyIssues: input.safetyIssues,
-        visitors: input.visitors,
-        workersOnSite: input.workersOnSite,
-        equipmentUsed: input.equipmentUsed || [],
-        materials: input.materials || [],
-        photos: input.photos,
-        notes: input.notes,
-        status: input.status || "draft",
-      },
-    });
-
-    console.log("Site diary created:", siteDiary.id);
-
-    return {
-      id: siteDiary.id,
-      date: siteDiary.date.toISOString(),
-      projectId: siteDiary.projectId,
-      projectName: siteDiary.projectName,
-      supervisorName: siteDiary.supervisorName,
-      supervisorId: siteDiary.supervisorId,
-      companyId: siteDiary.companyId,
-      weather: siteDiary.weather || undefined,
-      temperature: siteDiary.temperature || undefined,
-      workDescription: siteDiary.workDescription,
-      progress: siteDiary.progress || undefined,
-      delays: siteDiary.delays || undefined,
-      safetyIssues: siteDiary.safetyIssues || undefined,
-      visitors: siteDiary.visitors || undefined,
-      workersOnSite: siteDiary.workersOnSite || undefined,
-      equipmentUsed: (siteDiary.equipmentUsed as any) || [],
-      materials: (siteDiary.materials as any) || [],
-      photos: siteDiary.photos || [],
-      notes: siteDiary.notes || undefined,
-      status: siteDiary.status as "draft" | "completed",
-      sentAt: siteDiary.sentAt?.toISOString() || undefined,
-      sentTo: siteDiary.sentTo || [],
-      createdAt: siteDiary.createdAt.toISOString(),
-      updatedAt: siteDiary.updatedAt.toISOString(),
-    };
   });
