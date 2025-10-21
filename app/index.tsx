@@ -6,14 +6,16 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OnboardingScreen() {
-  const { user, isLoading } = useApp();
+  const appContext = useApp();
   const router = useRouter();
+  const user = appContext?.user || null;
+  const isLoading = appContext?.isLoading ?? true;
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (appContext && !isLoading && user) {
       router.replace('/(tabs)/home');
     }
-  }, [user, isLoading, router]);
+  }, [appContext, user, isLoading, router]);
 
   if (isLoading) {
     return (

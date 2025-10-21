@@ -19,18 +19,13 @@ const getBaseUrl = () => {
 const getTRPCUrl = () => {
   const baseUrl = getBaseUrl();
   if (!baseUrl) {
-    throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_RORK_API_BASE_URL in your .env file.');
+    return 'http://localhost:8788/api/trpc';
   }
   return `${baseUrl}/api/trpc`;
 };
 
 const createCustomFetch = () => {
   return async (url: RequestInfo | URL, options?: RequestInit) => {
-    const baseUrl = getBaseUrl();
-    if (!baseUrl) {
-      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_RORK_API_BASE_URL in your .env file.');
-    }
-    
     const token = await AsyncStorage.getItem('@checkmate_auth_token');
     
     const controller = new AbortController();
