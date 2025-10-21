@@ -57,20 +57,26 @@ export const createSiteDiaryProcedure = protectedProcedure
           supervisorName: ctx.user.name,
           supervisorId: ctx.user.id,
           companyId: ctx.user.currentCompanyId,
-          weather: input.weather || null,
-          temperature: input.temperature || null,
+          weather: input.weather ?? null,
+          temperature: input.temperature ?? null,
           workDescription: input.workDescription,
-          progress: input.progress || null,
-          delays: input.delays || null,
-          safetyIssues: input.safetyIssues || null,
-          visitors: input.visitors || null,
-          workersOnSite: input.workersOnSite || null,
-          equipmentUsed: input.equipmentUsed || [],
-          materials: input.materials || [],
-          photos: input.photos || [],
-          notes: input.notes || null,
-          status: input.status || "draft",
+          progress: input.progress ?? null,
+          delays: input.delays ?? null,
+          safetyIssues: input.safetyIssues ?? null,
+          visitors: input.visitors ?? null,
+          workersOnSite: input.workersOnSite ?? null,
+          equipmentUsed: input.equipmentUsed ?? [],
+          materials: input.materials ?? [],
+          photos: input.photos ?? [],
+          notes: input.notes ?? null,
+          status: input.status ?? "draft",
         },
+      });
+      
+      console.log("[SiteDiary Create] Created diary object:", {
+        id: siteDiary.id,
+        equipmentUsed: siteDiary.equipmentUsed,
+        materials: siteDiary.materials,
       });
 
       console.log("[SiteDiary Create] Success:", siteDiary.id);
@@ -78,6 +84,13 @@ export const createSiteDiaryProcedure = protectedProcedure
       return {
         success: true,
         id: siteDiary.id,
+        diary: {
+          id: siteDiary.id,
+          date: siteDiary.date.toISOString(),
+          projectId: siteDiary.projectId,
+          projectName: siteDiary.projectName,
+          status: siteDiary.status,
+        },
       };
     } catch (error) {
       console.error("[SiteDiary Create] Error:", error);
