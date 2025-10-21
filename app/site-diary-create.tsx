@@ -93,7 +93,12 @@ export default function SiteDiaryCreateScreen() {
   const [newMaterialQuantity, setNewMaterialQuantity] = useState('');
   const [newMaterialUnit, setNewMaterialUnit] = useState('');
 
-  const createMutation = trpc.siteDiaries.create.useMutation();
+  const utils = trpc.useUtils();
+  const createMutation = trpc.siteDiaries.create.useMutation({
+    onSuccess: () => {
+      utils.siteDiaries.list.invalidate();
+    },
+  });
   const projects = company?.projects || [];
 
   const updateCurrentDayData = () => {
