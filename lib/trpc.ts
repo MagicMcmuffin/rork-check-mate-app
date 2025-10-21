@@ -13,15 +13,22 @@ const getBaseUrl = () => {
     return rorkApiUrl;
   }
   
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  
   return '';
 };
 
 const getTRPCUrl = () => {
   const baseUrl = getBaseUrl();
   if (!baseUrl) {
+    console.log('[tRPC] Using default localhost URL');
     return 'http://localhost:8788/api/trpc';
   }
-  return `${baseUrl}/api/trpc`;
+  const url = `${baseUrl}/api/trpc`;
+  console.log('[tRPC] Using URL:', url);
+  return url;
 };
 
 const createCustomFetch = () => {
@@ -57,7 +64,7 @@ const createCustomFetch = () => {
           } else {
             errorBody = await response.clone().text();
           }
-        } catch (e) {
+        } catch {
           errorBody = 'Failed to parse error response';
         }
         
