@@ -53,11 +53,25 @@ const createCustomFetch = () => {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        const text = await response.text();
+        const contentType = response.headers.get('content-type');
+        let errorBody = '';
+        
+        try {
+          if (contentType?.includes('application/json')) {
+            const json = await response.clone().json();
+            errorBody = JSON.stringify(json, null, 2);
+          } else {
+            errorBody = await response.clone().text();
+          }
+        } catch (e) {
+          errorBody = 'Failed to parse error response';
+        }
+        
         console.error('[tRPC] Error response:', {
           status: response.status,
           statusText: response.statusText,
-          body: text.substring(0, 500),
+          contentType,
+          body: errorBody.substring(0, 1000),
         });
       }
       

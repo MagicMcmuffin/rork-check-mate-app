@@ -106,12 +106,16 @@ export default function SiteDiaryCreateScreen() {
 
   const utils = trpc.useUtils();
   const createMutation = trpc.siteDiaries.create.useMutation({
-    onSuccess: () => {
-      console.log('[SiteDiary] Create success, invalidating list');
+    onSuccess: (data) => {
+      console.log('[SiteDiary] Create success:', data.id);
       utils.siteDiaries.list.invalidate();
     },
     onError: (error) => {
-      console.error('[SiteDiary] Create error:', error);
+      console.error('[SiteDiary] Create error:', {
+        message: error.message,
+        data: error.data,
+        shape: error.shape,
+      });
     },
   });
   const projects = company?.projects || [];
@@ -258,6 +262,9 @@ export default function SiteDiaryCreateScreen() {
 
     try {
       console.log('[SiteDiary] Submitting', completedDays.length, 'diaries');
+      console.log('[SiteDiary] Company:', company?.id);
+      
+      const results: string[] = [];
       
       for (const dayData of completedDays) {
         const project = projects.find(p => p.id === dayData.projectId);
@@ -267,37 +274,48 @@ export default function SiteDiaryCreateScreen() {
         }
 
         console.log('[SiteDiary] Creating diary for', dayData.date, project.name);
+        console.log('[SiteDiary] Equipment:', dayData.equipmentList.length);
+        console.log('[SiteDiary] Materials:', dayData.materialsList.length);
 
-        const result = await createMutation.mutateAsync({
-          date: dayData.date,
-          projectId: dayData.projectId,
-          projectName: project.name,
-          weather: dayData.weather || undefined,
-          temperature: dayData.temperature || undefined,
-          workDescription: dayData.workDescription,
-          progress: dayData.progress || undefined,
-          delays: dayData.delays || undefined,
-          safetyIssues: dayData.safetyIssues || undefined,
-          visitors: dayData.visitors || undefined,
-          workersOnSite: dayData.workersOnSite ? Number(dayData.workersOnSite) : undefined,
-          equipmentUsed: dayData.equipmentList.length > 0 ? dayData.equipmentList : undefined,
-          materials: dayData.materialsList.length > 0 ? dayData.materialsList : undefined,
-          notes: dayData.notes || undefined,
-          status: submitStatus,
-        });
-        
-        console.log('[SiteDiary] Created diary:', result.id);
+        try {
+          const result = await createMutation.mutateAsync({
+            date: dayData.date,
+            projectId: dayData.projectId,
+            projectName: project.name,
+            weather: dayData.weather || undefined,
+            temperature: dayData.temperature || undefined,
+            workDescription: dayData.workDescription,
+            progress: dayData.progress || undefined,
+            delays: dayData.delays || undefined,
+            safetyIssues: dayData.safetyIssues || undefined,
+            visitors: dayData.visitors || undefined,
+            workersOnSite: dayData.workersOnSite ? Number(dayData.workersOnSite) : undefined,
+            equipmentUsed: dayData.equipmentList.length > 0 ? dayData.equipmentList : undefined,
+            materials: dayData.materialsList.length > 0 ? dayData.materialsList : undefined,
+            notes: dayData.notes || undefined,
+            status: submitStatus,
+          });
+          
+          console.log('[SiteDiary] Created diary:', result.id);
+          results.push(result.id);
+        } catch (dayError) {
+          console.error('[SiteDiary] Failed to create diary for', dayData.date, dayError);
+          const dayErrorMessage = dayError instanceof Error ? dayError.message : 'Unknown error';
+          throw new Error(`Failed to create diary for ${dayData.date}: ${dayErrorMessage}`);
+        }
       }
 
+      console.log('[SiteDiary] All diaries created:', results.length);
+      
       Alert.alert(
         'Success',
-        `${completedDays.length} site ${completedDays.length === 1 ? 'diary' : 'diaries'} created successfully`,
+        `${results.length} site ${results.length === 1 ? 'diary' : 'diaries'} created successfully`,
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error) {
-      console.error('Create site diary error:', error);
+      console.error('[SiteDiary] Submit error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create site diary';
-      Alert.alert('Error', errorMessage + '. Please try again.');
+      Alert.alert('Error', errorMessage + '. Check console for details.');
     }
   };
 

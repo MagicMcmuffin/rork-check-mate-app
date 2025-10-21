@@ -31,23 +31,24 @@ export const createSiteDiaryProcedure = protectedProcedure
     })
   )
   .mutation(async ({ ctx, input }) => {
+    if (!ctx.user) {
+      throw new Error("Unauthorized");
+    }
+
+    console.log("[SiteDiary Create] User:", ctx.user.id, ctx.user.name);
+    console.log("[SiteDiary Create] Company:", ctx.user.currentCompanyId);
+    console.log("[SiteDiary Create] Input project:", input.projectId, input.projectName);
+
+    if (!ctx.user.currentCompanyId) {
+      throw new Error("No company selected");
+    }
+
+    const userRole = ctx.user.role;
+    if (!["supervisor", "management", "administrator", "company"].includes(userRole)) {
+      throw new Error("Only supervisors and above can create site diaries");
+    }
+
     try {
-      if (!ctx.user) {
-        throw new Error("Unauthorized");
-      }
-
-      console.log("[SiteDiary Create] User:", ctx.user.id, ctx.user.name);
-      console.log("[SiteDiary Create] Company:", ctx.user.currentCompanyId);
-      console.log("[SiteDiary Create] Input:", JSON.stringify(input, null, 2));
-
-      if (!ctx.user.currentCompanyId) {
-        throw new Error("No company selected");
-      }
-
-      const userRole = ctx.user.role;
-      if (!["supervisor", "management", "administrator", "company"].includes(userRole)) {
-        throw new Error("Only supervisors and above can create site diaries");
-      }
 
       const siteDiary = await prisma.siteDiary.create({
         data: {
@@ -73,15 +74,9 @@ export const createSiteDiaryProcedure = protectedProcedure
         },
       });
       
-      console.log("[SiteDiary Create] Created diary object:", {
-        id: siteDiary.id,
-        equipmentUsed: siteDiary.equipmentUsed,
-        materials: siteDiary.materials,
-      });
-
       console.log("[SiteDiary Create] Success:", siteDiary.id);
 
-      return {
+      const response = {
         id: siteDiary.id,
         date: siteDiary.date.toISOString(),
         projectId: siteDiary.projectId,
@@ -89,26 +84,30 @@ export const createSiteDiaryProcedure = protectedProcedure
         supervisorName: siteDiary.supervisorName,
         supervisorId: siteDiary.supervisorId,
         companyId: siteDiary.companyId,
-        weather: siteDiary.weather || undefined,
-        temperature: siteDiary.temperature || undefined,
+        weather: siteDiary.weather ?? undefined,
+        temperature: siteDiary.temperature ?? undefined,
         workDescription: siteDiary.workDescription,
-        progress: siteDiary.progress || undefined,
-        delays: siteDiary.delays || undefined,
-        safetyIssues: siteDiary.safetyIssues || undefined,
-        visitors: siteDiary.visitors || undefined,
-        workersOnSite: siteDiary.workersOnSite || undefined,
+        progress: siteDiary.progress ?? undefined,
+        delays: siteDiary.delays ?? undefined,
+        safetyIssues: siteDiary.safetyIssues ?? undefined,
+        visitors: siteDiary.visitors ?? undefined,
+        workersOnSite: siteDiary.workersOnSite ?? undefined,
         equipmentUsed: (siteDiary.equipmentUsed as any) || [],
         materials: (siteDiary.materials as any) || [],
         photos: siteDiary.photos || [],
-        notes: siteDiary.notes || undefined,
+        notes: siteDiary.notes ?? undefined,
         status: siteDiary.status as "draft" | "completed",
-        sentAt: siteDiary.sentAt?.toISOString() || undefined,
+        sentAt: siteDiary.sentAt?.toISOString() ?? undefined,
         sentTo: siteDiary.sentTo || [],
         createdAt: siteDiary.createdAt.toISOString(),
         updatedAt: siteDiary.updatedAt.toISOString(),
       };
+      
+      console.log("[SiteDiary Create] Returning response with id:", response.id);
+      return response;
     } catch (error) {
-      console.error("[SiteDiary Create] Error:", error);
-      throw error;
+      console.error("[SiteDiary Create] Database error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create site diary";
+      throw new Error(errorMessage);
     }
   });
