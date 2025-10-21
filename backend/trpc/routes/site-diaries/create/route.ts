@@ -81,5 +81,8 @@ export const createSiteDiaryProcedure = protectedProcedure
     return {
       success: true,
       id: siteDiary.id,
+      date: siteDiary.date.toISOString(),
+      projectName: siteDiary.projectName,
+      status: siteDiary.status,
     };
   });
