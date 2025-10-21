@@ -539,13 +539,13 @@ model SiteDiary {
   safetyIssues    String?
   visitors        String?
   workersOnSite   Int?
-  equipmentUsed   Json     @default("[]")
-  materials       Json     @default("[]")
-  photos          String[]
+  equipmentUsed   Json
+  materials       Json
+  photos          String[] @default([])
   notes           String?
   status          String   @default("draft")
   sentAt          DateTime?
-  sentTo          String[]
+  sentTo          String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
