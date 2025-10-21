@@ -79,29 +79,7 @@ export const createSiteDiaryProcedure = protectedProcedure
     console.log("Site diary created:", siteDiary.id);
 
     return {
+      success: true,
       id: siteDiary.id,
-      date: siteDiary.date.toISOString(),
-      projectId: siteDiary.projectId,
-      projectName: siteDiary.projectName,
-      supervisorName: siteDiary.supervisorName,
-      supervisorId: siteDiary.supervisorId,
-      companyId: siteDiary.companyId,
-      weather: siteDiary.weather,
-      temperature: siteDiary.temperature,
-      workDescription: siteDiary.workDescription,
-      progress: siteDiary.progress,
-      delays: siteDiary.delays,
-      safetyIssues: siteDiary.safetyIssues,
-      visitors: siteDiary.visitors,
-      workersOnSite: siteDiary.workersOnSite,
-      equipmentUsed: siteDiary.equipmentUsed as typeof equipmentUsedData,
-      materials: siteDiary.materials as typeof materialsData,
-      photos: siteDiary.photos,
-      notes: siteDiary.notes,
-      status: siteDiary.status,
-      sentTo: siteDiary.sentTo,
-      sentAt: siteDiary.sentAt?.toISOString() || null,
-      createdAt: siteDiary.createdAt.toISOString(),
-      updatedAt: siteDiary.updatedAt.toISOString(),
     };
   });
