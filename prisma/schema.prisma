@@ -38,6 +38,7 @@ model User {
   holidayNotifications   HolidayNotification[]
   equipmentReports       EquipmentReport[]
   siteDiaries            SiteDiary[]
+  projectNotes           ProjectNote[]
   
   @@index([email])
 }
@@ -77,6 +78,7 @@ model Company {
   plantItems            PlantItem[]
   equipmentReports      EquipmentReport[]
   siteDiaries           SiteDiary[]
+  projectNotes          ProjectNote[]
   
   @@index([code])
   @@index([ownerId])
@@ -558,4 +560,22 @@ model SiteDiary {
   @@index([supervisorId])
   @@index([projectId])
   @@index([date])
+}
+
+model ProjectNote {
+  id              String   @id @default(cuid())
+  title           String
+  content         String
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  authorName      String
+  
+  @@index([companyId])
+  @@index([authorId])
 }

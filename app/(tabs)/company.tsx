@@ -1,12 +1,13 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users, BookOpen } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users, BookOpen, FileText } from 'lucide-react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Equipment } from '@/types';
+import { Equipment, ProjectNote } from '@/types';
+import { trpc } from '@/lib/trpc';
 
 type Section = 'plant' | 'projects' | 'announcements' | 'equipment' | 'holidays';
 
@@ -45,10 +46,21 @@ export default function CompanyScreen() {
   const [announcementType, setAnnouncementType] = useState<'general' | 'well-done' | 'warning' | 'achievement' | 'reminder'>('general');
   const [autoDeleteDays, setAutoDeleteDays] = useState<string>('');
 
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [noteCategory, setNoteCategory] = useState('');
+
   const isAdmin = user?.role === 'company' || user?.role === 'administrator' || user?.role === 'management';
+  const isSupervisorOrAbove = user?.role === 'supervisor' || user?.role === 'management' || user?.role === 'administrator' || user?.role === 'company';
   const equipment = company?.equipment || [];
   const projects = company?.projects || [];
   const announcements = getCompanyAnnouncements();
+
+  const projectNotesQuery = trpc.projectNotes.list.useQuery();
+  const createNoteMutation = trpc.projectNotes.create.useMutation();
+  const deleteNoteMutation = trpc.projectNotes.delete.useMutation();
+  const projectNotes = projectNotesQuery.data || [];
 
   const handleAddEquipment = async () => {
     if (!equipmentName.trim() || !make.trim() || !model.trim() || !serialNumber.trim()) {
@@ -735,8 +747,159 @@ export default function CompanyScreen() {
               </TouchableOpacity>
             )}
           </View>
+
+          <TouchableOpacity
+            style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setNoteModalVisible(true)}
+          >
+            <View style={[styles.sectionCardIcon, { backgroundColor: '#3b82f6' + '20' }]}>
+              <FileText size={24} color="#3b82f6" />
+            </View>
+            <View style={styles.sectionCardContent}>
+              <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Project Notes</Text>
+              <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Information & codes ({projectNotes.length} notes)</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={noteModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setNoteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.noteModalContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Project Notes</Text>
+              <TouchableOpacity onPress={() => setNoteModalVisible(false)}>
+                <Text style={[styles.modalClose, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {isSupervisorOrAbove && (
+              <View style={[styles.noteAddSection, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+                <Text style={[styles.label, { color: colors.text }]}>Add New Note</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Title (e.g., Gate Code)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={noteTitle}
+                  onChangeText={setNoteTitle}
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Content (e.g., Code is 1234)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={noteContent}
+                  onChangeText={setNoteContent}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Category (optional, e.g., Codes)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={noteCategory}
+                  onChangeText={setNoteCategory}
+                />
+                <TouchableOpacity
+                  style={[styles.addButton, { backgroundColor: colors.primary }]}
+                  onPress={async () => {
+                    if (!noteTitle.trim() || !noteContent.trim()) {
+                      Alert.alert('Error', 'Please fill in title and content');
+                      return;
+                    }
+                    try {
+                      await createNoteMutation.mutateAsync({
+                        title: noteTitle.trim(),
+                        content: noteContent.trim(),
+                        category: noteCategory.trim() || undefined,
+                      });
+                      setNoteTitle('');
+                      setNoteContent('');
+                      setNoteCategory('');
+                      projectNotesQuery.refetch();
+                      Alert.alert('Success', 'Note added successfully');
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to add note');
+                      console.error(error);
+                    }
+                  }}
+                >
+                  <Plus size={20} color="#ffffff" />
+                  <Text style={styles.addButtonText}>Add Note</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <ScrollView style={styles.notesList}>
+              {projectNotes.length === 0 ? (
+                <View style={[styles.emptyState, { backgroundColor: colors.background }]}>
+                  <FileText size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Notes Yet</Text>
+                  <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                    {isSupervisorOrAbove
+                      ? 'Add notes for information like machine codes, gate codes, etc.'
+                      : 'No notes have been added yet'}
+                  </Text>
+                </View>
+              ) : (
+                projectNotes.map((note: ProjectNote) => (
+                  <View key={note.id} style={[styles.noteCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={styles.noteHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.noteTitle, { color: colors.text }]}>{note.title}</Text>
+                        {note.category && (
+                          <View style={[styles.noteCategoryBadge, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.noteCategoryText, { color: colors.primary }]}>{note.category}</Text>
+                          </View>
+                        )}
+                      </View>
+                      {isSupervisorOrAbove && (
+                        <TouchableOpacity
+                          style={styles.deleteButton}
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Note',
+                              'Are you sure you want to delete this note?',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: async () => {
+                                    try {
+                                      await deleteNoteMutation.mutateAsync({ id: note.id });
+                                      projectNotesQuery.refetch();
+                                      Alert.alert('Success', 'Note deleted');
+                                    } catch (error) {
+                                      Alert.alert('Error', 'Failed to delete note');
+                                      console.error(error);
+                                    }
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        >
+                          <Trash2 size={18} color="#dc2626" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <Text style={[styles.noteContentText, { color: colors.text }]}>{note.content}</Text>
+                    <Text style={[styles.noteMetaText, { color: colors.textSecondary }]}>
+                      Added by {note.authorName} • {new Date(note.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
 
 
@@ -2109,5 +2272,55 @@ const styles = StyleSheet.create({
   announcementSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  noteModalContainer: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    height: '90%',
+  },
+  noteAddSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  notesList: {
+    flex: 1,
+    padding: 20,
+  },
+  noteCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  noteTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  noteCategoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  noteCategoryText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  noteContentText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  noteMetaText: {
+    fontSize: 12,
   },
 });

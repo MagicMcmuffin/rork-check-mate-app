@@ -11,6 +11,9 @@ import { getSiteDiaryProcedure } from "./routes/site-diaries/get/route";
 import { updateSiteDiaryProcedure } from "./routes/site-diaries/update/route";
 import { deleteSiteDiaryProcedure } from "./routes/site-diaries/delete/route";
 import { sendWeeklySiteDiaryProcedure } from "./routes/site-diaries/send-weekly/route";
+import { createProjectNoteProcedure } from "./routes/project-notes/create/route";
+import { listProjectNotesProcedure } from "./routes/project-notes/list/route";
+import { deleteProjectNoteProcedure } from "./routes/project-notes/delete/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -30,6 +33,11 @@ export const appRouter = createTRPCRouter({
     update: updateSiteDiaryProcedure,
     delete: deleteSiteDiaryProcedure,
     sendWeekly: sendWeeklySiteDiaryProcedure,
+  }),
+  projectNotes: createTRPCRouter({
+    create: createProjectNoteProcedure,
+    list: listProjectNotesProcedure,
+    delete: deleteProjectNoteProcedure,
   }),
 });
 

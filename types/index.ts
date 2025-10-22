@@ -541,3 +541,15 @@ export interface SiteDiary {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ProjectNote {
+  id: string;
+  companyId: string;
+  title: string;
+  content: string;
+  category?: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
