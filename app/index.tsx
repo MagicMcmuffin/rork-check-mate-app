@@ -6,9 +6,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OnboardingScreen() {
-  const appContext = useApp();
   const router = useRouter();
-  const user = appContext?.user || null;
+  const appContext = useApp();
+  const user = appContext?.user;
   const isLoading = appContext?.isLoading ?? true;
 
   useEffect(() => {
