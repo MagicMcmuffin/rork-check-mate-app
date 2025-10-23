@@ -8,7 +8,7 @@ If you're seeing errors like:
 [tRPC] Body: 404 Not Found
 ```
 
-This means the tRPC backend is not accessible. Here's how to fix it:
+or HTML error pages in the response body, this means the tRPC backend is not accessible. Here's how to fix it:
 
 ### Solution 1: Ensure Database Schema is Up to Date
 
@@ -26,16 +26,28 @@ Alternatively, to create a proper migration:
 npx prisma migrate dev --name add_project_notes
 ```
 
-### Solution 2: Restart the Development Server
+### Solution 2: Restart the Development Server (MOST COMMON FIX)
+
+**This is the most common cause of 404 errors.**
 
 Make sure you're using the correct start command:
 
 ```bash
-bun run start        # For mobile
-bun run start-web    # For web
+bun run start        # For mobile (with tunnel)
+bun run start-web    # For web (with tunnel)
 ```
 
-**DO NOT use** `npx expo start` as it won't start the backend server.
+**CRITICAL**: You MUST use these commands to start the backend server. The Rork CLI automatically:
+- Starts the Hono backend server
+- Injects the correct `EXPO_PUBLIC_RORK_API_BASE_URL` environment variable
+- Sets up tunneling for remote device access
+
+**DO NOT use:**
+- `npx expo start` - This won't start the backend server
+- `expo start` - This won't start the backend server
+- Any other expo commands - They won't set up the backend
+
+If you were using a different command, **stop your current server and restart with `bun run start` or `bun run start-web`**.
 
 ### Solution 3: Verify Backend URL
 
