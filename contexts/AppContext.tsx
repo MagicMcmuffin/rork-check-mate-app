@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Company, PlantInspection, QuickHitchInspection, VehicleInspection, BucketChangeInspection, Project, Equipment, Notification, PositiveIntervention, FixLog, ApprenticeshipEntry, Announcement, Draft, DraftType, GreasingRecord, GreasingInspection, Ticket, TicketReminder, AirTestingInspection, EquipmentCategory, EquipmentItem, EquipmentCertificate, HolidayRequest, HolidayNotification, HolidayStatus, PlantCategory, PlantItem, PlantCertificate, EquipmentReport } from '@/types';
+import { trpcClient } from '@/lib/trpc';
 
 const STORAGE_KEYS = {
   USER: '@checkmate_user',
@@ -214,185 +215,168 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   };
 
-  const generateCompanyCode = (): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-  };
-
   const registerCompany = useCallback(async (ownerName: string, companyName: string, companyEmail: string, personalEmail: string, password: string) => {
-    const code = generateCompanyCode();
-    const newCompany: Company = {
-      id: Date.now().toString(),
-      name: companyName,
-      code,
-      email: companyEmail,
-      projects: [],
-      equipment: [],
-      createdAt: new Date().toISOString(),
-    };
+    console.log('🔧 Registering company via tRPC backend...');
+    try {
+      const result = await trpcClient.auth.registerCompany.mutate({
+        ownerName,
+        companyName,
+        companyEmail,
+        personalEmail,
+        password,
+      });
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      role: 'company',
-      companyId: newCompany.id,
-      name: ownerName,
-      email: personalEmail,
-      password,
-      createdAt: new Date().toISOString(),
-    };
+      console.log('✅ Company registered successfully:', result.company.code);
 
-    const updatedCompanies = [...companies, newCompany];
-    const updatedUsers = [...users, newUser];
-
-    await Promise.all([
-      AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser)),
-      AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(newCompany)),
-      AsyncStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(updatedCompanies)),
-      AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers)),
-    ]);
-
-    setUser(newUser);
-    setCompany(newCompany);
-    setCompanies(updatedCompanies);
-    setUsers(updatedUsers);
-
-    return newCompany;
-  }, [companies, users]);
-
-  const joinCompany = useCallback(async (code: string, employeeName: string, email: string, password: string, profilePicture?: string) => {
-    const companiesData = await AsyncStorage.getItem(STORAGE_KEYS.COMPANIES);
-    const allCompanies = companiesData ? JSON.parse(companiesData) : [];
-    
-    const normalizedCode = code.trim().toUpperCase();
-    const foundCompany = allCompanies.find((c: Company) => c.code?.trim().toUpperCase() === normalizedCode);
-    if (!foundCompany) {
-      console.log('🔍 Searching for code:', normalizedCode);
-      console.log('📊 Available companies:', allCompanies.map((c: Company) => ({ name: c.name, code: c.code })));
-      throw new Error('Invalid company code');
-    }
-
-    const usersData = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
-    const allUsers = usersData ? JSON.parse(usersData) : [];
-
-    const existingUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-      if (existingUser.companyIds?.includes(foundCompany.id)) {
-        throw new Error('Already joined this company');
-      }
-      
-      const updatedUser = {
-        ...existingUser,
-        companyIds: [...(existingUser.companyIds || [existingUser.companyId!]), foundCompany.id],
-        currentCompanyId: foundCompany.id,
-        companyId: foundCompany.id,
+      const newUser: User = {
+        id: result.user.id,
+        role: result.user.role as any,
+        companyId: result.company.id,
+        name: result.user.name,
+        email: result.user.email,
+        password,
+        createdAt: new Date().toISOString(),
       };
 
-      const updatedUsers = allUsers.map((u: User) => u.id === existingUser.id ? updatedUser : u);
+      const newCompany: Company = {
+        id: result.company.id,
+        name: result.company.name,
+        code: result.company.code,
+        email: result.company.email,
+        projects: [],
+        equipment: [],
+        createdAt: new Date().toISOString(),
+      };
 
+      await AsyncStorage.setItem('@checkmate_auth_token', result.token);
       await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser)),
-        AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(foundCompany)),
-        AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers)),
+        AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser)),
+        AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(newCompany)),
       ]);
 
-      setUser(updatedUser);
-      setCompany(foundCompany);
-      setUsers(updatedUsers);
+      setUser(newUser);
+      setCompany(newCompany);
 
-      return foundCompany;
+      return newCompany;
+    } catch (error) {
+      console.error('❌ Register company error:', error);
+      throw error;
     }
+  }, []);
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      role: 'employee',
-      companyId: foundCompany.id,
-      companyIds: [foundCompany.id],
-      currentCompanyId: foundCompany.id,
-      name: employeeName,
-      email,
-      password,
-      profilePicture,
-      createdAt: new Date().toISOString(),
-    };
+  const joinCompany = useCallback(async (code: string, employeeName: string, email: string, password: string, profilePicture?: string) => {
+    console.log('🔧 Joining company via tRPC backend...');
+    console.log('🔍 Company code:', code.trim().toUpperCase());
+    
+    try {
+      const result = await trpcClient.auth.joinCompany.mutate({
+        code: code.trim().toUpperCase(),
+        employeeName,
+        email,
+        password,
+        profilePicture,
+      });
 
-    const updatedUsers = [...allUsers, newUser];
+      console.log('✅ Successfully joined company:', result.company.name);
 
-    await Promise.all([
-      AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser)),
-      AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(foundCompany)),
-      AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers)),
-    ]);
+      const newUser: User = {
+        id: result.user.id,
+        role: result.user.role as any,
+        companyId: result.company.id,
+        currentCompanyId: result.user.currentCompanyId || result.company.id,
+        name: result.user.name,
+        email: result.user.email,
+        password,
+        profilePicture,
+        createdAt: new Date().toISOString(),
+      };
 
-    setUser(newUser);
-    setCompany(foundCompany);
-    setUsers(updatedUsers);
+      const newCompany: Company = {
+        id: result.company.id,
+        name: result.company.name,
+        code: result.company.code,
+        email: result.company.email,
+        projects: [],
+        equipment: [],
+        createdAt: new Date().toISOString(),
+      };
 
-    return foundCompany;
+      await AsyncStorage.setItem('@checkmate_auth_token', result.token);
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser)),
+        AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(newCompany)),
+      ]);
+
+      setUser(newUser);
+      setCompany(newCompany);
+
+      return newCompany;
+    } catch (error: any) {
+      console.error('❌ Join company error:', error);
+      if (error.message?.includes('Invalid company code') || error.data?.code === 'NOT_FOUND') {
+        throw new Error('Invalid company code');
+      }
+      if (error.message?.includes('Already joined') || error.data?.code === 'BAD_REQUEST') {
+        throw new Error('Already joined this company');
+      }
+      throw new Error('Failed to join company. Please try again.');
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-
-    const usersData = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
-    console.log('🔍 Login attempt for email:', trimmedEmail);
+    console.log('🔧 Logging in via tRPC backend...');
+    console.log('🔍 Email:', email.trim().toLowerCase());
     
-    const allUsers: User[] = usersData ? JSON.parse(usersData) : [];
-    console.log('📊 Total users in database:', allUsers.length);
+    try {
+      const result = await trpcClient.auth.login.mutate({
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    if (allUsers.length === 0) {
-      throw new Error('No users found. Please register first.');
-    }
+      console.log('✅ Login successful:', result.user.email);
 
-    const foundUser = allUsers.find((u: User) => 
-      u.email.trim().toLowerCase() === trimmedEmail && 
-      u.password.trim() === trimmedPassword
-    );
-    
-    if (!foundUser) {
-      const emailMatch = allUsers.find((u: User) => 
-        u.email.trim().toLowerCase() === trimmedEmail
-      );
-      
-      if (emailMatch) {
-        console.error('❌ Email found but password mismatch');
-        throw new Error('Invalid password');
-      } else {
-        console.error('❌ Email not found in database');
-        throw new Error('Email not found');
+      const loggedInUser: User = {
+        id: result.user.id,
+        role: result.user.role as any,
+        companyId: result.company.id,
+        currentCompanyId: result.user.currentCompanyId || result.company.id,
+        name: result.user.name,
+        email: result.user.email,
+        password,
+        createdAt: new Date().toISOString(),
+      };
+
+      const userCompany: Company = {
+        id: result.company.id,
+        name: result.company.name,
+        code: result.company.code,
+        email: result.company.email,
+        projects: [],
+        equipment: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      await AsyncStorage.setItem('@checkmate_auth_token', result.token);
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(loggedInUser)),
+        AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(userCompany)),
+      ]);
+
+      setUser(loggedInUser);
+      setCompany(userCompany);
+
+      console.log('✅ Login complete for:', loggedInUser.email);
+      return loggedInUser;
+    } catch (error: any) {
+      console.error('❌ Login error:', error);
+      if (error.message?.includes('Invalid') || error.data?.code === 'UNAUTHORIZED') {
+        throw new Error('Invalid email or password');
       }
+      if (error.message?.includes('not found')) {
+        throw new Error('Email not found. Please register first.');
+      }
+      throw new Error('Failed to login. Please try again.');
     }
-
-    console.log('✅ User found:', foundUser.email);
-
-    const companiesData = await AsyncStorage.getItem(STORAGE_KEYS.COMPANIES);
-    const allCompanies: Company[] = companiesData ? JSON.parse(companiesData) : [];
-    
-    const companyId = foundUser.currentCompanyId || foundUser.companyId;
-    const foundCompany = allCompanies.find((c: Company) => c.id === companyId);
-
-    if (!foundCompany) {
-      console.error('❌ Company not found for user:', companyId);
-      throw new Error('Company not found. Please contact support.');
-    }
-
-    console.log('✅ Company found:', foundCompany.name);
-
-    await Promise.all([
-      AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(foundUser)),
-      AsyncStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(foundCompany)),
-    ]);
-
-    setUser(foundUser);
-    setCompany(foundCompany);
-    setUsers(allUsers);
-
-    console.log('✅ Login successful for:', foundUser.email);
-    return foundUser;
   }, []);
 
   const submitPlantInspection = useCallback(async (inspection: Omit<PlantInspection, 'id' | 'createdAt'>) => {
