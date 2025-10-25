@@ -1,4 +1,3 @@
-// template
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -18,11 +17,11 @@ const queryClient = new QueryClient({
       refetchOnMount: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      networkMode: 'offlineFirst',
+      networkMode: "offlineFirst",
     },
     mutations: {
       retry: false,
-      networkMode: 'offlineFirst',
+      networkMode: "offlineFirst",
     },
   },
 });
@@ -34,9 +33,28 @@ function RootLayoutNav() {
       <Stack.Screen name="company-register" options={{ headerShown: false }} />
       <Stack.Screen name="employee-join" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="plant-inspection" options={{ title: "Plant Inspection", presentation: "modal" }} />
-      <Stack.Screen name="quick-hitch-inspection" options={{ title: "Quick Hitch Inspection", presentation: "modal" }} />
-      <Stack.Screen name="apprenticeship-learning" options={{ title: "Apprenticeship Learning", presentation: "modal" }} />
+
+      <Stack.Screen
+        name="plant-inspection"
+        options={{
+          title: "Plant Inspection",
+          presentation: "modal" as const, // ✅ fixed type
+        }}
+      />
+      <Stack.Screen
+        name="quick-hitch-inspection"
+        options={{
+          title: "Quick Hitch Inspection",
+          presentation: "modal" as const, // ✅ fixed type
+        }}
+      />
+      <Stack.Screen
+        name="apprenticeship-learning"
+        options={{
+          title: "Apprenticeship Learning",
+          presentation: "modal" as const, // ✅ fixed type
+        }}
+      />
     </Stack>
   );
 }
