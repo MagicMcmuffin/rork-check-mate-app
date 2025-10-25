@@ -2,6 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
 import { Building2, Users, LogIn, Star, Sparkles } from 'lucide-react-native';
 import { useEffect } from 'react';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,7 +32,8 @@ export default function OnboardingScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-      <View style={styles.content}>
+      <ResponsiveContainer maxWidth={600}>
+        <View style={styles.content}>
         <View style={styles.header}>
           <Image
             source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/4w9q508wwrcszbw36y6h0' }}
@@ -107,7 +109,8 @@ export default function OnboardingScreen() {
           <LogIn size={24} color="#93c5fd" />
           <Text style={styles.loginText}>Sign In</Text>
         </TouchableOpacity>
-      </View>
+        </View>
+      </ResponsiveContainer>
       </ScrollView>
     </SafeAreaView>
   );

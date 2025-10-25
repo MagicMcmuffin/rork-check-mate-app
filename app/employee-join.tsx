@@ -2,6 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Users, KeyRound, CheckCircle2, Mail, Lock, User } from 'lucide-react-native';
 import { useState } from 'react';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import {
   View,
   Text,
@@ -91,7 +92,8 @@ export default function EmployeeJoinScreen() {
   if (joinedCompany) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-        <View style={styles.successContainer}>
+        <ResponsiveContainer maxWidth={500}>
+          <View style={styles.successContainer}>
           <View style={styles.successIcon}>
             <CheckCircle2 size={64} color="#10b981" />
           </View>
@@ -107,7 +109,8 @@ export default function EmployeeJoinScreen() {
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </ResponsiveContainer>
       </SafeAreaView>
     );
   }
@@ -119,7 +122,8 @@ export default function EmployeeJoinScreen() {
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
+          <ResponsiveContainer maxWidth={500}>
+            <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
@@ -239,6 +243,7 @@ export default function EmployeeJoinScreen() {
               )}
             </TouchableOpacity>
           </View>
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

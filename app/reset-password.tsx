@@ -1,6 +1,7 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Lock, CheckCircle2 } from 'lucide-react-native';
 import { useState } from 'react';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import {
   View,
   Text,
@@ -67,7 +68,8 @@ export default function ResetPasswordScreen() {
   if (isSuccess) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.successContainer}>
+        <ResponsiveContainer maxWidth={500}>
+          <View style={styles.successContainer}>
           <View style={styles.successIcon}>
             <CheckCircle2 size={64} color="#10b981" />
           </View>
@@ -82,7 +84,8 @@ export default function ResetPasswordScreen() {
           >
             <Text style={styles.loginButtonText}>Go to Login</Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </ResponsiveContainer>
       </SafeAreaView>
     );
   }
@@ -97,7 +100,8 @@ export default function ResetPasswordScreen() {
           contentContainerStyle={styles.scrollContent} 
           keyboardShouldPersistTaps="handled"
         >
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <ResponsiveContainer maxWidth={500}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ArrowLeft size={24} color="#f1f5f9" />
           </TouchableOpacity>
 
@@ -165,6 +169,7 @@ export default function ResetPasswordScreen() {
               <Text style={styles.cancelButtonText}>Back to Login</Text>
             </TouchableOpacity>
           </View>
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

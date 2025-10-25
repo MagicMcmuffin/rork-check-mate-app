@@ -2,6 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, LogIn, Mail } from 'lucide-react-native';
 import { useState } from 'react';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import {
   View,
   Text,
@@ -85,9 +86,10 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={true}
         >
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#f1f5f9" />
-          </TouchableOpacity>
+          <ResponsiveContainer maxWidth={500}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <ArrowLeft size={24} color="#f1f5f9" />
+            </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconContainer}>
@@ -155,6 +157,7 @@ export default function LoginScreen() {
           >
             <Text style={styles.resetButtonText}>Reset All Data</Text>
           </TouchableOpacity>
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

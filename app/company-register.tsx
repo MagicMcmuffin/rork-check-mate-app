@@ -2,6 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Building2, CheckCircle2, User, Mail } from 'lucide-react-native';
 import { useState } from 'react';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import {
   View,
   Text,
@@ -83,7 +84,8 @@ export default function CompanyRegisterScreen() {
   if (registeredCode) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-        <View style={styles.successContainer}>
+        <ResponsiveContainer maxWidth={500}>
+          <View style={styles.successContainer}>
           <View style={styles.successIcon}>
             <CheckCircle2 size={64} color="#10b981" />
           </View>
@@ -101,7 +103,8 @@ export default function CompanyRegisterScreen() {
           <TouchableOpacity style={[styles.continueButton, { backgroundColor: colors.primary }]} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
           </TouchableOpacity>
-        </View>
+          </View>
+        </ResponsiveContainer>
       </SafeAreaView>
     );
   }
@@ -113,7 +116,8 @@ export default function CompanyRegisterScreen() {
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
+          <ResponsiveContainer maxWidth={500}>
+            <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.card }]} onPress={() => router.back()}>
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
 
@@ -242,6 +246,7 @@ export default function CompanyRegisterScreen() {
               )}
             </TouchableOpacity>
           </View>
+          </ResponsiveContainer>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

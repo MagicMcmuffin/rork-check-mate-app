@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 
 export default function InspectionsScreen() {
   const { user, company, logout, switchCompany, getUserCompanies, updateUserProfile, getCompanyNotifications, markNotificationComplete, deleteNotification, getCompanyAnnouncements } = useApp();
@@ -75,7 +76,8 @@ export default function InspectionsScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+        <ResponsiveContainer maxWidth={1000}>
+          <View style={styles.header}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={handleUpdateProfilePicture}>
               {user?.profilePicture ? (
@@ -533,7 +535,8 @@ export default function InspectionsScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </View>
+          </View>
+        </ResponsiveContainer>
       </ScrollView>
 
       <Modal
