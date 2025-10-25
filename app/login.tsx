@@ -64,7 +64,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(email.trim(), password.trim());
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/home' as any);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password. Please try again.';
       Alert.alert('Login Failed', errorMessage);
@@ -120,7 +120,7 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
                 <Text style={styles.label}>Password</Text>
-                <TouchableOpacity onPress={() => Alert.alert('Forgot Password', 'Please contact your company administrator to reset your password.')}>
+                <TouchableOpacity onPress={() => router.push('/forgot-password')}>
                   <Text style={styles.forgotPassword}>Forgot?</Text>
                 </TouchableOpacity>
               </View>

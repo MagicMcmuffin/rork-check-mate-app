@@ -31,6 +31,7 @@ export default function EmployeeJoinScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [companyCode, setCompanyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [joinedCompany, setJoinedCompany] = useState<string | null>(null);
@@ -48,6 +49,21 @@ export default function EmployeeJoinScreen() {
 
     if (!password.trim()) {
       Alert.alert('Error', 'Please enter a password');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (!confirmPassword.trim()) {
+      Alert.alert('Error', 'Please confirm your password');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -69,7 +85,7 @@ export default function EmployeeJoinScreen() {
   };
 
   const handleContinue = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/home' as any);
   };
 
   if (joinedCompany) {
@@ -155,10 +171,26 @@ export default function EmployeeJoinScreen() {
                 <Lock size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-                  placeholder="Create a password"
+                  placeholder="Create a password (min 6 characters)"
                   placeholderTextColor="#94a3b8"
                   value={password}
                   onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
+              <View style={styles.inputWithIcon}>
+                <Lock size={20} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.inputWithPadding, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor="#94a3b8"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
                   secureTextEntry
                   editable={!isLoading}
                 />

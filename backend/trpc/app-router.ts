@@ -5,6 +5,8 @@ import joinCompanyRoute from "./routes/auth/join-company/route";
 import loginRoute from "./routes/auth/login/route";
 import logoutRoute from "./routes/auth/logout/route";
 import meRoute from "./routes/auth/me/route";
+import forgotPasswordRoute from "./routes/auth/forgot-password/route";
+import resetPasswordRoute from "./routes/auth/reset-password/route";
 import { createSiteDiaryProcedure } from "./routes/site-diaries/create/route";
 import { listSiteDiariesProcedure } from "./routes/site-diaries/list/route";
 import { getSiteDiaryProcedure } from "./routes/site-diaries/get/route";
@@ -25,6 +27,8 @@ export const appRouter = createTRPCRouter({
     login: loginRoute,
     logout: logoutRoute,
     me: meRoute,
+    forgotPassword: forgotPasswordRoute,
+    resetPassword: resetPasswordRoute,
   }),
   siteDiaries: createTRPCRouter({
     create: createSiteDiaryProcedure,
