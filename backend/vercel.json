@@ -1,9 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "hono.ts", "use": "@vercel/node" }
+    {
+      "src": "hono.ts",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "hono.ts" }
+    {
+      "src": "/(.*)",
+      "dest": "hono.ts"
+    }
   ]
 }
