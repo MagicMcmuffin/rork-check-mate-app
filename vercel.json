@@ -1,19 +1,27 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "backend/**/*.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "builds": [
     {
-      "src": "hono.ts",
+      "src": "backend/hono.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "hono.ts"
+      "dest": "backend/hono.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "hono.ts"
+      "dest": "backend/hono.ts"
     }
   ]
 }
