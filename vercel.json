@@ -2,19 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/hono.ts",
+      "src": "hono.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/hono.ts"
+      "dest": "hono.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "backend/hono.ts"
+      "dest": "hono.ts"
     }
-  ],
-  "outputDirectory": "backend"
+  ]
 }
