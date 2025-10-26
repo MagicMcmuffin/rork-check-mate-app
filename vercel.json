@@ -1,13 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs20.x"
-    },
-    "backend/**/*.ts": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "builds": [
     {
       "src": "backend/hono.ts",
@@ -15,10 +7,6 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/hono.ts"
-    },
     {
       "src": "/(.*)",
       "dest": "backend/hono.ts"
