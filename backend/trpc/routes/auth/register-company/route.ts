@@ -1,7 +1,12 @@
-import { z } from 'zod';
-import { TRPCError } from '@trpc/server';
-import { publicProcedure } from '../../../create-context';
-import { hashPassword, signToken, serializeAuthCookie } from '../../../../lib/auth';
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+// 👇 Add .js extensions for NodeNext compatibility
+import { publicProcedure } from "../../../create-context.js";
+import {
+  hashPassword,
+  signToken,
+  serializeAuthCookie,
+} from "../../../../lib/auth.js";
 
 export const registerCompanyProcedure = publicProcedure
   .input(
@@ -20,14 +25,14 @@ export const registerCompanyProcedure = publicProcedure
 
     if (existingUser) {
       throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Email already registered',
+        code: "BAD_REQUEST",
+        message: "Email already registered",
       });
     }
 
     const generateCompanyCode = (): string => {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code = '';
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
       for (let i = 0; i < 6; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
@@ -53,7 +58,7 @@ export const registerCompanyProcedure = publicProcedure
         email: input.personalEmail.toLowerCase().trim(),
         password: hashedPassword,
         name: input.ownerName,
-        role: 'company',
+        role: "company",
       },
     });
 
