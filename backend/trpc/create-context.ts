@@ -1,8 +1,11 @@
 import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { prisma } from "../lib/prisma";
-import { getTokenFromRequest, verifyToken } from "../lib/auth";
+
+// 👇 Add `.js` extensions for local modules
+import { prisma } from "../lib/prisma.js";
+import { getTokenFromRequest, verifyToken } from "../lib/auth.js";
+
 type User = {
   id: string;
   email: string;
@@ -46,7 +49,7 @@ export const publicProcedure = t.procedure;
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
   }
   return next({
     ctx: {
