@@ -1,21 +1,24 @@
-import { createTRPCRouter } from "./create-context";
-import hiRoute from "./routes/example/hi/route";
-import registerCompanyRoute from "./routes/auth/register-company/route";
-import joinCompanyRoute from "./routes/auth/join-company/route";
-import loginRoute from "./routes/auth/login/route";
-import logoutRoute from "./routes/auth/logout/route";
-import meRoute from "./routes/auth/me/route";
-import forgotPasswordRoute from "./routes/auth/forgot-password/route";
-import resetPasswordRoute from "./routes/auth/reset-password/route";
-import { createSiteDiaryProcedure } from "./routes/site-diaries/create/route";
-import { listSiteDiariesProcedure } from "./routes/site-diaries/list/route";
-import { getSiteDiaryProcedure } from "./routes/site-diaries/get/route";
-import { updateSiteDiaryProcedure } from "./routes/site-diaries/update/route";
-import { deleteSiteDiaryProcedure } from "./routes/site-diaries/delete/route";
-import { sendWeeklySiteDiaryProcedure } from "./routes/site-diaries/send-weekly/route";
-import { createProjectNoteProcedure } from "./routes/project-notes/create/route";
-import { listProjectNotesProcedure } from "./routes/project-notes/list/route";
-import { deleteProjectNoteProcedure } from "./routes/project-notes/delete/route";
+import { createTRPCRouter } from "./create-context.js";
+
+import hiRoute from "./routes/example/hi/route.js";
+import registerCompanyRoute from "./routes/auth/register-company/route.js";
+import joinCompanyRoute from "./routes/auth/join-company/route.js";
+import loginRoute from "./routes/auth/login/route.js";
+import logoutRoute from "./routes/auth/logout/route.js";
+import meRoute from "./routes/auth/me/route.js";
+import forgotPasswordRoute from "./routes/auth/forgot-password/route.js";
+import resetPasswordRoute from "./routes/auth/reset-password/route.js";
+
+import { createSiteDiaryProcedure } from "./routes/site-diaries/create/route.js";
+import { listSiteDiariesProcedure } from "./routes/site-diaries/list/route.js";
+import { getSiteDiaryProcedure } from "./routes/site-diaries/get/route.js";
+import { updateSiteDiaryProcedure } from "./routes/site-diaries/update/route.js";
+import { deleteSiteDiaryProcedure } from "./routes/site-diaries/delete/route.js";
+import { sendWeeklySiteDiaryProcedure } from "./routes/site-diaries/send-weekly/route.js";
+
+import { createProjectNoteProcedure } from "./routes/project-notes/create/route.js";
+import { listProjectNotesProcedure } from "./routes/project-notes/list/route.js";
+import { deleteProjectNoteProcedure } from "./routes/project-notes/delete/route.js";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({

@@ -5,8 +5,10 @@ export const config = {
 import { Hono } from "hono";
 import { trpcServer } from "@hono/trpc-server";
 import { cors } from "hono/cors";
-import { appRouter } from "./trpc/app-router";
-import { createContext } from "./trpc/create-context";
+
+// 👇 Add ".js" to these relative imports (required for NodeNext)
+import { appRouter } from "./trpc/app-router.js";
+import { createContext } from "./trpc/create-context.js";
 
 const app = new Hono();
 
@@ -28,6 +30,7 @@ app.use(
   })
 );
 
+// ✅ This endpoint helps verify the deployment works
 app.get("/api", (c) => {
   return c.json({ status: "ok", message: "API is running" });
 });
@@ -37,10 +40,10 @@ app.notFound((c) => {
 });
 
 app.onError((err, c) => {
-  console.error('[Hono Error]:', err);
+  console.error("[Hono Error]:", err);
   return c.json(
     {
-      error: 'Internal Server Error',
+      error: "Internal Server Error",
       message: err.message,
     },
     500
