@@ -25,11 +25,18 @@ const getBaseUrl = () => {
 
 const getTRPCUrl = () => {
   const baseUrl = getBaseUrl();
-  if (!baseUrl) {
+  
+  if (!baseUrl || baseUrl === '') {
+    if (typeof window !== 'undefined') {
+      const fallbackUrl = `${window.location.origin}/api/trpc`;
+      console.log('[tRPC] No env base URL, using window origin:', fallbackUrl);
+      return fallbackUrl;
+    }
     const fallbackUrl = 'http://localhost:8788/api/trpc';
     console.log('[tRPC] No base URL, using fallback:', fallbackUrl);
     return fallbackUrl;
   }
+  
   const url = `${baseUrl}/api/trpc`;
   console.log('[tRPC] Final tRPC URL:', url);
   return url;

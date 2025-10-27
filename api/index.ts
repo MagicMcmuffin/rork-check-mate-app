@@ -1,8 +1,7 @@
-import { Hono } from 'hono'
+import app from '../backend/hono';
 
-const app = new Hono()
+export const config = {
+  runtime: "nodejs",
+};
 
-app.get('/', (c) => c.text('Hono is running on Vercel!'))
-app.get('/api/test', (c) => c.json({ ok: true }))
-
-export default app
+export default app;
