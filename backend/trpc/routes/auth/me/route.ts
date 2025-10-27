@@ -1,4 +1,4 @@
-import { protectedProcedure } from '../../../create-context';
+import { protectedProcedure } from '../../../create-context.js';
 
 export const meProcedure = protectedProcedure.query(async ({ ctx }) => {
   const user = await ctx.prisma.user.findUnique({

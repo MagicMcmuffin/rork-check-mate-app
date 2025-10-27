@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { publicProcedure } from '../../../create-context';
-import { hashPassword } from '../../../../lib/auth';
+import { publicProcedure } from '../../../create-context.js';
+import { hashPassword } from '../../../../lib/auth.js';
 
 export const resetPasswordProcedure = publicProcedure
   .input(

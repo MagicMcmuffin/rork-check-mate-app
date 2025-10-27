@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { publicProcedure } from '../../../create-context';
-import { sendEmail } from '../../../../services/email';
+import { publicProcedure } from '../../../create-context.js';
+import { sendEmail } from '../../../../services/email.js';
 import crypto from 'crypto';
 
 export const forgotPasswordProcedure = publicProcedure

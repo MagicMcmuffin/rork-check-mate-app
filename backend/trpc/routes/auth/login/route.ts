@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { publicProcedure } from '../../../create-context';
-import { verifyPassword, signToken, serializeAuthCookie } from '../../../../lib/auth';
+import { publicProcedure } from '../../../create-context.js';
+import { verifyPassword, signToken, serializeAuthCookie } from '../../../../lib/auth.js';
 
 export const loginProcedure = publicProcedure
   .input(
