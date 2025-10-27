@@ -553,3 +553,25 @@ export interface ProjectNote {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ITFStatus = 'planned' | 'in-progress' | 'approved';
+
+export interface InspectionTestForm {
+  id: string;
+  companyId: string;
+  itfCode: string;
+  itfTitle: string;
+  trade: string;
+  description: string;
+  status: ITFStatus;
+  date?: string;
+  inspectorName?: string;
+  engineerName?: string;
+  documentUri?: string;
+  documentName?: string;
+  documentType?: string;
+  notes?: string;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,7 +1,7 @@
 import { useApp } from '@/contexts/AppContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Stack } from 'expo-router';
-import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users, BookOpen, FileText } from 'lucide-react-native';
+import { Building2, Wrench, Briefcase, Plus, Trash2, Edit2, Mail, Megaphone, Calendar, Bell, Package, Users, BookOpen, FileText, ClipboardList } from 'lucide-react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
@@ -760,6 +760,21 @@ export default function CompanyScreen() {
               <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Information & codes ({projectNotes.length} notes)</Text>
             </View>
           </TouchableOpacity>
+
+          {isCompanyOrManagement && (
+            <TouchableOpacity
+              style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/itf-management')}
+            >
+              <View style={[styles.sectionCardIcon, { backgroundColor: '#f59e0b' + '20' }]}>
+                <ClipboardList size={24} color="#f59e0b" />
+              </View>
+              <View style={styles.sectionCardContent}>
+                <Text style={[styles.sectionCardTitle, { color: colors.text }]}>Inspection Test Forms</Text>
+                <Text style={[styles.sectionCardSubtitle, { color: colors.textSecondary }]}>Construction QA/QC ITF records</Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 

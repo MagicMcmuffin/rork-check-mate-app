@@ -20,6 +20,12 @@ import { createProjectNoteProcedure } from "./routes/project-notes/create/route.
 import { listProjectNotesProcedure } from "./routes/project-notes/list/route.js";
 import { deleteProjectNoteProcedure } from "./routes/project-notes/delete/route.js";
 
+import { listITFsProcedure } from "./routes/itf/list/route.js";
+import { createITFProcedure } from "./routes/itf/create/route.js";
+import { updateITFProcedure } from "./routes/itf/update/route.js";
+import { deleteITFProcedure } from "./routes/itf/delete/route.js";
+import { seedITFTemplatesProcedure } from "./routes/itf/seed-templates/route.js";
+
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
@@ -45,6 +51,13 @@ export const appRouter = createTRPCRouter({
     create: createProjectNoteProcedure,
     list: listProjectNotesProcedure,
     delete: deleteProjectNoteProcedure,
+  }),
+  itf: createTRPCRouter({
+    list: listITFsProcedure,
+    create: createITFProcedure,
+    update: updateITFProcedure,
+    delete: deleteITFProcedure,
+    seedTemplates: seedITFTemplatesProcedure,
   }),
 });
 
