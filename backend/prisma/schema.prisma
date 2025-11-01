@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,9 +8,617 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
+  id                     String                   @id @default(cuid())
+  email                  String                   @unique
+  password               String
+  name                   String
+  role                   String                   @default("employee")
+  profilePicture         String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  
+  companies              UserCompany[]
+  currentCompanyId       String?
+  currentCompany         Company?                 @relation("CurrentCompany", fields: [currentCompanyId], references: [id])
+  
+  ownedCompanies         Company[]                @relation("CompanyOwner")
+  plantInspections       PlantInspection[]
+  quickHitchInspections  QuickHitchInspection[]
+  vehicleInspections     VehicleInspection[]
+  bucketChangeInspections BucketChangeInspection[]
+  positiveInterventions  PositiveIntervention[]
+  apprenticeshipEntries  ApprenticeshipEntry[]
+  announcements          Announcement[]
+  drafts                 Draft[]
+  greasingInspections    GreasingInspection[]
+  tickets                Ticket[]
+  ticketReminders        TicketReminder[]
+  airTestingInspections  AirTestingInspection[]
+  holidayRequests        HolidayRequest[]
+  holidayNotifications   HolidayNotification[]
+  equipmentReports       EquipmentReport[]
+  siteDiaries            SiteDiary[]
+  projectNotes           ProjectNote[]
+  inspectionTestForms    InspectionTestForm[]
+  
+  @@index([email])
+}
+
+model Company {
+  id                    String                   @id @default(cuid())
+  name                  String
+  code                  String                   @unique
+  email                 String
+  logo                  String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  
+  ownerId               String
+  owner                 User                     @relation("CompanyOwner", fields: [ownerId], references: [id])
+  
+  users                 UserCompany[]
+  currentUsers          User[]                   @relation("CurrentCompany")
+  projects              Project[]
+  equipment             Equipment[]
+  plantInspections      PlantInspection[]
+  quickHitchInspections QuickHitchInspection[]
+  vehicleInspections    VehicleInspection[]
+  bucketChangeInspections BucketChangeInspection[]
+  notifications         Notification[]
+  positiveInterventions PositiveIntervention[]
+  apprenticeshipEntries ApprenticeshipEntry[]
+  announcements         Announcement[]
+  drafts                Draft[]
+  greasingInspections   GreasingInspection[]
+  airTestingInspections AirTestingInspection[]
+  equipmentCategories   EquipmentCategory[]
+  equipmentItems        EquipmentItem[]
+  holidayRequests       HolidayRequest[]
+  holidayNotifications  HolidayNotification[]
+  plantCategories       PlantCategory[]
+  plantItems            PlantItem[]
+  equipmentReports      EquipmentReport[]
+  siteDiaries           SiteDiary[]
+  projectNotes          ProjectNote[]
+  inspectionTestForms   InspectionTestForm[]
+  
+  @@index([code])
+  @@index([ownerId])
+}
+
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  joinedAt  DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+}
+
+model Project {
+  id                     String   @id @default(cuid())
+  name                   String
+  projectNumber          String
+  emails                 String[]
+  assignedEmployeeIds    String[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  companyId              String
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+}
+
+model Equipment {
+  id                String   @id @default(cuid())
+  name              String
+  type              String
+  registration      String?
+  serialNumber      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+}
+
+model PlantInspection {
+  id                String   @id @default(cuid())
+  plantNumber       String
+  equipmentId       String?
+  employeeName      String
+  projectName       String
+  checks            Json
+  signature         String?
+  isFixed           Boolean  @default(false)
+  fixedBy           String?
+  fixedAt           DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model QuickHitchInspection {
+  id                String   @id @default(cuid())
+  excavatorDetails  String
+  operatorName      String
+  projectName       String
+  equipmentId       String?
+  checks            Json
+  signature         String?
+  isFixed           Boolean  @default(false)
+  fixedBy           String?
+  fixedAt           DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model VehicleInspection {
+  id                  String   @id @default(cuid())
+  vehicleRegistration String
+  equipmentId         String?
+  employeeName        String
+  projectName         String
+  checks              Json
+  signature           String?
+  isFixed             Boolean  @default(false)
+  fixedBy             String?
+  fixedAt             DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  companyId           String
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId          String
+  employee            User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model BucketChangeInspection {
+  id                String   @id @default(cuid())
+  bucketType        String
+  equipmentId       String?
+  employeeName      String
+  projectName       String
+  checks            Json
+  signature         String?
+  isFixed           Boolean  @default(false)
+  fixedBy           String?
+  fixedAt           DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model Notification {
+  id              String   @id @default(cuid())
+  inspectionId    String?
+  inspectionType  String?
+  equipmentName   String
+  issue           String
+  severity        String
+  reportedBy      String
+  reportedAt      String
+  isCompleted     Boolean  @default(false)
+  completedBy     String?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+}
+
+model PositiveIntervention {
+  id              String   @id @default(cuid())
+  employeeName    String
+  projectName     String
+  description     String
+  signature       String?
+  photos          String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model ApprenticeshipEntry {
+  id              String   @id @default(cuid())
+  apprenticeName  String
+  tradeDescription String
+  weekCommencing  String
+  weekEnding      String
+  totalHours      Float
+  signature       String?
+  activities      Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  apprenticeId    String
+  apprentice      User     @relation(fields: [apprenticeId], references: [id])
+  
+  @@index([companyId])
+  @@index([apprenticeId])
+}
+
+model Announcement {
+  id              String   @id @default(cuid())
+  title           String
+  message         String
+  priority        String
+  authorName      String
+  autoDeleteDate  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  
+  @@index([companyId])
+}
+
+model Draft {
+  id              String   @id @default(cuid())
+  type            String
+  data            Json
+  employeeName    String
+  isWeeklyReport  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model GreasingInspection {
+  id              String   @id @default(cuid())
+  equipmentName   String
+  equipmentId     String?
+  operatorName    String
+  projectName     String
+  hoursRun        Float
+  checks          Json
+  signature       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model Ticket {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  status          String   @default("open")
+  priority        String   @default("medium")
+  reminderEnabled Boolean  @default(false)
+  reminderDate    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([employeeId])
+}
+
+model TicketReminder {
+  id              String   @id @default(cuid())
+  ticketId        String
+  ticketTitle     String
+  reminderDate    DateTime
+  isCompleted     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([employeeId])
+}
+
+model AirTestingInspection {
+  id              String   @id @default(cuid())
+  siteName        String
+  projectName     String
+  operatorName    String
+  equipmentDetails String
+  testResults     Json
+  signature       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model EquipmentCategory {
+  id                String   @id @default(cuid())
+  name              String
+  parentCategoryId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+}
+
+model EquipmentItem {
+  id                String   @id @default(cuid())
+  name              String
+  categoryId        String
+  serialNumber      String?
+  location          String?
+  status            String   @default("active")
+  purchaseDate      DateTime?
+  warrantyExpiry    DateTime?
+  notes             String?
+  certificates      Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+  @@index([categoryId])
+}
+
+model HolidayRequest {
+  id              String   @id @default(cuid())
+  startDate       DateTime
+  endDate         DateTime
+  reason          String?
+  status          String   @default("pending")
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  employeeName    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model HolidayNotification {
+  id              String   @id @default(cuid())
+  requestId       String
+  employeeName    String
+  message         String
+  type            String
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model PlantCategory {
+  id                String   @id @default(cuid())
+  name              String
+  parentCategoryId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+}
+
+model PlantItem {
+  id                String   @id @default(cuid())
+  name              String
+  categoryId        String
+  serialNumber      String?
+  location          String?
+  status            String   @default("active")
+  purchaseDate      DateTime?
+  warrantyExpiry    DateTime?
+  notes             String?
+  certificates      Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+  @@index([categoryId])
+}
+
+model EquipmentReport {
+  id              String   @id @default(cuid())
+  equipmentName   String
+  equipmentId     String?
+  reportedBy      String
+  reportedByName  String
+  issue           String
+  severity        String
+  photos          String[]
+  status          String   @default("open")
+  fixedBy         String?
+  fixedAt         DateTime?
+  fixNotes        String?
+  discardedBy     String?
+  discardedAt     DateTime?
+  discardNotes    String?
+  actionLog       Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        User     @relation(fields: [employeeId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model SiteDiary {
+  id              String   @id @default(cuid())
+  date            DateTime
+  projectId       String
+  projectName     String
+  supervisorName  String
+  weather         String?
+  temperature     String?
+  workDescription String
+  progress        String?
+  delays          String?
+  safetyIssues    String?
+  visitors        String?
+  workersOnSite   Int?
+  equipmentUsed   Json
+  materials       Json
+  photos          String[] @default([])
+  notes           String?
+  status          String   @default("draft")
+  sentAt          DateTime?
+  sentTo          String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supervisorId    String
+  supervisor      User     @relation(fields: [supervisorId], references: [id])
+  
+  @@index([companyId])
+  @@index([supervisorId])
+  @@index([projectId])
+  @@index([date])
+}
+
+model ProjectNote {
+  id              String   @id @default(cuid())
+  title           String
+  content         String
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  authorName      String
+  
+  @@index([companyId])
+  @@index([authorId])
+}
+
+model InspectionTestForm {
+  id              String   @id @default(cuid())
+  itfCode         String
+  itfTitle        String
+  trade           String
+  description     String
+  status          String   @default("planned")
+  date            DateTime?
+  inspectorName   String?
+  engineerName    String?
+  documentUri     String?
+  documentName    String?
+  documentType    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  
+  @@index([companyId])
+  @@index([createdById])
+  @@index([itfCode])
+  @@index([trade])
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
+  
+  @@index([email])
+  @@index([token])
 }
