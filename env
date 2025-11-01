@@ -1,0 +1,15 @@
+# Rork API Base URL (no trailing slash)
+EXPO_PUBLIC_RORK_API_BASE_URL=https://u54wvrddq5zpukiksxhwh.rork.live
+
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/checkmate"
+
+# JWT Secret (change this in production)
+JWT_SECRET="your-secret-key-change-in-production"
+
+# Email Configuration (optional - for nodemailer)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM="noreply@checkmate.com"
